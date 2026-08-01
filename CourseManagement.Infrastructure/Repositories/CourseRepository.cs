@@ -8,13 +8,17 @@ namespace CourseManagement.Infrastructure.Repositories;
 public class CourseRepository(ApplicationDbContext context) : ICourseRepository
 {
     public async Task<IEnumerable<Course>> GetAllAsync() =>
-        await context.Courses.Include(c => c.Instructor).ToListAsync();
+        await context.Courses.AsNoTracking().Include(c => c.Instructor).ToListAsync();
 
     public async Task<Course?> GetByIdAsync(int id) =>
         await context.Courses.Include(c => c.Instructor).FirstOrDefaultAsync(c => c.Id == id);
 
+    // كان ينقصها Include(Instructor) فتظهر أسماء المدربين فارغة في النتائج
     public async Task<IEnumerable<Course>> GetByInstructorIdAsync(int instructorId) =>
-        await context.Courses.Where(c => c.InstructorId == instructorId).ToListAsync();
+        await context.Courses.AsNoTracking()
+            .Include(c => c.Instructor)
+            .Where(c => c.InstructorId == instructorId)
+            .ToListAsync();
 
     public async Task<Course> AddAsync(Course course)
     {

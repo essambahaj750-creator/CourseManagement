@@ -1,3 +1,4 @@
+using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
@@ -29,38 +30,45 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
     {
         var course = new Course
         {
-            Title = dto.Title,
-            Description = dto.Description,
+            Title = dto.Title.Trim(),
+            Description = dto.Description.Trim(),
             Price = dto.Price,
             InstructorId = instructorId
         };
 
         await courseRepository.AddAsync(course);
-        return MapToResponseDto(course);
+
+        // إعادة الجلب بعد الحفظ حتى تُحمَّل بيانات المدرب (كانت تظهر "Unknown" سابقاً)
+        var created = await courseRepository.GetByIdAsync(course.Id);
+        return MapToResponseDto(created ?? course);
     }
 
-    public async Task<CourseResponseDto> UpdateCourseAsync(int id, CourseDto dto, int instructorId)
+    public async Task<CourseResponseDto> UpdateCourseAsync(int id, CourseDto dto, int requesterId, bool isAdmin)
     {
-        var course = await courseRepository.GetByIdAsync(id);
-        if (course == null || course.InstructorId != instructorId)
-            throw new InvalidOperationException("Course not found or you are not the instructor.");
+        var course = await courseRepository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException("Course not found.");
 
-        course.Title = dto.Title;
-        course.Description = dto.Description;
+        // الـ Admin يتجاوز شرط الملكية؛ المدرب يعدل كورساته فقط
+        if (!isAdmin && course.InstructorId != requesterId)
+            throw new ForbiddenAccessException("You can only modify your own courses.");
+
+        course.Title = dto.Title.Trim();
+        course.Description = dto.Description.Trim();
         course.Price = dto.Price;
 
         await courseRepository.UpdateAsync(course);
         return MapToResponseDto(course);
     }
 
-    public async Task<bool> DeleteCourseAsync(int id, int instructorId)
+    public async Task DeleteCourseAsync(int id, int requesterId, bool isAdmin)
     {
-        var course = await courseRepository.GetByIdAsync(id);
-        if (course == null || course.InstructorId != instructorId)
-            return false;
+        var course = await courseRepository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException("Course not found.");
+
+        if (!isAdmin && course.InstructorId != requesterId)
+            throw new ForbiddenAccessException("You can only delete your own courses.");
 
         await courseRepository.DeleteAsync(id);
-        return true;
     }
 
     private static CourseResponseDto MapToResponseDto(Course course) => new()
@@ -69,6 +77,7 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
         Title = course.Title,
         Description = course.Description,
         Price = course.Price,
-        InstructorName = course.Instructor?.FullName ?? "Unknown"
+        InstructorId = course.InstructorId,
+        InstructorName = course.Instructor?.FullName ?? string.Empty
     };
 }

@@ -1,8 +1,8 @@
-﻿using CourseManagement.Application.DTOs;
+﻿using CourseManagement.API.Extensions;
+using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace CourseManagement.API.Controllers;
 
@@ -10,14 +10,12 @@ namespace CourseManagement.API.Controllers;
 [ApiController]
 public class CourseController(ICourseService courseService) : ControllerBase
 {
+    /// <summary>كتالوج الكورسات — عام</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var courses = await courseService.GetAllCoursesAsync();
-        return Ok(courses);
-    }
+    public async Task<IActionResult> GetAll() =>
+        Ok(await courseService.GetAllCoursesAsync());
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
         var course = await courseService.GetCourseByIdAsync(id);
@@ -26,47 +24,29 @@ public class CourseController(ICourseService courseService) : ControllerBase
         return Ok(course);
     }
 
-    [HttpGet("instructor/{instructorId}")]
-    [Authorize(Roles = "Instructor,Admin")]
-    public async Task<IActionResult> GetByInstructor(int instructorId)
-    {
-        var courses = await courseService.GetCoursesByInstructorAsync(instructorId);
-        return Ok(courses);
-    }
+    // كانت مقيدة بـ Instructor,Admin رغم أن قائمة الكورسات كلها عامة أصلاً — تناقض منطقي
+    [HttpGet("instructor/{instructorId:int}")]
+    public async Task<IActionResult> GetByInstructor(int instructorId) =>
+        Ok(await courseService.GetCoursesByInstructorAsync(instructorId));
 
     [HttpPost]
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> Create([FromBody] CourseDto dto)
     {
-        var instructorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var course = await courseService.CreateCourseAsync(dto, instructorId);
+        var course = await courseService.CreateCourseAsync(dto, User.GetUserId());
         return CreatedAtAction(nameof(GetById), new { id = course.Id }, course);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [Authorize(Roles = "Instructor,Admin")]
-    public async Task<IActionResult> Update(int id, [FromBody] CourseDto dto)
-    {
-        var instructorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        try
-        {
-            var course = await courseService.UpdateCourseAsync(id, dto, instructorId);
-            return Ok(course);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+    public async Task<IActionResult> Update(int id, [FromBody] CourseDto dto) =>
+        Ok(await courseService.UpdateCourseAsync(id, dto, User.GetUserId(), User.IsAdmin()));
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var instructorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await courseService.DeleteCourseAsync(id, instructorId);
-        if (!result)
-            return NotFound(new { message = "Course not found or you are not the instructor" });
+        await courseService.DeleteCourseAsync(id, User.GetUserId(), User.IsAdmin());
         return NoContent();
     }
 }

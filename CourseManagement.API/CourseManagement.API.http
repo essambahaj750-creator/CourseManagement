@@ -1,6 +1,61 @@
-@CourseManagement.API_HostAddress = http://localhost:5205
+@host = http://localhost:5205
+@token = PASTE_TOKEN_HERE
 
-GET {{CourseManagement.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### تسجيل حساب جديد (Student دائماً)
+POST {{host}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "fullName": "Anas Sadeq",
+  "email": "anas@example.com",
+  "password": "P@ssw0rd123"
+}
+
+### تسجيل الدخول (الـ Admin المبذور في بيئة التطوير)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@coursemanagement.local",
+  "password": "Admin@12345"
+}
+
+### ترقية مستخدم إلى Instructor — يتطلب توكن Admin
+PUT {{host}}/api/users/2/role
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "role": "Instructor"
+}
+
+### إنشاء كورس — يتطلب توكن Instructor أو Admin
+POST {{host}}/api/course
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "ASP.NET Core من الصفر",
+  "description": "بناء Web APIs احترافية",
+  "price": 49.99
+}
+
+### كل الكورسات — عام
+GET {{host}}/api/course
+
+### التسجيل في كورس — أي مستخدم مسجّل دخول
+POST {{host}}/api/enrollment
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "courseId": 1
+}
+
+### تسجيلاتي
+GET {{host}}/api/enrollment/my
+Authorization: Bearer {{token}}
+
+### إلغاء تسجيلي من كورس
+DELETE {{host}}/api/enrollment/course/1
+Authorization: Bearer {{token}}

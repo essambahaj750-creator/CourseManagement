@@ -1,14 +1,13 @@
+using System.Security.Claims;
+using System.Text;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
+using CourseManagement.Domain.Enums;
 using CourseManagement.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CourseManagement.Infrastructure.Services;
 
@@ -16,22 +15,19 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        var existingUser = await userRepository.GetByEmailAsync(dto.Email);
-        if (existingUser != null)
-            throw new InvalidOperationException("User with this email already exists.");
+        var email = dto.Email.Trim();
 
-        // ÇáÊÍŞŞ ãä Ãä ÇáÏæÑ ÕÇáÍ
-        if (!Enum.TryParse<Domain.Enums.Role>(dto.Role, true, out var userRole))
-        {
-            userRole = Domain.Enums.Role.Student; // ÅĞÇ ßÇä ÇáÏæÑ ÛíÑ ÕÇáÍ¡ ÇÌÚáå Student
-        }
+        if (await userRepository.ExistsAsync(email))
+            throw new InvalidOperationException("User with this email already exists.");
 
         var user = new User
         {
-            FullName = dto.FullName,
-            Email = dto.Email,
+            FullName = dto.FullName.Trim(),
+            Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = userRole // ÇÓÊÎÏÇã ÇáÏæÑ ÇáãÏÎá
+            // Ø£Ù…Ø§Ù†: Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¹Ø§Ù… ÙŠÙ†Ø´Ø¦ Student Ø¯Ø§Ø¦Ù…Ø§Ù‹ â€” Ø§Ù„ØªØ±Ù‚ÙŠØ© ØªØªÙ… Ø¹Ø¨Ø± Admin ÙÙ‚Ø·.
+            // (ÙƒØ§Ù†Øª Ø§Ù„Ø«ØºØ±Ø© Ø§Ù„Ø³Ø§Ø¨Ù‚Ø© ØªØ³Ù…Ø­ Ù„Ø£ÙŠ Ø²Ø§Ø¦Ø± Ø¨ØªØ³Ø¬ÙŠÙ„ Ù†ÙØ³Ù‡ Admin!)
+            Role = Role.Student
         };
 
         await userRepository.AddAsync(user);
@@ -40,7 +36,8 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        var user = await userRepository.GetByEmailAsync(dto.Email);
+        var user = await userRepository.GetByEmailAsync(dto.Email.Trim());
+
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password.");
 
@@ -50,30 +47,38 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
     private AuthResponseDto GenerateToken(User user)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"]!;
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var secret = jwtSettings["Secret"];
 
-        var claims = new[]
+        if (string.IsNullOrWhiteSpace(secret))
+            throw new InvalidOperationException("JwtSettings:Secret is not configured.");
+
+        var expiryHours = double.TryParse(jwtSettings["ExpiryHours"], out var h) && h > 0 ? h : 2;
+        var expiresAt = DateTime.UtcNow.AddHours(expiryHours);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+
+        var descriptor = new SecurityTokenDescriptor
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
-            new Claim(ClaimTypes.Name, user.FullName)
+            Subject = new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim(ClaimTypes.Name, user.FullName)
+            ]),
+            Issuer = jwtSettings["Issuer"],
+            Audience = jwtSettings["Audience"],
+            Expires = expiresAt,
+            SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(2),
-            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-        );
 
         return new AuthResponseDto
         {
-            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Token = new JsonWebTokenHandler().CreateToken(descriptor),
+            UserId = user.Id,
             FullName = user.FullName,
-            Role = user.Role.ToString()
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            ExpiresAtUtc = expiresAt
         };
     }
 }

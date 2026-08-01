@@ -1,3 +1,4 @@
+using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
@@ -5,7 +6,9 @@ using CourseManagement.Domain.Interfaces;
 
 namespace CourseManagement.Infrastructure.Services;
 
-public class EnrollmentService(IEnrollmentRepository enrollmentRepository) : IEnrollmentService
+public class EnrollmentService(
+    IEnrollmentRepository enrollmentRepository,
+    ICourseRepository courseRepository) : IEnrollmentService
 {
     public async Task<IEnumerable<EnrollmentDto>> GetAllEnrollmentsAsync()
     {
@@ -25,16 +28,30 @@ public class EnrollmentService(IEnrollmentRepository enrollmentRepository) : IEn
         return enrollments.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByCourseAsync(int courseId)
+    public async Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByCourseAsync(int courseId, int requesterId, bool isAdmin)
     {
+        var course = await courseRepository.GetByIdAsync(courseId)
+            ?? throw new KeyNotFoundException("Course not found.");
+
+        // قائمة المسجّلين بيانات خاصة: مدرب الكورس نفسه أو الـ Admin فقط
+        if (!isAdmin && course.InstructorId != requesterId)
+            throw new ForbiddenAccessException("Only the course instructor or an admin can view course enrollments.");
+
         var enrollments = await enrollmentRepository.GetByCourseIdAsync(courseId);
         return enrollments.Select(MapToDto);
     }
 
     public async Task<EnrollmentDto> EnrollUserAsync(int userId, int courseId)
     {
-        var isEnrolled = await enrollmentRepository.IsUserEnrolledAsync(userId, courseId);
-        if (isEnrolled)
+        // كان التسجيل السابق لا يتحقق من وجود الكورس أصلاً → خطأ FK خام من قاعدة البيانات
+        var course = await courseRepository.GetByIdAsync(courseId)
+            ?? throw new KeyNotFoundException("Course not found.");
+
+        // لا معنى لتسجيل المدرب في كورسه
+        if (course.InstructorId == userId)
+            throw new InvalidOperationException("You cannot enroll in your own course.");
+
+        if (await enrollmentRepository.IsUserEnrolledAsync(userId, courseId))
             throw new InvalidOperationException("User is already enrolled in this course.");
 
         var enrollment = new Enrollment
@@ -45,26 +62,27 @@ public class EnrollmentService(IEnrollmentRepository enrollmentRepository) : IEn
         };
 
         await enrollmentRepository.AddAsync(enrollment);
-        return MapToDto(enrollment);
+
+        // إعادة الجلب حتى تُحمَّل أسماء المستخدم والكورس (كانت تظهر "Unknown" سابقاً)
+        var created = await enrollmentRepository.GetByIdAsync(enrollment.Id);
+        return MapToDto(created ?? enrollment);
     }
 
-    public async Task<bool> UnenrollUserAsync(int userId, int courseId)
+    public async Task UnenrollUserAsync(int userId, int courseId)
     {
-        var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId);
-        if (enrollment == null)
-            return false;
+        var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)
+            ?? throw new KeyNotFoundException("You are not enrolled in this course.");
 
         await enrollmentRepository.DeleteAsync(enrollment.Id);
-        return true;
     }
 
     private static EnrollmentDto MapToDto(Enrollment enrollment) => new()
     {
         Id = enrollment.Id,
         UserId = enrollment.UserId,
-        UserName = enrollment.User?.FullName ?? "Unknown",
+        UserName = enrollment.User?.FullName ?? string.Empty,
         CourseId = enrollment.CourseId,
-        CourseTitle = enrollment.Course?.Title ?? "Unknown",
+        CourseTitle = enrollment.Course?.Title ?? string.Empty,
         EnrolledDate = enrollment.EnrolledDate
     };
 }

@@ -8,31 +8,18 @@ namespace CourseManagement.API.Controllers;
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
+    /// <summary>تسجيل حساب جديد (Student دائماً)</summary>
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
-    {
-        try
-        {
-            var result = await authService.RegisterAsync(dto);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto) =>
+        Ok(await authService.RegisterAsync(dto));
 
+    /// <summary>تسجيل الدخول</summary>
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
-    {
-        try
-        {
-            var result = await authService.LoginAsync(dto);
-            return Ok(result);
-        }
-        catch
-        {
-            return Unauthorized(new { message = "Invalid email or password" });
-        }
-    }
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto) =>
+        Ok(await authService.LoginAsync(dto));
 }
