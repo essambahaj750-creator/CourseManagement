@@ -1,0 +1,13 @@
+namespace CourseManagement.Domain.Entities;
+
+public class Course
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+
+    // ÚáÇŞÉ ãÚ ÇáãÏÑÈ (User)
+    public int InstructorId { get; set; }
+    public User Instructor { get; set; } = null!;
+}
