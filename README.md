@@ -1,6 +1,6 @@
 # Course Management API
 
-Web API لإدارة الكورسات والتسجيلات، مبني بمعمارية Clean Architecture على **.NET 10** مع **EF Core + SQL Server** و **JWT Authentication**.
+Web API لإدارة الكورسات والتسجيلات، مبني بمعمارية Clean Architecture على **.NET 10** مع **EF Core + SQLite** و **JWT Authentication**.
 
 ## المعمارية
 
@@ -91,7 +91,7 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 ### تطبيق ترحيل صورة الكورس
 
-بعد تثبيت .NET SDK وتشغيل SQL Server، نفّذ:
+بعد تثبيت .NET SDK، ضع الأسرار خارج Git ثم نفّذ:
 
 ```bash
 dotnet restore
@@ -99,7 +99,7 @@ dotnet ef database update --project CourseManagement.Infrastructure --startup-pr
 dotnet run --project CourseManagement.API
 ```
 
-تأكد من وضع `JwtSettings:Secret` وسلسلة الاتصال في User Secrets أو متغيرات البيئة، وعدم تخزين الأسرار الحقيقية داخل Git.
+سيُنشأ ملف `coursemanagement.db` تلقائيًا داخل مجلد التشغيل. تأكد من وضع `JwtSettings:Secret` في User Secrets أو متغيرات البيئة، ولا تخزّن الأسرار الحقيقية داخل Git.
 
 ## الاختبارات وCI
 
@@ -117,6 +117,8 @@ dotnet test CourseManagement.API.slnx --configuration Release
 ```bash
 dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API --configuration Release
 ```
+
+يمكن تغيير موقع ملف SQLite عبر `ConnectionStrings:DefaultConnection`، مثل `Data Source=/var/lib/coursemanagement/coursemanagement.db`. يجب منح حساب التطبيق صلاحية القراءة والكتابة على المجلد، مع نسخ احتياطي دوري للملف.
 
 
 ## إعادة التصميم الاحترافية — منصة المعرفة

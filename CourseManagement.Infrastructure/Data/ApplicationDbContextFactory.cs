@@ -8,10 +8,10 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
     public ApplicationDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=CourseManagementDb;Trusted_Connection=True;TrustServerCertificate=True;";
+            ?? "Data Source=coursemanagement.db";
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer(connectionString)
+            .UseSqlite(connectionString)
             .Options;
 
         return new ApplicationDbContext(options);

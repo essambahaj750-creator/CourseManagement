@@ -18,9 +18,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            // يولّد User.SecurityStamp قيمته في طبقة Domain، لذلك لا نعتمد على دالة SQL Server.
             entity.Property(e => e.SecurityStamp)
-                .IsRequired()
-                .HasDefaultValueSql("NEWID()");
+                .IsRequired();
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
             entity.HasIndex(e => e.Email).IsUnique();
         });
@@ -31,7 +31,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(2000);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
-            entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            // SQLite لا يملك نوع decimal أصليًا؛ نخزّن السعر كسنتات INTEGER مع إبقاء API بصيغة decimal.
+            entity.Property(e => e.Price)
+                .HasConversion(
+                    value => decimal.ToInt64(decimal.Round(value * 100m, 0, MidpointRounding.AwayFromZero)),
+                    value => value / 100m);
 
             entity.HasOne(e => e.Instructor)
                   .WithMany()

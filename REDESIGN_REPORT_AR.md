@@ -59,15 +59,16 @@
 
 ## 8. طريقة التشغيل المحلية
 
-للتشغيل في بيئة تطوير Windows التي يتوفر فيها SQL Server LocalDB، يُضبط السر وقاعدة البيانات عبر User Secrets بدل وضعهما في Git:
+للتشغيل المحلي، يستخدم المشروع ملف SQLite باسم `coursemanagement.db`، ويمكن تغيير مكانه عبر `ConnectionStrings:DefaultConnection`. تُضبط الأسرار عبر User Secrets بدل وضعها في Git:
 
 ```bash
 dotnet user-secrets set "JwtSettings:Secret" "ضع-سرًا-قويًا-خاصًا-ببيئتك"
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "اتصال-SQL-Server-الخاص-بك"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=coursemanagement.db"
+dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API
 dotnet run --project CourseManagement.API/CourseManagement.API.csproj
 ```
 
-بعد التشغيل يمكن فتح `/` للوحة التحكم، و`/Courses` لاستكشاف الكورسات، و`/Account/Login` للمصادقة، و`/health` لفحص صحة التطبيق. في الإنتاج يجب استخدام SQL Server فعلي، وأسرار مخصصة للإنتاج، وتطبيق Migrations من خلال Pipeline أو خطوة نشر مضبوطة بدل تفعيلها عشوائيًا عند الإقلاع.
+بعد التشغيل يمكن فتح `/` للوحة التحكم، و`/Courses` لاستكشاف الكورسات، و`/Account/Login` للمصادقة، و`/health` لفحص صحة التطبيق. في الإنتاج يجب وضع ملف SQLite في مسار دائم قابل للنسخ الاحتياطي، ومنح التطبيق صلاحية القراءة والكتابة، وتطبيق Migrations من خلال Pipeline أو خطوة نشر مضبوطة بدل تفعيلها عشوائيًا عند الإقلاع.
 
 ## 9. الملفات الأهم في إعادة التصميم
 
@@ -85,4 +86,4 @@ dotnet run --project CourseManagement.API/CourseManagement.API.csproj
 
 ## 10. التقييم النهائي
 
-النسخة الحالية مناسبة للعرض الأكاديمي في Week 7 لأنها تعرض الوحدات المطلوبة، الشاشات، علاقات البيانات، صور الكورسات، Dashboard، CRUD، Bootstrap، DataTables، Modals، ومنطق الأعمال المرتبط بالصلاحيات والتسجيل. وهي كذلك أساس عملي قابل للتطوير إلى منتج إنتاجي بعد ربطها بقاعدة SQL Server فعلية، ضبط الأسرار، إضافة مراقبة مركزية، وتوسيع اختبارات التكامل الخاصة بالبيانات.
+النسخة الحالية مناسبة للعرض الأكاديمي في Week 7 لأنها تعرض الوحدات المطلوبة، الشاشات، علاقات البيانات، صور الكورسات، Dashboard، CRUD، Bootstrap، DataTables، Modals، ومنطق الأعمال المرتبط بالصلاحيات والتسجيل. وهي كذلك أساس عملي قابل للتطوير إلى منتج إنتاجي مع إدارة ملف SQLite في مسار دائم، نسخ احتياطي، ضبط الأسرار، إضافة مراقبة مركزية، وتوسيع اختبارات التكامل الخاصة بالبيانات.

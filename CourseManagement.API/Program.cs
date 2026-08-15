@@ -17,9 +17,9 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ─── قاعدة البيانات SQL Server ─────────────────────────────────────────────
+// ─── قاعدة البيانات SQLite ─────────────────────────────────────────────────
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ─── تسجيل الـ Repositories والـ Services ──────────────────────────────────
 builder.Services.AddScoped<IUserRepository, UserRepository>();
