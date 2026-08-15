@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CourseManagement.Application.DTOs;
 
 public class AuthResponseDto
@@ -8,4 +10,7 @@ public class AuthResponseDto
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public DateTime ExpiresAtUtc { get; set; }
+
+    [JsonIgnore]
+    public string SecurityStamp { get; set; } = string.Empty;
 }

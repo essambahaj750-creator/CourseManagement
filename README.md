@@ -17,20 +17,31 @@ Web API لإدارة الكورسات والتسجيلات، مبني بمعما
 dotnet run --project CourseManagement.API
 ```
 
-- الترحيلات (Migrations) تُطبَّق تلقائياً عند الإقلاع.
-- في بيئة التطوير يُبذر حساب Admin أولي تلقائياً (من قسم `SeedAdmin` في `appsettings.Development.json`):
-  - **Email:** `admin@coursemanagement.local`
-  - **Password:** `Admin@12345` — ⚠️ غيّره فور أول تسجيل دخول.
-- Swagger UI متاح في التطوير على `/swagger` (ويمكن تفعيله في أي بيئة عبر `Swagger:Enabled = true`).
+- الترحيلات لا تُطبَّق تلقائياً في الإنتاج. تُفعّل في التطوير عبر `Database:ApplyMigrations = true`، أو تُطبّق يدويًا من خط النشر.
+- إنشاء Admin الأولي معطل افتراضيًا. فعّله صراحةً بعد وضع بياناته في User Secrets أو متغيرات البيئة.
+- Swagger UI متاح في التطوير على `/swagger`، ويمكن تفعيله في بيئة أخرى عبر `Swagger:Enabled = true` بعد تقييد الوصول إليه.
 
 ## الإعدادات والأسرار
 
-- `JwtSettings:Secret` **غير مخزّن** في `appsettings.json` عمداً. ضعه في:
-  - `appsettings.Development.json` (موجود للتطوير)، أو
-  - User Secrets: `dotnet user-secrets set "JwtSettings:Secret" "<64+ chars>"`، أو
-  - متغير بيئة: `JwtSettings__Secret`.
-- التطبيق يرفض الإقلاع إذا كان السر مفقوداً أو أقصر من 32 حرفاً.
-- `Cors:AllowedOrigins`: حدد نطاقات الواجهة الأمامية في الإنتاج (فارغة/`*` = السماح للجميع، للتطوير فقط).
+- `JwtSettings:Secret` غير مخزّن في أي ملف إعدادات. التطبيق يرفض الإقلاع إذا كان مفقودًا أو أقصر من 32 حرفًا.
+- لإعداد التطوير باستخدام User Secrets:
+
+```bash
+dotnet user-secrets set "JwtSettings:Secret" "ضع-سرًا-عشوائيًا-طويلًا-هنا" --project CourseManagement.API
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "سلسلة-الاتصال" --project CourseManagement.API
+dotnet user-secrets set "Cors:AllowedOrigins:0" "https://localhost:5173" --project CourseManagement.API
+```
+
+- لتفعيل Admin الأولي، ضع القيم التالية خارج Git:
+
+```bash
+dotnet user-secrets set "SeedAdmin:Enabled" "true" --project CourseManagement.API
+dotnet user-secrets set "SeedAdmin:FullName" "System Administrator" --project CourseManagement.API
+dotnet user-secrets set "SeedAdmin:Email" "admin@example.com" --project CourseManagement.API
+dotnet user-secrets set "SeedAdmin:Password" "كلمة-مرور-قوية-وفريدة" --project CourseManagement.API
+```
+
+- `Cors:AllowedOrigins` قائمة صريحة؛ إذا كانت فارغة أو تحتوي `*` فسيتم رفض CORS بدل فتحه للجميع.
 
 ## الأدوار وتدفق الصلاحيات
 
@@ -72,6 +83,7 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 - `/` لوحة التحكم الرئيسية.
 - `/Account/Login` تسجيل الدخول.
 - `/Account/Register` إنشاء حساب.
+- `/Account/ChangePassword` تغيير كلمة المرور وإبطال الجلسة الحالية.
 - `/Courses` قائمة الكورسات وعمليات CRUD حسب الدور.
 - `/Enrollments` تسجيلات المستخدم الحالي.
 - `/Admin/Users` إدارة المستخدمين للمشرف.
@@ -88,3 +100,20 @@ dotnet run --project CourseManagement.API
 ```
 
 تأكد من وضع `JwtSettings:Secret` وسلسلة الاتصال في User Secrets أو متغيرات البيئة، وعدم تخزين الأسرار الحقيقية داخل Git.
+
+## الاختبارات وCI
+
+```bash
+dotnet build CourseManagement.API.slnx --configuration Release
+dotnet test CourseManagement.API.slnx --configuration Release
+```
+
+يحتوي الحل على مشروع `CourseManagement.Tests` لاختبارات السلوك الأمني والتحقق من نماذج MVC. كما ينفذ GitHub Actions ملف `.github/workflows/ci.yml` تلقائيًا عند Push وPull Request.
+
+## تشغيل الترحيلات بأمان
+
+في التطوير يمكن استخدام `Database:ApplyMigrations=true`. في الإنتاج يفضّل تنفيذ الترحيل من خطوة نشر منفصلة ثم تشغيل التطبيق مع `Database:ApplyMigrations=false`:
+
+```bash
+dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API --configuration Release
+```

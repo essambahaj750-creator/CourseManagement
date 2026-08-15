@@ -42,6 +42,28 @@ public sealed class RegisterViewModel
     public RegisterDto ToDto() => new() { FullName = FullName, Email = Email, Password = Password };
 }
 
+public sealed class ChangePasswordViewModel
+{
+    [Required, DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور الحالية")]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required, StringLength(72, MinimumLength = 12), DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور الجديدة")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required, DataType(DataType.Password), Compare(nameof(NewPassword))]
+    [Display(Name = "تأكيد كلمة المرور الجديدة")]
+    public string ConfirmNewPassword { get; set; } = string.Empty;
+
+    public ChangePasswordDto ToDto() => new()
+    {
+        CurrentPassword = CurrentPassword,
+        NewPassword = NewPassword,
+        ConfirmNewPassword = ConfirmNewPassword
+    };
+}
+
 public sealed class CourseFormViewModel
 {
     public int Id { get; set; }

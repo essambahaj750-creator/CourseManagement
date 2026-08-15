@@ -18,6 +18,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.SecurityStamp)
+                .IsRequired()
+                .HasDefaultValueSql("NEWID()");
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
             entity.HasIndex(e => e.Email).IsUnique();
         });
 
@@ -25,7 +29,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Description).IsRequired();
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(2000);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
 

@@ -8,13 +8,14 @@ namespace CourseManagement.Infrastructure.Repositories;
 public class UserRepository(ApplicationDbContext context) : IUserRepository
 {
     public async Task<IEnumerable<User>> GetAllAsync() =>
-        await context.Users.ToListAsync();
+        await context.Users.AsNoTracking().ToListAsync();
 
     public async Task<User?> GetByIdAsync(int id) =>
-        await context.Users.FindAsync(id);
+        await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
 
     public async Task<User?> GetByEmailAsync(string email) =>
-        await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        await context.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == email.Trim().ToLowerInvariant());
 
     public async Task<User> AddAsync(User user)
     {
@@ -40,5 +41,5 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     }
 
     public async Task<bool> ExistsAsync(string email) =>
-        await context.Users.AnyAsync(u => u.Email == email);
+        await context.Users.AnyAsync(u => u.Email == email.Trim().ToLowerInvariant());
 }

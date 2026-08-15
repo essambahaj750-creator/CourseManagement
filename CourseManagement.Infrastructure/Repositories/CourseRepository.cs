@@ -11,7 +11,9 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
         await context.Courses.AsNoTracking().Include(c => c.Instructor).ToListAsync();
 
     public async Task<Course?> GetByIdAsync(int id) =>
-        await context.Courses.Include(c => c.Instructor).FirstOrDefaultAsync(c => c.Id == id);
+        await context.Courses.AsNoTracking()
+            .Include(c => c.Instructor)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
     // كان ينقصها Include(Instructor) فتظهر أسماء المدربين فارغة في النتائج
     public async Task<IEnumerable<Course>> GetByInstructorIdAsync(int instructorId) =>

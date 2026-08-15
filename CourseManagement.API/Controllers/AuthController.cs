@@ -1,11 +1,13 @@
 ﻿using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CourseManagement.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting("auth")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
     /// <summary>تسجيل حساب جديد (Student دائماً)</summary>

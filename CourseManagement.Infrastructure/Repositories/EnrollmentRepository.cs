@@ -14,7 +14,7 @@ public class EnrollmentRepository(ApplicationDbContext context) : IEnrollmentRep
             .ToListAsync();
 
     public async Task<Enrollment?> GetByIdAsync(int id) =>
-        await context.Enrollments
+        await context.Enrollments.AsNoTracking()
             .Include(e => e.User)
             .Include(e => e.Course)
             .FirstOrDefaultAsync(e => e.Id == id);
@@ -36,7 +36,8 @@ public class EnrollmentRepository(ApplicationDbContext context) : IEnrollmentRep
             .ToListAsync();
 
     public async Task<Enrollment?> GetByUserAndCourseAsync(int userId, int courseId) =>
-        await context.Enrollments.FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId);
+        await context.Enrollments.AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId);
 
     public async Task<Enrollment> AddAsync(Enrollment enrollment)
     {

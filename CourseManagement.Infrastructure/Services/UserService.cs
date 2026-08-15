@@ -36,6 +36,8 @@ public class UserService(
 
         user.FullName = dto.FullName.Trim();
         user.Email = newEmail;
+        if (emailChanged)
+            user.SecurityStamp = Guid.NewGuid();
 
         await userRepository.UpdateAsync(user);
         return MapToDto(user);
@@ -64,6 +66,7 @@ public class UserService(
         }
 
         user.Role = newRole;
+        user.SecurityStamp = Guid.NewGuid();
         await userRepository.UpdateAsync(user);
         return MapToDto(user);
     }

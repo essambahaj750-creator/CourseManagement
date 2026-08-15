@@ -38,10 +38,23 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
     {
         var user = await userRepository.GetByEmailAsync(dto.Email.Trim());
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        if (user == null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password.");
 
         return GenerateToken(user);
+    }
+
+    public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
+    {
+        var user = await userRepository.GetByIdAsync(userId)
+            ?? throw new UnauthorizedAccessException("User not found.");
+
+        if (!user.IsActive || !BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.SecurityStamp = Guid.NewGuid();
+        await userRepository.UpdateAsync(user);
     }
 
     private AuthResponseDto GenerateToken(User user)
@@ -61,12 +74,15 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
             Subject = new ClaimsIdentity(
             [
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("jti", Guid.NewGuid().ToString("N")),
+                new Claim("security_stamp", user.SecurityStamp.ToString("N")),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName)
             ]),
             Issuer = jwtSettings["Issuer"],
             Audience = jwtSettings["Audience"],
+            IssuedAt = DateTime.UtcNow,
             Expires = expiresAt,
             SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         };
@@ -78,7 +94,8 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
-            ExpiresAtUtc = expiresAt
+            ExpiresAtUtc = expiresAt,
+            SecurityStamp = user.SecurityStamp.ToString("N")
         };
     }
 }

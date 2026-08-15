@@ -8,16 +8,16 @@ Content-Type: application/json
 {
   "fullName": "Anas Sadeq",
   "email": "anas@example.com",
-  "password": "P@ssw0rd123"
+  "password": "REPLACE_WITH_A_STRONG_LOCAL_PASSWORD"
 }
 
-### تسجيل الدخول (الـ Admin المبذور في بيئة التطوير)
+### تسجيل الدخول — استخدم بيانات Admin الموجودة في User Secrets أو بيئة التشغيل
 POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@coursemanagement.local",
-  "password": "Admin@12345"
+  "email": "admin@example.com",
+  "password": "REPLACE_WITH_YOUR_LOCAL_ADMIN_PASSWORD"
 }
 
 ### ترقية مستخدم إلى Instructor — يتطلب توكن Admin

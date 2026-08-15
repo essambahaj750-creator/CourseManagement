@@ -9,7 +9,7 @@ namespace CourseManagement.API.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class UsersController(IUserService userService) : ControllerBase
+public class UsersController(IUserService userService, IAuthService authService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Admin")]
@@ -25,6 +25,13 @@ public class UsersController(IUserService userService) : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto dto) =>
         Ok(await userService.UpdateProfileAsync(User.GetUserId(), dto));
+
+    [HttpPut("me/password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        await authService.ChangePasswordAsync(User.GetUserId(), dto);
+        return NoContent();
+    }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

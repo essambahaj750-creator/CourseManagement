@@ -5,6 +5,7 @@ using CourseManagement.Infrastructure.Data;
 using CourseManagement.Infrastructure.Repositories;
 using CourseManagement.Infrastructure.Services;
 using CourseManagement.API.Mvc.Security;
+using CourseManagement.API.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<JwtSecurityStampEvents>();
+builder.Services.AddScoped<MvcCookieSecurityEvents>();
 
 // ─── JWT Authentication ───────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -36,7 +40,7 @@ const string SmartAuthenticationScheme = "SmartAuthentication";
 
 if (string.IsNullOrWhiteSpace(secretKey))
     throw new InvalidOperationException(
-        "JwtSettings:Secret is missing. Set it via user-secrets, environment variable (JwtSettings__Secret), or appsettings.Development.json — never commit a real secret to source control.");
+        "JwtSettings:Secret is missing. Set it via user-secrets or environment variable (JwtSettings__Secret); never commit it to source control.");
 
 if (secretKey.Length < 32)
     throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters long for HMAC-SHA256.");
@@ -56,6 +60,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
+        options.EventsType = typeof(JwtSecurityStampEvents);
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -70,6 +75,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddCookie(MvcAuthenticationDefaults.Scheme, options =>
     {
+        options.EventsType = typeof(MvcCookieSecurityEvents);
         options.Cookie.Name = MvcAuthenticationDefaults.CookieName;
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
@@ -81,7 +87,21 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddAuthorization();
- builder.Services.AddControllersWithViews();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
+builder.Services.AddControllersWithViews();
+builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 
 // ─── CORS (كان مفقوداً تماماً — أي واجهة أمامية كانت ستفشل) ─────────────────
@@ -90,12 +110,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        if (allowedOrigins.Length == 0 || allowedOrigins.Contains("*"))
-            policy.AllowAnyOrigin();
+        if (allowedOrigins.Length == 0 || allowedOrigins.Any(string.IsNullOrWhiteSpace) || allowedOrigins.Contains("*"))
+            policy.SetIsOriginAllowed(_ => false);
         else
-            policy.WithOrigins(allowedOrigins);
-
-        policy.AllowAnyHeader().AllowAnyMethod();
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
     });
 });
 
@@ -131,13 +149,20 @@ var app = builder.Build();
 // ─── معالجة الأخطاء المركزية — أول الأنبوب دائماً ──────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// ─── تهيئة قاعدة البيانات: الترحيلات + بذر حساب الـ Admin ───────────────────
-// (كان Migrate داخل شرط Development فقط — فبيئة الإنتاج لا تُرحَّل أبداً!)
-using (var scope = app.Services.CreateScope())
+// ─── تهيئة قاعدة البيانات اختيارياً ─────────────────────────────────────────
+// لا تُطبّق الترحيلات تلقائياً في الإنتاج إلا بعد تفعيل الخيار صراحةً.
+var applyMigrations = app.Configuration.GetValue<bool>("Database:ApplyMigrations");
+var seedAdmin = app.Configuration.GetValue<bool>("SeedAdmin:Enabled");
+if (applyMigrations || seedAdmin)
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-    await DbSeeder.SeedAsync(db, app.Configuration, app.Logger);
+
+    if (applyMigrations)
+        await db.Database.MigrateAsync();
+
+    if (seedAdmin)
+        await DbSeeder.SeedAsync(db, app.Configuration, app.Logger);
 }
 
 if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
@@ -150,11 +175,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllerRoute(
     name: "mvc",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();

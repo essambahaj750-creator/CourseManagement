@@ -41,6 +41,7 @@
                     <ul class="dropdown-menu dropdown-menu-start shadow-sm border-0">
                         <li><span class="dropdown-item-text small text-muted">الدور: @role</span></li>
                         <li><a class="dropdown-item" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check ms-2"></i> تسجيلاتي</a></li>
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock ms-2"></i> تغيير كلمة المرور</a></li>
                         @if (role == "Admin")
                         {
                             <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people ms-2"></i> إدارة المستخدمين</a></li>

@@ -190,6 +190,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
         }
         catch (Exception ex)
         {
+            ViewData["UserId"] = id;
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
         }

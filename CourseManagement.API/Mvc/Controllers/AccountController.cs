@@ -1,14 +1,17 @@
 using System.Security.Claims;
+using CourseManagement.API.Extensions;
 using CourseManagement.API.Mvc.Security;
 using CourseManagement.API.Mvc.ViewModels;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CourseManagement.API.Mvc.Controllers;
 
 [Route("Account")]
+[EnableRateLimiting("auth")]
 public sealed class AccountController(IAuthService authService) : Controller
 {
     [HttpGet("Login")]
@@ -25,7 +28,7 @@ public sealed class AccountController(IAuthService authService) : Controller
         try
         {
             var auth = await authService.LoginAsync(model.ToDto());
-            await SignInAsync(auth.UserId, auth.FullName, auth.Email, auth.Role, model.RememberMe, auth.ExpiresAtUtc);
+            await SignInAsync(auth.UserId, auth.FullName, auth.Email, auth.Role, auth.SecurityStamp, model.RememberMe, auth.ExpiresAtUtc);
             return RedirectToLocal(model.ReturnUrl);
         }
         catch (UnauthorizedAccessException)
@@ -54,7 +57,7 @@ public sealed class AccountController(IAuthService authService) : Controller
         try
         {
             var auth = await authService.RegisterAsync(model.ToDto());
-            await SignInAsync(auth.UserId, auth.FullName, auth.Email, auth.Role, false, auth.ExpiresAtUtc);
+            await SignInAsync(auth.UserId, auth.FullName, auth.Email, auth.Role, auth.SecurityStamp, false, auth.ExpiresAtUtc);
             TempData["Success"] = "تم إنشاء حسابك بنجاح.";
             return RedirectToAction("Index", "Home");
         }
@@ -66,6 +69,41 @@ public sealed class AccountController(IAuthService authService) : Controller
         catch (Exception)
         {
             ModelState.AddModelError(string.Empty, "تعذر إنشاء الحساب حاليًا. حاول مرة أخرى.");
+            return View(model);
+        }
+    }
+
+    [Authorize]
+    [HttpGet("ChangePassword")]
+    public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
+
+    [Authorize]
+    [HttpPost("ChangePassword")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        try
+        {
+            await authService.ChangePasswordAsync(User.GetUserId(), model.ToDto());
+            await HttpContext.SignOutAsync(MvcAuthenticationDefaults.Scheme);
+            TempData["Success"] = "تم تغيير كلمة المرور. سجّل الدخول مرة أخرى.";
+            return RedirectToAction(nameof(Login));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            ModelState.AddModelError(nameof(model.CurrentPassword), "كلمة المرور الحالية غير صحيحة.");
+            return View(model);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(model);
+        }
+        catch (Exception)
+        {
+            ModelState.AddModelError(string.Empty, "تعذر تغيير كلمة المرور حاليًا. حاول مرة أخرى.");
             return View(model);
         }
     }
@@ -82,11 +120,12 @@ public sealed class AccountController(IAuthService authService) : Controller
     [AllowAnonymous]
     public IActionResult AccessDenied() => View();
 
-    private async Task SignInAsync(int userId, string fullName, string email, string role, bool isPersistent, DateTime expiresAtUtc)
+    private async Task SignInAsync(int userId, string fullName, string email, string role, string securityStamp, bool isPersistent, DateTime expiresAtUtc)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new("security_stamp", securityStamp),
             new(ClaimTypes.Name, fullName),
             new(ClaimTypes.Email, email),
             new(ClaimTypes.Role, role)
