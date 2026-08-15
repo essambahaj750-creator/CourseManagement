@@ -1,8 +1,11 @@
-@using CourseManagement.API.Mvc.Security
+@using System.Security.Claims
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var displayName = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.Email) ?? "زائر";
+    var displayInitial = string.IsNullOrWhiteSpace(displayName) ? "ز" : displayName[..1].ToUpperInvariant();
     var role = User.FindFirstValue(ClaimTypes.Role);
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
 }
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -10,7 +13,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - منصة المعرفة</title>
-    <meta name="description" content="منصة إدارة الكورسات والتسجيلات التعليمية" />
+    <meta name="description" content="منصة عربية لإدارة الكورسات والتسجيلات التعليمية" />
+    <meta name="theme-color" content="#0b1220" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -20,46 +24,52 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header class="appbar border-bottom">
-        <div class="container-fluid px-3 px-lg-4 d-flex align-items-center gap-3">
+    <header class="appbar">
+        <div class="container-fluid px-3 px-lg-4 appbar-inner d-flex align-items-center gap-3">
             <button class="btn icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideDrawer" aria-label="فتح القائمة">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <a class="brand d-flex align-items-center gap-2 text-decoration-none" asp-controller="Home" asp-action="Index">
+            <a class="brand d-flex align-items-center gap-2 text-decoration-none" asp-controller="Home" asp-action="Index" aria-label="العودة إلى لوحة التحكم">
                 <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
-                <span><strong>منصة المعرفة</strong><small>إدارة التعلم بسهولة</small></span>
+                <span><strong>منصة المعرفة</strong><small>إدارة التعلم بوضوح</small></span>
             </a>
-            <div class="flex-grow-1"></div>
-            <a class="btn icon-btn d-none d-md-inline-flex" asp-controller="Courses" asp-action="Index" title="تصفح الكورسات"><i class="bi bi-search"></i></a>
-            @if (isAuthenticated)
-            {
-                <div class="dropdown">
-                    <button class="btn user-chip dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="avatar">@displayName[..1].ToUpperInvariant()</span>
-                        <span class="d-none d-sm-inline">@displayName</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-start shadow-sm border-0">
-                        <li><span class="dropdown-item-text small text-muted">الدور: @role</span></li>
-                        <li><a class="dropdown-item" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check ms-2"></i> تسجيلاتي</a></li>
-                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock ms-2"></i> تغيير كلمة المرور</a></li>
-                        @if (role == "Admin")
-                        {
-                            <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people ms-2"></i> إدارة المستخدمين</a></li>
-                        }
-                        <li><hr class="dropdown-divider" /></li>
-                        <li>
-                            <form asp-controller="Account" asp-action="Logout" method="post">
-                                <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right ms-2"></i> تسجيل الخروج</button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            }
-            else
-            {
-                <a class="btn btn-outline-primary d-none d-sm-inline-flex" asp-controller="Account" asp-action="Login">تسجيل الدخول</a>
-                <a class="btn btn-primary" asp-controller="Account" asp-action="Register">إنشاء حساب</a>
-            }
+            <form class="appbar-search d-none d-md-block me-auto" asp-controller="Courses" asp-action="Index" method="get" role="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" name="q" type="search" placeholder="ابحث عن كورس أو مهارة..." aria-label="البحث في الكورسات" />
+            </form>
+            <div class="d-flex align-items-center gap-1 gap-sm-2 me-auto me-md-0">
+                <a class="btn icon-btn d-md-none" asp-controller="Courses" asp-action="Index" title="استكشاف الكورسات" aria-label="استكشاف الكورسات"><i class="bi bi-search"></i></a>
+                @if (isAuthenticated)
+                {
+                    <div class="dropdown">
+                        <button class="btn user-chip dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="avatar">@displayInitial</span>
+                            <span class="d-none d-sm-inline">@displayName</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-start shadow-sm">
+                            <li><span class="dropdown-item-text small text-muted"><i class="bi bi-shield-check ms-1"></i> الدور: @role</span></li>
+                            <li><hr class="dropdown-divider" /></li>
+                            <li><a class="dropdown-item" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check ms-2"></i> تسجيلاتي</a></li>
+                            <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-shield-lock ms-2"></i> أمان الحساب</a></li>
+                            @if (role == "Admin")
+                            {
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people ms-2"></i> إدارة المستخدمين</a></li>
+                            }
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-controller="Account" asp-action="Logout" method="post">
+                                    <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right ms-2"></i> تسجيل الخروج</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a class="btn btn-outline-primary d-none d-sm-inline-flex" asp-controller="Account" asp-action="Login">تسجيل الدخول</a>
+                    <a class="btn btn-primary" asp-controller="Account" asp-action="Register">إنشاء حساب</a>
+                }
+            </div>
         </div>
     </header>
 
@@ -69,7 +79,10 @@
         </aside>
         <div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="sideDrawer" aria-labelledby="sideDrawerLabel">
             <div class="offcanvas-header border-bottom">
-                <h5 id="sideDrawerLabel" class="mb-0">القائمة الرئيسية</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
+                    <h5 id="sideDrawerLabel" class="mb-0 fw-bold">القائمة الرئيسية</h5>
+                </div>
                 <button type="button" class="btn-close ms-0" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
             </div>
             <div class="offcanvas-body p-0">
@@ -78,24 +91,45 @@
         </div>
 
         <main class="main-content">
-            <div class="container-fluid px-3 px-lg-4 py-4">
+            <div class="container-fluid px-3 px-lg-4 py-4 content-wrap">
                 @if (TempData["Success"] is string success)
                 {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle ms-2"></i>@success<button type="button" class="btn-close ms-0" data-bs-dismiss="alert"></button></div>
+                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert"><i class="bi bi-check-circle-fill"></i><span>@success</span><button type="button" class="btn-close ms-0" data-bs-dismiss="alert" aria-label="إغلاق"></button></div>
                 }
                 @if (TempData["Error"] is string error)
                 {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle ms-2"></i>@error<button type="button" class="btn-close ms-0" data-bs-dismiss="alert"></button></div>
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert"><i class="bi bi-exclamation-triangle-fill"></i><span>@error</span><button type="button" class="btn-close ms-0" data-bs-dismiss="alert" aria-label="إغلاق"></button></div>
                 }
                 @RenderBody()
             </div>
         </main>
     </div>
 
+    <nav class="mobile-bottom-nav" aria-label="التنقل السريع">
+        <a class="nav-link @(currentController == "Home" ? "active" : string.Empty)" asp-controller="Home" asp-action="Index"><i class="bi bi-grid-1x2-fill"></i>الرئيسية</a>
+        <a class="nav-link @(currentController == "Courses" ? "active" : string.Empty)" asp-controller="Courses" asp-action="Index"><i class="bi bi-collection-play-fill"></i>الكورسات</a>
+        @if (isAuthenticated)
+        {
+            <a class="nav-link @(currentController == "Enrollments" ? "active" : string.Empty)" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check"></i>تسجيلاتي</a>
+        }
+        else
+        {
+            <a class="nav-link" asp-controller="Account" asp-action="Login"><i class="bi bi-box-arrow-in-left"></i>الدخول</a>
+        }
+        @if (role == "Admin")
+        {
+            <a class="nav-link @(currentController == "Admin" ? "active" : string.Empty)" asp-controller="Admin" asp-action="Users"><i class="bi bi-people-fill"></i>الإدارة</a>
+        }
+        else if (role == "Instructor")
+        {
+            <a class="nav-link" asp-controller="Courses" asp-action="Create"><i class="bi bi-plus-circle-fill"></i>إضافة</a>
+        }
+    </nav>
+
     <footer class="footer border-top">
-        <div class="container-fluid px-3 px-lg-4 d-flex flex-column flex-md-row justify-content-between gap-2">
+        <div class="container-fluid px-3 px-lg-4 content-wrap d-flex flex-column flex-md-row justify-content-between gap-2">
             <span>منصة المعرفة © @DateTime.UtcNow.Year</span>
-            <span>تعلم. طبّق. تطوّر.</span>
+            <span>تعلم بوضوح، طبّق بثقة، وتطوّر باستمرار.</span>
         </div>
     </footer>
 

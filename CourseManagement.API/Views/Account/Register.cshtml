@@ -3,18 +3,31 @@
     ViewData["Title"] = "إنشاء حساب";
 }
 <div class="auth-shell">
-    <div class="surface-card auth-card">
-        <div class="auth-icon"><i class="bi bi-person-plus-fill"></i></div>
-        <div class="text-center mb-4"><h1 class="h3 fw-bold">أنشئ حسابك</h1><p class="text-muted mb-0">ابدأ التعلم في دقائق</p></div>
-        <form asp-action="Register" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-            <div class="mb-3"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" autocomplete="name" placeholder="اكتب اسمك الكامل" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
-            <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" placeholder="name@example.com" /><span asp-validation-for="Email" class="text-danger small"></span></div>
-            <div class="mb-3"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" autocomplete="new-password" placeholder="8 أحرف على الأقل" /><span asp-validation-for="Password" class="text-danger small"></span></div>
-            <div class="mb-4"><label asp-for="ConfirmPassword" class="form-label"></label><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" /><span asp-validation-for="ConfirmPassword" class="text-danger small"></span></div>
-            <button class="btn btn-primary w-100" type="submit">إنشاء الحساب <i class="bi bi-arrow-left me-2"></i></button>
-        </form>
-        <p class="text-center text-muted small mt-4 mb-0">لديك حساب بالفعل؟ <a asp-action="Login" class="text-primary fw-bold text-decoration-none">سجل الدخول</a></p>
+    <div class="row g-4 align-items-stretch w-100 justify-content-center">
+        <div class="col-lg-5 d-none d-lg-block">
+            <div class="auth-aside h-100 d-flex flex-column justify-content-center">
+                <span class="badge rounded-pill bg-light text-primary align-self-start px-3 py-2 mb-4"><i class="bi bi-rocket-takeoff ms-1"></i>خطوتك الأولى</span>
+                <h1 class="display-6 fw-bold mb-3">تعلم يناسبك، من أول يوم.</h1>
+                <p class="text-white-50 mb-4">أنشئ حسابك وابدأ باكتشاف الكورسات التي تساعدك على تحويل المعرفة إلى مهارة.</p>
+                <div class="mini-feature"><span><i class="bi bi-collection-play"></i></span><div><strong>محتوى منظم</strong><small>تصفح الكورسات بسهولة</small></div></div>
+                <div class="mini-feature"><span><i class="bi bi-journal-check"></i></span><div><strong>مسار محفوظ</strong><small>احتفظ بتسجيلاتك في حسابك</small></div></div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="surface-card auth-card mx-auto">
+                <div class="auth-icon"><i class="bi bi-person-plus-fill"></i></div>
+                <div class="text-center mb-4"><div class="section-kicker">حساب جديد</div><h2 class="h3 fw-bold">أنشئ حسابك</h2><p class="text-muted mb-0">ابدأ التعلم في دقائق.</p></div>
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                    <div class="mb-3"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" autocomplete="name" placeholder="اكتب اسمك الكامل" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+                    <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" placeholder="name@example.com" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+                    <div class="mb-3"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" autocomplete="new-password" placeholder="12 حرفًا على الأقل" /><div class="input-hint"><i class="bi bi-info-circle ms-1"></i>استخدم مزيجًا من الحروف والأرقام والرموز.</div><span asp-validation-for="Password" class="text-danger small"></span></div>
+                    <div class="mb-4"><label asp-for="ConfirmPassword" class="form-label"></label><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" /><span asp-validation-for="ConfirmPassword" class="text-danger small"></span></div>
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-person-check ms-2"></i>إنشاء الحساب</button>
+                </form>
+                <p class="text-center text-muted small mt-4 mb-0">لديك حساب بالفعل؟ <a asp-action="Login" class="text-primary fw-bold text-decoration-none">سجل الدخول</a></p>
+            </div>
+        </div>
     </div>
 </div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

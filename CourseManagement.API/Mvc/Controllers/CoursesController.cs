@@ -12,8 +12,21 @@ public sealed class CoursesController(ICourseService courseService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
-    public async Task<IActionResult> Index()
-        => View(await courseService.GetAllCoursesAsync());
+    public async Task<IActionResult> Index([FromQuery] string? q)
+    {
+        var courses = await courseService.GetAllCoursesAsync();
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            courses = courses.Where(course =>
+                course.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                course.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                course.InstructorName.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        ViewData["SearchTerm"] = q;
+        return View(courses);
+    }
 
     [HttpGet("Details/{id:int}")]
     [AllowAnonymous]

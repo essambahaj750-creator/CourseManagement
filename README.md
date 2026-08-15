@@ -117,3 +117,26 @@ dotnet test CourseManagement.API.slnx --configuration Release
 ```bash
 dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API --configuration Release
 ```
+
+
+## إعادة التصميم الاحترافية — منصة المعرفة
+
+أُعيد تصميم واجهة MVC العربية بالكامل لتقديم تجربة تعليمية RTL باسم **منصة المعرفة**، مع الحفاظ على Clean Architecture وطبقة الخدمات والصلاحيات الحالية. يتضمن التصميم AppBar وDrawer متجاوبًا وBottom Navigation للهاتف، Dashboard رئيسيًا، شبكة بطاقات للكورسات، جداول DataTables عربية، Bootstrap Modals، حالات فارغة ورسائل نجاح وخطأ، ونماذج مصادقة محسنة.
+
+| المجال | الشاشات أو المكونات |
+|---|---|
+| الحساب | تسجيل الدخول، إنشاء الحساب، تغيير كلمة المرور |
+| التعلم | Dashboard، استكشاف الكورسات، تفاصيل الكورس، تسجيلاتي |
+| إدارة المحتوى | إضافة كورس، تعديل كورس، حذف كورس، صورة الكورس |
+| الإدارة | المستخدمون، تغيير الدور عبر Modal، كل التسجيلات |
+| التصميم | Bootstrap RTL 5.3، Cairo، Bootstrap Icons، CSS Variables، Responsive Drawer |
+
+يشرح `REDESIGN_PLAN_AR.md` خطة التنفيذ ومعايير القبول، بينما يشرح `REDESIGN_REPORT_AR.md` المطابقة التفصيلية لمتطلبات Week 7 والوحدات والشاشات ومنطق الأعمال. توجد لقطات التحقق البصري في `docs/screenshots/`.
+
+### بحث الكورسات
+
+يرتبط البحث الموجود في AppBar فعليًا بالمسار `/Courses?q=...`، ويبحث في عنوان الكورس ووصفه واسم المدرب عبر `CoursesController`، ثم يعرض النتائج في البطاقات والجدول.
+
+### التحقق البصري
+
+تم التحقق محليًا من أن `/Account/Login` و`/Account/Register` يعيدان `HTTP 200` وتظهر فيهما الهوية البصرية العربية الجديدة. كما يعيد `/health` القيمة `200`، ونجحت اختبارات xUnit الأربعة بعد إعادة التصميم.

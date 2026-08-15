@@ -3,18 +3,30 @@
     ViewData["Title"] = "تسجيل الدخول";
 }
 <div class="auth-shell">
-    <div class="surface-card auth-card">
-        <div class="auth-icon"><i class="bi bi-shield-lock-fill"></i></div>
-        <div class="text-center mb-4"><h1 class="h3 fw-bold">مرحبًا بعودتك</h1><p class="text-muted mb-0">سجل دخولك لمتابعة رحلة التعلم</p></div>
-        <form asp-action="Login" method="post">
-            <input asp-for="ReturnUrl" type="hidden" />
-            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-            <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" placeholder="name@example.com" /><span asp-validation-for="Email" class="text-danger small"></span></div>
-            <div class="mb-3"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" autocomplete="current-password" placeholder="••••••••" /><span asp-validation-for="Password" class="text-danger small"></span></div>
-            <div class="form-check mb-4"><input asp-for="RememberMe" class="form-check-input" /><label asp-for="RememberMe" class="form-check-label"></label></div>
-            <button class="btn btn-primary w-100" type="submit">تسجيل الدخول <i class="bi bi-arrow-left me-2"></i></button>
-        </form>
-        <p class="text-center text-muted small mt-4 mb-0">ليس لديك حساب؟ <a asp-action="Register" class="text-primary fw-bold text-decoration-none">أنشئ حسابًا الآن</a></p>
+    <div class="row g-4 align-items-stretch w-100 justify-content-center">
+        <div class="col-lg-5 d-none d-lg-block">
+            <div class="auth-aside h-100 d-flex flex-column justify-content-center">
+                <span class="badge rounded-pill bg-light text-primary align-self-start px-3 py-2 mb-4"><i class="bi bi-stars ms-1"></i>مرحبًا بك مجددًا</span>
+                <h1 class="display-6 fw-bold mb-3">تعلّم بوضوح، وتقدّم بثقة.</h1>
+                <p class="text-white-50 mb-4">مساحتك التعليمية المنظمة لمتابعة الكورسات والتسجيلات وإدارة مسارك من مكان واحد.</p>
+                <div class="d-grid gap-3 small text-white-50"><span><i class="bi bi-check-circle-fill text-info ms-2"></i>تصميم عربي مريح وسريع</span><span><i class="bi bi-check-circle-fill text-info ms-2"></i>صلاحيات واضحة وحسابات محمية</span><span><i class="bi bi-check-circle-fill text-info ms-2"></i>محتوى عملي قابل للاستكشاف</span></div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="surface-card auth-card mx-auto">
+                <div class="auth-icon"><i class="bi bi-shield-lock-fill"></i></div>
+                <div class="text-center mb-4"><div class="section-kicker">الدخول الآمن</div><h2 class="h3 fw-bold">مرحبًا بعودتك</h2><p class="text-muted mb-0">سجّل دخولك لمتابعة رحلة التعلم.</p></div>
+                <form asp-action="Login" method="post">
+                    <input asp-for="ReturnUrl" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                    <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" placeholder="name@example.com" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+                    <div class="mb-3"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" autocomplete="current-password" placeholder="••••••••" /><span asp-validation-for="Password" class="text-danger small"></span></div>
+                    <div class="form-check mb-4"><input asp-for="RememberMe" class="form-check-input" /><label asp-for="RememberMe" class="form-check-label"></label></div>
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-box-arrow-in-left ms-2"></i>تسجيل الدخول</button>
+                </form>
+                <p class="text-center text-muted small mt-4 mb-0">ليس لديك حساب؟ <a asp-action="Register" class="text-primary fw-bold text-decoration-none">أنشئ حسابًا الآن</a></p>
+            </div>
+        </div>
     </div>
 </div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }
