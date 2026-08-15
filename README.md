@@ -62,3 +62,29 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 `404` غير موجود · `403` ممنوع (ملكية) · `401` غير مصادَق · `409` تعارض (تكرار/قواعد عمل) · `400` فشل التحقق من المدخلات · `500` خطأ غير متوقع (بدون تسريب التفاصيل).
 
 ملف `CourseManagement.API/CourseManagement.API.http` يحتوي طلبات جاهزة لتجربة التدفق كاملاً.
+
+## واجهة ASP.NET Core MVC
+
+تمت إضافة واجهة MVC عربية متجاوبة داخل مشروع `CourseManagement.API`. تبدأ الواجهة من المسار `/`، وتستخدم Cookie آمنًا لجلسة Razor MVC، بينما تبقى مسارات `/api/*` معتمدة على JWT Bearer.
+
+### أهم المسارات
+
+- `/` لوحة التحكم الرئيسية.
+- `/Account/Login` تسجيل الدخول.
+- `/Account/Register` إنشاء حساب.
+- `/Courses` قائمة الكورسات وعمليات CRUD حسب الدور.
+- `/Enrollments` تسجيلات المستخدم الحالي.
+- `/Admin/Users` إدارة المستخدمين للمشرف.
+- `/Admin/Enrollments` إدارة التسجيلات للمشرف.
+
+### تطبيق ترحيل صورة الكورس
+
+بعد تثبيت .NET SDK وتشغيل SQL Server، نفّذ:
+
+```bash
+dotnet restore
+dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API
+dotnet run --project CourseManagement.API
+```
+
+تأكد من وضع `JwtSettings:Secret` وسلسلة الاتصال في User Secrets أو متغيرات البيئة، وعدم تخزين الأسرار الحقيقية داخل Git.

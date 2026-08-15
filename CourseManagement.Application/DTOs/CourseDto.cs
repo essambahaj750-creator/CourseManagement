@@ -13,4 +13,7 @@ public class CourseDto
     // السعر لا يمكن أن يكون سالباً
     [Range(0, 1_000_000)]
     public decimal Price { get; set; }
+
+    [Url, RegularExpression(@"^https?://", ErrorMessage = "يجب أن يبدأ رابط الصورة بـ http:// أو https://"), StringLength(500)]
+    public string? ImageUrl { get; set; }
 }

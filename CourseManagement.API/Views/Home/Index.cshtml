@@ -1,0 +1,63 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم";
+}
+
+<section class="hero mb-4">
+    <div class="row align-items-center g-4 position-relative">
+        <div class="col-lg-8">
+            <span class="badge rounded-pill bg-light text-primary mb-3 px-3 py-2">منصة التعلم الحديثة</span>
+            <h1>طوّر مهاراتك، وابنِ مستقبلك بثقة.</h1>
+            <p class="lead mb-4">اكتشف كورسات عملية، تابع تقدمك، وتعلم من مدربين يشاركونك المعرفة والخبرة.</p>
+            <a class="btn btn-light text-primary" asp-controller="Courses" asp-action="Index"><i class="bi bi-arrow-left ms-2"></i>استكشف الكورسات</a>
+        </div>
+        <div class="col-lg-4 d-none d-lg-block text-center">
+            <i class="bi bi-mortarboard display-1 opacity-75"></i>
+        </div>
+    </div>
+</section>
+
+<div class="stats-grid mb-5">
+    <div class="stat-card"><div><div class="label">الكورسات المتاحة</div><div class="value">@Model.Courses.Count()</div></div><span class="stat-icon"><i class="bi bi-collection-play"></i></span></div>
+    <div class="stat-card"><div><div class="label">تسجيلاتي</div><div class="value">@Model.MyEnrollments.Count()</div></div><span class="stat-icon"><i class="bi bi-journal-check"></i></span></div>
+    @if (Model.Role == "Admin")
+    {
+        <div class="stat-card"><div><div class="label">المستخدمون</div><div class="value">@Model.UsersCount</div></div><span class="stat-icon"><i class="bi bi-people"></i></span></div>
+        <div class="stat-card"><div><div class="label">كل التسجيلات</div><div class="value">@Model.EnrollmentsCount</div></div><span class="stat-icon"><i class="bi bi-graph-up-arrow"></i></span></div>
+    }
+    else
+    {
+        <div class="stat-card"><div><div class="label">تعلم مستمر</div><div class="value">24/7</div></div><span class="stat-icon"><i class="bi bi-clock-history"></i></span></div>
+        <div class="stat-card"><div><div class="label">تقدمك</div><div class="value">ابدأ الآن</div></div><span class="stat-icon"><i class="bi bi-rocket-takeoff"></i></span></div>
+    }
+</div>
+
+<div class="page-heading">
+    <div><h2 class="section-title">أحدث الكورسات</h2><p>اختر مسارك التعليمي وابدأ خطوة جديدة.</p></div>
+    <a class="btn btn-outline-primary" asp-controller="Courses" asp-action="Index">عرض الكل</a>
+</div>
+
+@if (Model.Courses.Any())
+{
+    <div class="row g-4">
+        @foreach (var course in Model.Courses.Take(6))
+        {
+            var excerpt = course.Description.Length > 110 ? course.Description[..110] + "..." : course.Description;
+            <div class="col-md-6 col-xl-4">
+                <article class="course-card">
+                    <div class="course-cover">@if (!string.IsNullOrWhiteSpace(course.ImageUrl)) { <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" /> }<span class="badge bg-light text-primary position-relative">كورس مميز</span><i class="bi bi-code-slash position-relative"></i></div>
+                    <div class="course-body">
+                        <h3>@course.Title</h3>
+                        <p>@excerpt</p>
+                        <div class="course-meta"><span><i class="bi bi-person ms-1"></i>@course.InstructorName</span><span class="price">@course.Price.ToString("N2")</span></div>
+                        <a class="btn btn-primary w-100 mt-3" asp-controller="Courses" asp-action="Details" asp-route-id="@course.Id">عرض التفاصيل</a>
+                    </div>
+                </article>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="surface-card empty-state"><i class="bi bi-collection"></i><h3 class="mt-3">لا توجد كورسات بعد</h3><p>سيتم عرض الكورسات هنا عند إضافتها.</p></div>
+}

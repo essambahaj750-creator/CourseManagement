@@ -1,0 +1,16 @@
+@model CourseFormViewModel
+@{
+    ViewData["Title"] = "إضافة كورس";
+}
+<div class="page-heading"><div><h1>إضافة كورس جديد</h1><p>شارك معرفتك وأنشئ محتوى تعليميًا مفيدًا.</p></div><a class="btn btn-outline-secondary" asp-action="Index">إلغاء</a></div>
+<div class="surface-card form-card">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+        <div class="mb-3"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" placeholder="مثال: أساسيات تطوير الويب" /><span asp-validation-for="Title" class="text-danger small"></span></div>
+        <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="6" placeholder="اكتب وصفًا مختصرًا للكورس..."></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+        <div class="mb-3"><label asp-for="ImageUrl" class="form-label"></label><input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/course-cover.jpg" /><span asp-validation-for="ImageUrl" class="text-danger small"></span></div>
+        <div class="mb-4"><label asp-for="Price" class="form-label"></label><div class="input-group"><span class="input-group-text">ر.س</span><input asp-for="Price" class="form-control" type="number" min="0" step="0.01" /><span asp-validation-for="Price" class="text-danger small"></span></div></div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle ms-2"></i>حفظ الكورس</button>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

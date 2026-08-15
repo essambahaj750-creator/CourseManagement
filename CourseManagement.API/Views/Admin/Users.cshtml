@@ -1,0 +1,17 @@
+@model IEnumerable<UserResponseDto>
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+    var users = Model.ToList();
+}
+<div class="page-heading"><div><h1>إدارة المستخدمين</h1><p>راجع الحسابات وحدد الأدوار المناسبة.</p></div><div class="d-flex gap-2"><a class="btn btn-primary" asp-action="CreateUser"><i class="bi bi-person-plus ms-2"></i>إضافة مستخدم</a><a class="btn btn-outline-primary" asp-action="Enrollments">كل التسجيلات</a></div></div>
+<div class="surface-card table-card"><div class="table-responsive"><table class="table" data-datatable><thead><tr><th>المستخدم</th><th>البريد</th><th>الدور</th><th>الإجراءات</th></tr></thead><tbody>
+@foreach (var user in users)
+{
+    <tr><td><div class="d-flex align-items-center gap-2"><span class="avatar">@user.FullName[..1].ToUpperInvariant()</span><div><strong>@user.FullName</strong><div class="small text-muted">#@user.Id</div></div></div></td><td>@user.Email</td><td><span class="badge badge-soft rounded-pill px-3 py-2">@user.Role</span></td><td><a class="btn btn-sm btn-outline-secondary" asp-action="UserDetails" asp-route-id="@user.Id">تفاصيل</a> <a class="btn btn-sm btn-light" asp-action="EditUser" asp-route-id="@user.Id">تعديل</a> <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#roleModal-@user.Id"><i class="bi bi-person-gear ms-1"></i>الدور</button> <form asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="هل تريد حذف هذا المستخدم؟">حذف</button></form></td></tr>
+}
+</tbody></table></div></div>
+
+@foreach (var user in users)
+{
+    <div class="modal fade" id="roleModal-@user.Id" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4"><div class="modal-header"><h5 class="modal-title">تغيير دور @user.FullName</h5><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div><form asp-action="ChangeRole" method="post"><div class="modal-body"><input type="hidden" name="UserId" value="@user.Id" /><label class="form-label" for="role-@user.Id">الدور الجديد</label><select class="form-select" name="Role" id="role-@user.Id"><option value="Student" selected="@(user.Role == "Student")">Student</option><option value="Instructor" selected="@(user.Role == "Instructor")">Instructor</option><option value="Admin" selected="@(user.Role == "Admin")">Admin</option></select></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-primary" type="submit">حفظ</button></div></form></div></div></div>
+}

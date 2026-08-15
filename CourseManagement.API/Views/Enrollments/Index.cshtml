@@ -1,0 +1,21 @@
+@model IEnumerable<EnrollmentDto>
+@{
+    ViewData["Title"] = "تسجيلاتي";
+    var enrollments = Model.ToList();
+}
+<div class="page-heading"><div><h1>تسجيلاتي</h1><p>تابع الكورسات التي بدأت بها.</p></div><a class="btn btn-primary" asp-controller="Courses" asp-action="Index"><i class="bi bi-plus-lg ms-2"></i>اكتشف كورسات</a></div>
+<div class="surface-card table-card">
+@if (enrollments.Count == 0)
+{
+    <div class="empty-state"><i class="bi bi-journal-x"></i><h3 class="mt-3">لم تسجل في أي كورس بعد</h3><p>ابدأ رحلة التعلم باختيار كورس مناسب.</p><a class="btn btn-primary" asp-controller="Courses" asp-action="Index">استكشاف الكورسات</a></div>
+}
+else
+{
+    <div class="table-responsive"><table class="table" data-datatable><thead><tr><th>الكورس</th><th>تاريخ التسجيل</th><th>الإجراء</th></tr></thead><tbody>
+    @foreach (var enrollment in enrollments)
+    {
+        <tr><td><a class="fw-bold text-decoration-none" asp-action="Details" asp-route-id="@enrollment.Id">@enrollment.CourseTitle</a></td><td>@enrollment.EnrolledDate.ToString("yyyy/MM/dd")</td><td><form asp-action="Unenroll" asp-route-courseId="@enrollment.CourseId" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="هل تريد إلغاء التسجيل من هذا الكورس؟">إلغاء التسجيل</button></form></td></tr>
+    }
+    </tbody></table></div>
+}
+</div>

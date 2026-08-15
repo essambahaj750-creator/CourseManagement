@@ -68,6 +68,25 @@ public class EnrollmentService(
         return MapToDto(created ?? enrollment);
     }
 
+    public async Task<EnrollmentDto> UpdateEnrollmentAsync(int enrollmentId, int newCourseId)
+    {
+        var enrollment = await enrollmentRepository.GetByIdAsync(enrollmentId)
+            ?? throw new KeyNotFoundException("Enrollment not found.");
+        var course = await courseRepository.GetByIdAsync(newCourseId)
+            ?? throw new KeyNotFoundException("Course not found.");
+
+        if (course.InstructorId == enrollment.UserId)
+            throw new InvalidOperationException("You cannot enroll in your own course.");
+
+        if (enrollment.CourseId != newCourseId && await enrollmentRepository.IsUserEnrolledAsync(enrollment.UserId, newCourseId))
+            throw new InvalidOperationException("User is already enrolled in this course.");
+
+        enrollment.CourseId = newCourseId;
+        await enrollmentRepository.UpdateAsync(enrollment);
+        var updated = await enrollmentRepository.GetByIdAsync(enrollment.Id);
+        return MapToDto(updated ?? enrollment);
+    }
+
     public async Task UnenrollUserAsync(int userId, int courseId)
     {
         var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)

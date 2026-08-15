@@ -1,0 +1,26 @@
+@model (bool IsAuthenticated, string? Role)
+<nav class="side-nav p-3">
+    <div class="nav-section-title">التنقل</div>
+    <a class="nav-link" asp-controller="Home" asp-action="Index"><i class="bi bi-grid-1x2-fill"></i><span>لوحة التحكم</span></a>
+    <a class="nav-link" asp-controller="Courses" asp-action="Index"><i class="bi bi-collection-play-fill"></i><span>استكشاف الكورسات</span></a>
+    @if (Model.IsAuthenticated)
+    {
+        <a class="nav-link" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check"></i><span>تسجيلاتي</span></a>
+    }
+    @if (Model.Role == "Instructor" || Model.Role == "Admin")
+    {
+        <div class="nav-section-title mt-4">إدارة المحتوى</div>
+        <a class="nav-link" asp-controller="Courses" asp-action="Create"><i class="bi bi-plus-circle-fill"></i><span>إضافة كورس</span></a>
+    }
+    @if (Model.Role == "Admin")
+    {
+        <div class="nav-section-title mt-4">الإدارة</div>
+        <a class="nav-link" asp-controller="Admin" asp-action="Users"><i class="bi bi-people-fill"></i><span>المستخدمون</span></a>
+        <a class="nav-link" asp-controller="Admin" asp-action="Enrollments"><i class="bi bi-bar-chart-fill"></i><span>كل التسجيلات</span></a>
+    }
+    <div class="side-tip mt-auto">
+        <i class="bi bi-lightbulb-fill"></i>
+        <strong>نصيحة اليوم</strong>
+        <span>خصص وقتًا يوميًا للتعلم المستمر.</span>
+    </div>
+</nav>

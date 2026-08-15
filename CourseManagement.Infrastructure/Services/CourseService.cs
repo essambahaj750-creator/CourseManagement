@@ -33,6 +33,7 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
             Title = dto.Title.Trim(),
             Description = dto.Description.Trim(),
             Price = dto.Price,
+            ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim(),
             InstructorId = instructorId
         };
 
@@ -55,6 +56,7 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
         course.Title = dto.Title.Trim();
         course.Description = dto.Description.Trim();
         course.Price = dto.Price;
+        course.ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim();
 
         await courseRepository.UpdateAsync(course);
         return MapToResponseDto(course);
@@ -77,6 +79,7 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
         Title = course.Title,
         Description = course.Description,
         Price = course.Price,
+        ImageUrl = course.ImageUrl,
         InstructorId = course.InstructorId,
         InstructorName = course.Instructor?.FullName ?? string.Empty
     };

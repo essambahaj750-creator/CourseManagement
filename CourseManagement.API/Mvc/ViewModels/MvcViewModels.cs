@@ -1,0 +1,117 @@
+using System.ComponentModel.DataAnnotations;
+using CourseManagement.Application.DTOs;
+
+namespace CourseManagement.API.Mvc.ViewModels;
+
+public sealed class LoginViewModel
+{
+    [Required, EmailAddress]
+    [Display(Name = "البريد الإلكتروني")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required, DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور")]
+    public string Password { get; set; } = string.Empty;
+
+    [Display(Name = "تذكرني")]
+    public bool RememberMe { get; set; }
+
+    public string? ReturnUrl { get; set; }
+
+    public LoginDto ToDto() => new() { Email = Email, Password = Password };
+}
+
+public sealed class RegisterViewModel
+{
+    [Required, StringLength(100, MinimumLength = 2)]
+    [Display(Name = "الاسم الكامل")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required, EmailAddress, StringLength(256)]
+    [Display(Name = "البريد الإلكتروني")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required, StringLength(72, MinimumLength = 8), DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور")]
+    public string Password { get; set; } = string.Empty;
+
+    [Required, DataType(DataType.Password), Compare(nameof(Password))]
+    [Display(Name = "تأكيد كلمة المرور")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    public RegisterDto ToDto() => new() { FullName = FullName, Email = Email, Password = Password };
+}
+
+public sealed class CourseFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required, StringLength(200, MinimumLength = 3)]
+    [Display(Name = "عنوان الكورس")]
+    public string Title { get; set; } = string.Empty;
+
+    [StringLength(2000)]
+    [Display(Name = "الوصف")]
+    public string Description { get; set; } = string.Empty;
+
+    [Range(0, 1_000_000)]
+    [Display(Name = "السعر")]
+    public decimal Price { get; set; }
+
+    [Url, RegularExpression(@"^https?://", ErrorMessage = "يجب أن يبدأ رابط الصورة بـ http:// أو https://"), StringLength(500)]
+    [Display(Name = "رابط صورة الكورس")]
+    public string? ImageUrl { get; set; }
+
+    public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price, ImageUrl = ImageUrl };
+}
+
+public sealed class RoleFormViewModel
+{
+    public int UserId { get; set; }
+
+    [Required]
+    [Display(Name = "الدور")]
+    public string Role { get; set; } = "Student";
+}
+
+public sealed class EnrollmentEditViewModel
+{
+    public int EnrollmentId { get; set; }
+    public int CurrentCourseId { get; set; }
+
+    [Required, Range(1, int.MaxValue)]
+    [Display(Name = "الكورس الجديد")]
+    public int CourseId { get; set; }
+
+    public IEnumerable<CourseResponseDto> Courses { get; init; } = [];
+}
+
+public sealed class EnrollmentCreateViewModel
+{
+    [Required, Range(1, int.MaxValue)]
+    [Display(Name = "المستخدم")]
+    public int UserId { get; set; }
+
+    [Required, Range(1, int.MaxValue)]
+    [Display(Name = "الكورس")]
+    public int CourseId { get; set; }
+
+    public IEnumerable<UserResponseDto> Users { get; init; } = [];
+    public IEnumerable<CourseResponseDto> Courses { get; init; } = [];
+}
+
+public sealed class DashboardViewModel
+{
+    public IEnumerable<CourseResponseDto> Courses { get; init; } = [];
+    public IEnumerable<EnrollmentDto> MyEnrollments { get; init; } = [];
+    public int UsersCount { get; init; }
+    public int EnrollmentsCount { get; init; }
+    public bool IsAuthenticated { get; init; }
+    public string Role { get; init; } = string.Empty;
+}
+
+public sealed class ErrorViewModel
+{
+    public string? RequestId { get; init; }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+}

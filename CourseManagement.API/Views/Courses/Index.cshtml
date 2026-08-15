@@ -1,0 +1,22 @@
+@model IEnumerable<CourseResponseDto>
+@{
+    ViewData["Title"] = "الكورسات";
+    var courses = Model.ToList();
+    var canCreate = User.IsInRole("Instructor") || User.IsInRole("Admin");
+}
+<div class="page-heading"><div><h1>استكشاف الكورسات</h1><p>تصفح المحتوى المتاح واختر ما يناسب أهدافك.</p></div>@if (canCreate) { <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg ms-2"></i>إضافة كورس</a> }</div>
+<div class="surface-card table-card">
+    @if (courses.Count > 0)
+    {
+        <div class="table-responsive"><table class="table" data-datatable><thead><tr><th>الكورس</th><th>المدرب</th><th>السعر</th><th>الإجراءات</th></tr></thead><tbody>
+        @foreach (var course in courses)
+        {
+            <tr><td><div class="d-flex align-items-center gap-2">@if (!string.IsNullOrWhiteSpace(course.ImageUrl)) { <img class="table-thumb" src="@course.ImageUrl" alt="غلاف @course.Title" /> } else { <span class="stat-icon"><i class="bi bi-play-btn"></i></span> }<div><strong>@course.Title</strong><div class="small text-muted">#@course.Id</div></div></div></td><td>@course.InstructorName</td><td class="price">@course.Price.ToString("N2")</td><td><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@course.Id">التفاصيل</a> @if (User.IsInRole("Admin") || (User.IsInRole("Instructor") && course.InstructorId == int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"))) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@course.Id">تعديل</a> }</td></tr>
+        }
+        </tbody></table></div>
+    }
+    else
+    {
+        <div class="empty-state"><i class="bi bi-collection"></i><h3 class="mt-3">لا توجد كورسات</h3><p>أضف أول كورس ليظهر هنا.</p></div>
+    }
+</div>

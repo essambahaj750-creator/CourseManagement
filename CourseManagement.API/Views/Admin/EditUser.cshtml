@@ -1,0 +1,14 @@
+@model UpdateUserDto
+@{
+    ViewData["Title"] = "تعديل المستخدم";
+}
+<div class="page-heading"><div><h1>تعديل المستخدم</h1><p>حدّث بيانات الملف الشخصي.</p></div><a class="btn btn-outline-secondary" asp-action="Users">إلغاء</a></div>
+<div class="surface-card form-card">
+    <form asp-action="EditUser" asp-route-id="@(ViewData["UserId"])" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+        <div class="mb-3"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+        <div class="mb-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التغييرات</button>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

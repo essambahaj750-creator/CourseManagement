@@ -1,0 +1,6 @@
+@model IEnumerable<EnrollmentDto>
+@{
+    ViewData["Title"] = "كل التسجيلات";
+}
+<div class="page-heading"><div><h1>كل التسجيلات</h1><p>نظرة شاملة على نشاط التعلم في المنصة.</p></div><div class="d-flex gap-2"><a class="btn btn-primary" asp-action="CreateEnrollment"><i class="bi bi-journal-plus ms-2"></i>إضافة تسجيل</a><a class="btn btn-outline-primary" asp-controller="Courses" asp-action="Index">الكورسات</a><a class="btn btn-outline-secondary" asp-action="Users">المستخدمون</a></div></div>
+<div class="surface-card table-card"><div class="table-responsive"><table class="table" data-datatable><thead><tr><th>#</th><th>المستخدم</th><th>الكورس</th><th>تاريخ التسجيل</th><th>الإجراءات</th></tr></thead><tbody>@foreach (var enrollment in Model) { <tr><td>@enrollment.Id</td><td>@enrollment.UserName</td><td>@enrollment.CourseTitle</td><td>@enrollment.EnrolledDate.ToString("yyyy/MM/dd HH:mm")</td><td><a class="btn btn-sm btn-outline-secondary" asp-action="EnrollmentDetails" asp-route-id="@enrollment.Id">تفاصيل</a> <a class="btn btn-sm btn-light" asp-action="EditEnrollment" asp-route-id="@enrollment.Id">تعديل</a> <form asp-action="DeleteEnrollment" asp-route-id="@enrollment.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="هل تريد حذف هذا التسجيل؟">حذف</button></form></td></tr> }</tbody></table></div></div>

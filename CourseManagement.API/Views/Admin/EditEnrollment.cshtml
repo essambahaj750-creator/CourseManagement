@@ -1,0 +1,15 @@
+@model EnrollmentEditViewModel
+@{
+    ViewData["Title"] = "تعديل التسجيل";
+}
+<div class="page-heading"><div><h1>تعديل التسجيل</h1><p>غيّر الكورس المرتبط بهذا المستخدم.</p></div><a class="btn btn-outline-secondary" asp-action="Enrollments">إلغاء</a></div>
+<div class="surface-card form-card">
+    <form asp-action="EditEnrollment" asp-route-id="@Model.EnrollmentId" method="post">
+        <input asp-for="EnrollmentId" type="hidden" />
+        <input asp-for="CurrentCourseId" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+        <div class="mb-4"><label asp-for="CourseId" class="form-label"></label><select asp-for="CourseId" class="form-select"><option value="">اختر الكورس</option>@foreach (var course in Model.Courses) { <option value="@course.Id">@course.Title — @course.InstructorName</option> }</select><span asp-validation-for="CourseId" class="text-danger small"></span></div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التعديل</button>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

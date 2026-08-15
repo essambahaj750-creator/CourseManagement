@@ -4,7 +4,10 @@ using CourseManagement.Domain.Interfaces;
 using CourseManagement.Infrastructure.Data;
 using CourseManagement.Infrastructure.Repositories;
 using CourseManagement.Infrastructure.Services;
+using CourseManagement.API.Mvc.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -29,6 +32,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 // ─── JWT Authentication ───────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"];
+const string SmartAuthenticationScheme = "SmartAuthentication";
 
 if (string.IsNullOrWhiteSpace(secretKey))
     throw new InvalidOperationException(
@@ -37,7 +41,19 @@ if (string.IsNullOrWhiteSpace(secretKey))
 if (secretKey.Length < 32)
     throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters long for HMAC-SHA256.");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+    {
+        // يختار JWT لمسارات /api وCookie لواجهة MVC، حتى تظهر هوية المستخدم في Dashboard أيضًا.
+        options.DefaultAuthenticateScheme = SmartAuthenticationScheme;
+        options.DefaultChallengeScheme = SmartAuthenticationScheme;
+    })
+    .AddPolicyScheme(SmartAuthenticationScheme, "Smart authentication", options =>
+    {
+        options.ForwardDefaultSelector = context =>
+            context.Request.Path.StartsWithSegments("/api")
+                ? JwtBearerDefaults.AuthenticationScheme
+                : MvcAuthenticationDefaults.Scheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -48,12 +64,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
+    })
+    .AddCookie(MvcAuthenticationDefaults.Scheme, options =>
+    {
+        options.Cookie.Name = MvcAuthenticationDefaults.CookieName;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddControllers();
+ builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 
 // ─── CORS (كان مفقوداً تماماً — أي واجهة أمامية كانت ستفشل) ─────────────────
@@ -119,9 +147,14 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllerRoute(
+    name: "mvc",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapControllers();
 
 app.Run();

@@ -1,0 +1,5 @@
+@model CourseResponseDto
+@{
+    ViewData["Title"] = "حذف الكورس";
+}
+<div class="auth-shell"><div class="surface-card form-card text-center"><div class="auth-icon bg-danger"><i class="bi bi-trash3"></i></div><h1 class="h3 fw-bold">حذف الكورس؟</h1><p class="text-muted">سيتم حذف <strong>@Model.Title</strong> نهائيًا، وقد تتأثر التسجيلات المرتبطة به.</p><div class="d-flex justify-content-center gap-2 mt-4"><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Id">إلغاء</a><form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post"><button class="btn btn-danger" type="submit">نعم، احذف الكورس</button></form></div></div></div>
