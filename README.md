@@ -76,7 +76,9 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 ## واجهة ASP.NET Core MVC
 
-تمت إضافة واجهة MVC عربية متجاوبة داخل مشروع `CourseManagement.API`. تبدأ الواجهة من المسار `/`، وتستخدم Cookie آمنًا لجلسة Razor MVC، بينما تبقى مسارات `/api/*` معتمدة على JWT Bearer.
+تمت إضافة واجهة MVC عربية متجاوبة داخل المشروع الفرعي `CourseManagement.API/CourseManagement.API`. تبدأ الواجهة من المسار `/` بعد تشغيل ملف `CourseManagement.API.csproj`، وتستخدم Cookie آمنًا لجلسة Razor MVC، بينما تبقى مسارات `/api/*` معتمدة على JWT Bearer. ملفات الواجهة نفسها موجودة داخل `CourseManagement.API/CourseManagement.API/Views`، ولا تُفتح بالنقر المزدوج من File Explorer لأنها Razor Views تُعرض أثناء تشغيل ASP.NET Core.
+
+للتشغيل السريع في Windows، افتح مجلد الحل الذي يحتوي على `CourseManagement.API.slnx` وانقر `run-mvc.bat`، أو راجع `RUN_MVC_AR.md` للتعليمات التفصيلية. استخدم رابط HTTPS الذي يظهر في Terminal، وغالبًا يكون `https://localhost:7026/Account/Login`.
 
 ### أهم المسارات
 
