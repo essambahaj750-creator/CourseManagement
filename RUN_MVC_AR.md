@@ -1,54 +1,83 @@
-# تشغيل واجهة MVC العربية
+# تشغيل واجهة CourseManagement.Web
 
-## سبب عدم ظهور الواجهة في المجلد الجذر
+## الهيكل الصحيح للمشروع
 
-المجلد الذي يحتوي على `CourseManagement.API.slnx` هو مجلد الحل، وليس صفحة ويب. واجهة MVC موجودة داخل مشروع الويب:
-
-```text
-CourseManagement.API/
-└── CourseManagement.API/
-    ├── CourseManagement.API.csproj
-    ├── Program.cs
-    ├── Mvc/Controllers/
-    └── Views/
-```
-
-ملفات الواجهة موجودة داخل:
+أصبح الحل الآن مقسمًا إلى مشاريع مستقلة مثل الهيكل المطلوب:
 
 ```text
-CourseManagement.API/Views/
+CourseManagement.API.slnx
+├── CourseManagement.API             # REST API وJWT وSwagger فقط
+├── CourseManagement.Application     # منطق التطبيق وواجهات الخدمات
+├── CourseManagement.Domain          # الكيانات وقواعد المجال
+├── CourseManagement.Infrastructure  # EF Core وSQLite والمستودعات والخدمات
+├── CourseManagement.Tests           # اختبارات xUnit
+└── CourseManagement.Web             # مشروع ASP.NET Core MVC وواجهة الموقع
 ```
 
-وهي Razor Views تُعرض داخل المتصفح بعد تشغيل مشروع `CourseManagement.API`، وليست ملفات HTML تُفتح بالنقر المزدوج من File Explorer.
+مشروع الويب المستقل موجود هنا:
 
-## التشغيل في Windows
-
-ثبّت .NET 10 SDK، ثم افتح Terminal داخل المجلد الذي يحتوي على `CourseManagement.API.slnx` ونفّذ:
-
-```powershell
-dotnet restore
-
-dotnet user-secrets init --project CourseManagement.API/CourseManagement.API.csproj
-dotnet user-secrets set "JwtSettings:Secret" "ضع-مفتاحًا-عشوائيًا-طويلًا-هنا-لا-يقل-عن-32-حرفًا" --project CourseManagement.API/CourseManagement.API.csproj
-
-dotnet run --project CourseManagement.API/CourseManagement.API.csproj --launch-profile https
+```text
+CourseManagement.Web/
+├── CourseManagement.Web.csproj
+├── Program.cs
+├── Controllers/
+├── ViewModels/
+├── Views/
+└── wwwroot/
 ```
 
-بعد ظهور رسالة التشغيل، افتح:
+أما API فأصبح مستقلًا ولا يحتوي على Controllers أو Views الخاصة بواجهة MVC.
+
+## التشغيل في Visual Studio
+
+افتح ملف الحل الموجود في الجذر:
+
+```text
+CourseManagement.API.slnx
+```
+
+من **Solution Explorer** ستجد مشروعًا مستقلًا باسم:
+
+```text
+CourseManagement.Web
+```
+
+اضغط عليه بزر الفأرة الأيمن واختر **Set as Startup Project**، ثم شغّله باستخدام Profile باسم `https` أو اضغط `Ctrl + F5`.
+
+بعد التشغيل افتح:
 
 ```text
 https://localhost:7026/Account/Login
 ```
 
-يمكن أيضًا فتح الصفحة الرئيسية:
+## التشغيل من Terminal
 
-```text
-https://localhost:7026/
+افتح Terminal داخل مجلد الحل الذي يحتوي على `CourseManagement.API.slnx`، ثم نفّذ:
+
+```powershell
+dotnet restore
+
+dotnet user-secrets init --project CourseManagement.Web/CourseManagement.Web.csproj
+dotnet user-secrets set "JwtSettings:Secret" "CourseManagement-local-development-secret-2026" --project CourseManagement.Web/CourseManagement.Web.csproj
+
+dotnet run --project CourseManagement.Web/CourseManagement.Web.csproj --launch-profile https
 ```
 
-إذا ظهر تحذير شهادة HTTPS في أول تشغيل، اختر Advanced ثم Continue to localhost؛ هذه شهادة تطوير محلية وليست شهادة إنتاج.
+سيستخدم Web قاعدة SQLite الموجودة في:
 
-## تشغيل بنقرة واحدة
+```text
+coursemanagement.db
+```
+
+ويمكن تفعيل تطبيق الـMigrations أثناء التطوير عبر متغير البيئة:
+
+```powershell
+$env:Database__ApplyMigrations="true"
+```
+
+في أول تشغيل قد يظهر تحذير شهادة HTTPS محلية؛ اختر **Advanced** ثم **Continue to localhost**.
+
+## التشغيل بنقرة واحدة في Windows
 
 من مجلد الحل، انقر مرتين على:
 
@@ -56,7 +85,13 @@ https://localhost:7026/
 run-mvc.bat
 ```
 
-سيطلب منك الملف مفتاح JWT مؤقتًا، ثم يشغل مشروع MVC مع SQLite ويطبّق Migrations. لا تضع مفتاحًا حقيقيًا داخل ملفات المشروع أو GitHub.
+الملف يشغّل المشروع التالي مباشرةً:
+
+```text
+CourseManagement.Web/CourseManagement.Web.csproj
+```
+
+وسيطلب مفتاح JWT مؤقتًا ثم يفتح واجهة MVC على منفذ HTTPS.
 
 ## أهم صفحات الواجهة
 
@@ -72,4 +107,4 @@ run-mvc.bat
 | إدارة التسجيلات | `/Admin/Enrollments` |
 | فحص الصحة | `/health` |
 
-صفحات الإدارة تحتاج حسابًا يملك دور `Admin`. أما الصفحات العامة مثل تسجيل الدخول والتسجيل والكورسات فتُفتح من خلال الرابط بعد تشغيل التطبيق.
+صفحات الإدارة تحتاج حسابًا بدور `Admin`. لا تفتح ملفات `.cshtml` بالنقر المزدوج؛ هذه Razor Views تُعرض فقط من خلال تشغيل مشروع `CourseManagement.Web`.

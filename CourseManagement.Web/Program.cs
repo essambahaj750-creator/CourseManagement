@@ -1,16 +1,13 @@
-﻿using CourseManagement.Application.Interfaces;
+using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Interfaces;
 using CourseManagement.Infrastructure.Data;
 using CourseManagement.Infrastructure.Repositories;
 using CourseManagement.Infrastructure.Services;
-using CourseManagement.API.Middleware;
-using CourseManagement.API.Security;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using CourseManagement.Web.Middleware;
+using CourseManagement.Web.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,7 +22,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<JwtSecurityStampEvents>();
+builder.Services.AddScoped<MvcCookieSecurityEvents>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"];
@@ -36,21 +33,22 @@ if (string.IsNullOrWhiteSpace(secretKey))
 if (secretKey.Length < 32)
     throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters long for HMAC-SHA256.");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
     {
-        options.EventsType = typeof(JwtSecurityStampEvents);
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
+        options.DefaultAuthenticateScheme = MvcAuthenticationDefaults.Scheme;
+        options.DefaultChallengeScheme = MvcAuthenticationDefaults.Scheme;
+    })
+    .AddCookie(MvcAuthenticationDefaults.Scheme, options =>
+    {
+        options.EventsType = typeof(MvcCookieSecurityEvents);
+        options.Cookie.Name = MvcAuthenticationDefaults.CookieName;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
 
 builder.Services.AddAuthorization();
@@ -68,44 +66,8 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 builder.Services.AddHealthChecks();
-builder.Services.AddEndpointsApiExplorer();
-
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        if (allowedOrigins.Length == 0 || allowedOrigins.Any(string.IsNullOrWhiteSpace) || allowedOrigins.Contains("*"))
-            policy.SetIsOriginAllowed(_ => false);
-        else
-            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
-    });
-});
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Course Management API",
-        Version = "v1",
-        Description = "API لإدارة الكورسات والتسجيلات — المصادقة عبر JWT Bearer."
-    });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "الصق التوكن (JWT) فقط هنا — بدون البادئة 'Bearer '.",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-    c.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-    {
-        { new OpenApiSecuritySchemeReference("Bearer", doc), new List<string>() }
-    });
-});
 
 var app = builder.Build();
 
@@ -125,19 +87,16 @@ if (applyMigrations || seedAdmin)
         await DbSeeder.SeedAsync(db, app.Configuration, app.Logger);
 }
 
-if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled"))
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
-app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapHealthChecks("/health");
 
 app.Run();

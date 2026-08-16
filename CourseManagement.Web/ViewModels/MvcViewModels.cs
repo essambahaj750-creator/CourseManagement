@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CourseManagement.Application.DTOs;
 
-namespace CourseManagement.API.Mvc.ViewModels;
+namespace CourseManagement.Web.ViewModels;
 
 public sealed class LoginViewModel
 {

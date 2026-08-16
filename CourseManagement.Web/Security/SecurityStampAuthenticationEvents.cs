@@ -1,29 +1,28 @@
 using System.Security.Claims;
 using CourseManagement.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace CourseManagement.API.Security;
+namespace CourseManagement.Web.Security;
 
-public sealed class JwtSecurityStampEvents : JwtBearerEvents
+public sealed class MvcCookieSecurityEvents : CookieAuthenticationEvents
 {
     private readonly IUserRepository userRepository;
-    private readonly ILogger<JwtSecurityStampEvents> logger;
+    private readonly ILogger<MvcCookieSecurityEvents> logger;
 
-    public JwtSecurityStampEvents(
+    public MvcCookieSecurityEvents(
         IUserRepository userRepository,
-        ILogger<JwtSecurityStampEvents> logger)
+        ILogger<MvcCookieSecurityEvents> logger)
     {
         this.userRepository = userRepository;
         this.logger = logger;
-        OnTokenValidated = ValidateTokenAsync;
     }
 
-    private async Task ValidateTokenAsync(TokenValidatedContext context)
+    public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
         if (!TryReadIdentity(context.Principal, out var userId, out var stamp))
         {
-            context.Fail("The token does not contain a valid identity.");
+            await RejectAsync(context);
             return;
         }
 
@@ -31,11 +30,15 @@ public sealed class JwtSecurityStampEvents : JwtBearerEvents
         if (user is null || !user.IsActive || !string.Equals(
                 user.SecurityStamp.ToString("N"), stamp, StringComparison.OrdinalIgnoreCase))
         {
-            context.Fail("The account is inactive or the token has been revoked.");
-            return;
+            logger.LogInformation("Rejected stale or inactive MVC cookie for user {UserId}.", userId);
+            await RejectAsync(context);
         }
+    }
 
-        logger.LogDebug("Validated JWT security stamp for user {UserId}.", userId);
+    private static async Task RejectAsync(CookieValidatePrincipalContext context)
+    {
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(MvcAuthenticationDefaults.Scheme);
     }
 
     private static bool TryReadIdentity(ClaimsPrincipal? principal, out int userId, out string stamp)

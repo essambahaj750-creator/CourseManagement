@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>CourseManagement.Web-Development</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CourseManagement.Application\CourseManagement.Application.csproj" />
+    <ProjectReference Include="..\CourseManagement.Domain\CourseManagement.Domain.csproj" />
+    <ProjectReference Include="..\CourseManagement.Infrastructure\CourseManagement.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

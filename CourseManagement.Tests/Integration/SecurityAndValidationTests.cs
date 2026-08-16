@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using CourseManagement.API.Extensions;
-using CourseManagement.API.Mvc.ViewModels;
+using CourseManagement.Web.Extensions;
+using CourseManagement.Web.ViewModels;
 using Xunit;
 
 namespace CourseManagement.Tests.Integration;

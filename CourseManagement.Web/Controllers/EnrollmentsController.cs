@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using CourseManagement.API.Mvc.Security;
+using CourseManagement.Web.Security;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CourseManagement.API.Mvc.Controllers;
+namespace CourseManagement.Web.Controllers;
 
 [Route("Enrollments")]
 [Authorize(AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]

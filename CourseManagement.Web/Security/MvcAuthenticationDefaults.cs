@@ -1,4 +1,4 @@
-namespace CourseManagement.API.Mvc.Security;
+namespace CourseManagement.Web.Security;
 
 public static class MvcAuthenticationDefaults
 {

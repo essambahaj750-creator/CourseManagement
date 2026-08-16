@@ -1,14 +1,14 @@
 using System.Security.Claims;
-using CourseManagement.API.Extensions;
-using CourseManagement.API.Mvc.Security;
-using CourseManagement.API.Mvc.ViewModels;
+using CourseManagement.Web.Extensions;
+using CourseManagement.Web.Security;
+using CourseManagement.Web.ViewModels;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace CourseManagement.API.Mvc.Controllers;
+namespace CourseManagement.Web.Controllers;
 
 [Route("Account")]
 [EnableRateLimiting("auth")]

@@ -4,4 +4,5 @@
   <Project Path="CourseManagement.Domain/CourseManagement.Domain.csproj" />
   <Project Path="CourseManagement.Infrastructure/CourseManagement.Infrastructure.csproj" />
   <Project Path="CourseManagement.Tests/CourseManagement.Tests.csproj" />
+  <Project Path="CourseManagement.Web/CourseManagement.Web.csproj" />
 </Solution>

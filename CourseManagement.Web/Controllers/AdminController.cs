@@ -1,12 +1,12 @@
 using System.Security.Claims;
-using CourseManagement.API.Mvc.Security;
-using CourseManagement.API.Mvc.ViewModels;
+using CourseManagement.Web.Security;
+using CourseManagement.Web.ViewModels;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CourseManagement.API.Mvc.Controllers;
+namespace CourseManagement.Web.Controllers;
 
 [Route("Admin")]
 [Authorize(Roles = "Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]

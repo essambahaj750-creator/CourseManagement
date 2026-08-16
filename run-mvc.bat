@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ===============================================
-echo CourseManagement.API - MVC Launcher
+echo CourseManagement.Web - MVC Launcher
 echo ===============================================
 
 where dotnet >nul 2>nul
@@ -13,7 +13,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "CourseManagement.API\CourseManagement.API.csproj" (
+if not exist "CourseManagement.Web\CourseManagement.Web.csproj" (
     echo ERROR: Run this file from the repository root.
     pause
     exit /b 1
@@ -38,6 +38,6 @@ echo Starting MVC at https://localhost:7026 ...
 echo Open: https://localhost:7026/Account/Login
  echo.
 
-dotnet run --project "CourseManagement.API\CourseManagement.API.csproj" --launch-profile https
+dotnet run --project "CourseManagement.Web\CourseManagement.Web.csproj" --launch-profile https
 
 pause

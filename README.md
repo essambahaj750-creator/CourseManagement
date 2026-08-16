@@ -1,4 +1,4 @@
-# Course Management API
+# Course Management API + Web
 
 Web API لإدارة الكورسات والتسجيلات، مبني بمعمارية Clean Architecture على **.NET 10** مع **EF Core + SQLite** و **JWT Authentication**.
 
@@ -9,7 +9,8 @@ Web API لإدارة الكورسات والتسجيلات، مبني بمعما
 | `CourseManagement.Domain` | الكيانات (User, Course, Enrollment) والـ Enums وواجهات المستودعات |
 | `CourseManagement.Application` | DTOs وواجهات الخدمات — لا يعتمد إلا على Domain |
 | `CourseManagement.Infrastructure` | EF Core DbContext والمستودعات والخدمات (تطبيق الواجهات) |
-| `CourseManagement.API` | Controllers و Middleware ونقطة التشغيل |
+| `CourseManagement.API` | REST API وJWT وSwagger وHealth Check — مستقل عن واجهة MVC |
+| `CourseManagement.Web` | ASP.NET Core MVC: Controllers وViews وwwwroot وCookie Authentication |
 
 ## التشغيل
 
@@ -76,9 +77,9 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 ## واجهة ASP.NET Core MVC
 
-تمت إضافة واجهة MVC عربية متجاوبة داخل المشروع الفرعي `CourseManagement.API/CourseManagement.API`. تبدأ الواجهة من المسار `/` بعد تشغيل ملف `CourseManagement.API.csproj`، وتستخدم Cookie آمنًا لجلسة Razor MVC، بينما تبقى مسارات `/api/*` معتمدة على JWT Bearer. ملفات الواجهة نفسها موجودة داخل `CourseManagement.API/CourseManagement.API/Views`، ولا تُفتح بالنقر المزدوج من File Explorer لأنها Razor Views تُعرض أثناء تشغيل ASP.NET Core.
+تمت إضافة مشروع MVC مستقل باسم `CourseManagement.Web` داخل الحل، مطابق لنمط المشاريع المنفصلة في Solution Explorer. يحتوي `CourseManagement.Web` على Controllers وViewModels وViews وwwwroot ويستخدم Cookie آمنًا لجلسة Razor MVC، بينما يبقى `CourseManagement.API` مشروع REST API مستقلًا مع JWT Bearer وSwagger. تبدأ الواجهة من المسار `/` بعد تشغيل `CourseManagement.Web/CourseManagement.Web.csproj`، ولا تُفتح Razor Views بالنقر المزدوج من File Explorer لأنها تُعرض أثناء تشغيل ASP.NET Core.
 
-للتشغيل السريع في Windows، افتح مجلد الحل الذي يحتوي على `CourseManagement.API.slnx` وانقر `run-mvc.bat`، أو راجع `RUN_MVC_AR.md` للتعليمات التفصيلية. استخدم رابط HTTPS الذي يظهر في Terminal، وغالبًا يكون `https://localhost:7026/Account/Login`.
+للتشغيل السريع في Windows، افتح مجلد الحل الذي يحتوي على `CourseManagement.API.slnx` وانقر `run-mvc.bat`؛ سيشغّل الملف مشروع `CourseManagement.Web` مباشرة. أو اجعل `CourseManagement.Web` هو Startup Project في Visual Studio. راجع `RUN_MVC_AR.md` للتعليمات التفصيلية. استخدم رابط HTTPS الذي يظهر في Terminal، وغالبًا يكون `https://localhost:7026/Account/Login`.
 
 ### أهم المسارات
 
@@ -97,8 +98,8 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 ```bash
 dotnet restore
-dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.API
-dotnet run --project CourseManagement.API
+dotnet ef database update --project CourseManagement.Infrastructure --startup-project CourseManagement.Web
+dotnet run --project CourseManagement.Web
 ```
 
 سيُنشأ ملف `coursemanagement.db` تلقائيًا داخل مجلد التشغيل. تأكد من وضع `JwtSettings:Secret` في User Secrets أو متغيرات البيئة، ولا تخزّن الأسرار الحقيقية داخل Git.
