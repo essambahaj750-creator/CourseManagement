@@ -26,10 +26,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    document.querySelectorAll('.view-switch').forEach((switcher) => {
+        const buttons = [...switcher.querySelectorAll('button')];
+        const grid = document.querySelector('.course-grid');
+        if (!grid || buttons.length < 2) return;
+        buttons.forEach((button, index) => {
+            button.addEventListener('click', () => {
+                buttons.forEach((item) => item.classList.remove('active'));
+                button.classList.add('active');
+                grid.classList.toggle('is-list', index === 1);
+                button.setAttribute('aria-pressed', 'true');
+                buttons.filter((item) => item !== button).forEach((item) => item.setAttribute('aria-pressed', 'false'));
+            });
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            const search = document.querySelector('#courseSearch');
+            if (!search) return;
+            event.preventDefault();
+            search.focus();
+            search.select();
+        }
+    });
+
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', () => {
             const submit = form.querySelector('button[type="submit"]');
-            if (!submit || submit.dataset.allowRepeat === 'true') return;
+            if (!submit || submit.dataset.allowRepeat === 'true' || form.dataset.noSubmitLock === 'true') return;
             submit.disabled = true;
             submit.classList.add('disabled');
             submit.dataset.originalText = submit.innerHTML;

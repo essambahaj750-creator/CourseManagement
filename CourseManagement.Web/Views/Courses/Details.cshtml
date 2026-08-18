@@ -6,14 +6,51 @@
 }
 
 <div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i><a asp-action="Index">الكورسات</a><i class="bi bi-chevron-left mx-2"></i>التفاصيل</div>
-<div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap"><a class="text-decoration-none text-muted" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>@if (isOwner) { <div class="d-flex gap-2"><a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a><a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.Id"><i class="bi bi-trash ms-1"></i>حذف</a></div> }</div>
+<div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
+    <a class="text-decoration-none text-muted" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>
+    @if (isOwner)
+    {
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a>
+            <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.Id"><i class="bi bi-trash ms-1"></i>حذف</a>
+        </div>
+    }
+</div>
 
 <section class="detail-cover mb-4">
-    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl)) { <img class="detail-cover-image" src="@Model.ImageUrl" alt="غلاف @Model.Title" loading="eager" /> }
+    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+    {
+        <img class="detail-cover-image" src="@Model.ImageUrl" alt="غلاف @Model.Title" loading="eager" />
+    }
     <div class="detail-cover-overlay"></div><div class="detail-cover-content"><span class="badge bg-light text-primary mb-3"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span><h1 class="display-6 fw-bold">@Model.Title</h1><p class="mb-0 opacity-75"><i class="bi bi-person ms-1"></i>بواسطة @Model.InstructorName</p></div>
 </section>
 
 <div class="row g-4 align-items-start">
     <div class="col-lg-8"><div class="surface-card p-4 p-lg-5"><div class="section-kicker">نظرة عامة</div><h2 class="h3 fw-bold mb-3">عن الكورس</h2><p class="text-muted lh-lg mb-4">@Model.Description</p><div class="row g-3 border-top pt-4"><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-person"></i></span><div><small>المدرب</small><strong>@Model.InstructorName</strong></div></div></div><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-hash"></i></span><div><small>المعرّف</small><strong>#@Model.Id</strong></div></div></div><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div></div></div></div></div>
-    <div class="col-lg-4"><div class="surface-card p-4 sticky-lg-top" style="top:1.25rem"><div class="text-muted small">استثمر في تعلمك</div><div class="display-6 fw-bold text-primary my-2">@Model.Price.ToString("N2") <small class="fs-6">ر.س</small></div><p class="text-muted small">احصل على وصول منظم إلى هذا المسار التعليمي.</p>@if (User.Identity?.IsAuthenticated == true && !isOwner) { <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@Model.Id" method="post"><button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-journal-plus ms-2"></i>التسجيل في الكورس</button></form> } else if (User.Identity?.IsAuthenticated != true) { <a class="btn btn-primary w-100 mt-3" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"><i class="bi bi-box-arrow-in-left ms-2"></i>سجل الدخول للتسجيل</a> } else { <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle ms-1"></i>أنت مالك هذا الكورس.</div> }<div class="detail-checklist mt-4"><span><i class="bi bi-check-circle-fill"></i>وصف واضح للمحتوى</span><span><i class="bi bi-check-circle-fill"></i>مدرب محدد</span><span><i class="bi bi-check-circle-fill"></i>تسجيل آمن</span></div></div></div>
+    <div class="col-lg-4">
+        <div class="surface-card p-4 sticky-lg-top" style="top:1.25rem">
+            <div class="text-muted small">استثمر في تعلمك</div>
+            <div class="display-6 fw-bold text-primary my-2">@Model.Price.ToString("N2") <small class="fs-6">ر.س</small></div>
+            <p class="text-muted small">احصل على وصول منظم إلى هذا المسار التعليمي.</p>
+            @if (User.Identity?.IsAuthenticated == true && !isOwner)
+            {
+                <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@Model.Id" method="post">
+                    <button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-journal-plus ms-2"></i>التسجيل في الكورس</button>
+                </form>
+            }
+            else if (User.Identity?.IsAuthenticated != true)
+            {
+                <a class="btn btn-primary w-100 mt-3" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"><i class="bi bi-box-arrow-in-left ms-2"></i>سجل الدخول للتسجيل</a>
+            }
+            else
+            {
+                <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle ms-1"></i>أنت مالك هذا الكورس.</div>
+            }
+            <div class="detail-checklist mt-4">
+                <span><i class="bi bi-check-circle-fill"></i>وصف واضح للمحتوى</span>
+                <span><i class="bi bi-check-circle-fill"></i>مدرب محدد</span>
+                <span><i class="bi bi-check-circle-fill"></i>تسجيل آمن</span>
+            </div>
+        </div>
+    </div>
 </div>

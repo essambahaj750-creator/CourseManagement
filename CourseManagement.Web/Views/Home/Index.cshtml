@@ -1,105 +1,134 @@
 @model DashboardViewModel
+
 @{
     ViewData["Title"] = "لوحة التحكم";
     var courseCount = Model.Courses.Count();
     var enrollmentCount = Model.MyEnrollments.Count();
+    var displayName = User.Identity?.IsAuthenticated == true
+        ? (User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "متعلم")
+        : "زائر";
 }
 
-<section class="hero mb-4">
-    <div class="row align-items-center g-4 hero-content">
-        <div class="col-lg-8">
-            <span class="badge rounded-pill bg-light text-primary mb-3 px-3 py-2"><i class="bi bi-stars ms-1"></i> منصة تعلم عربية متكاملة</span>
-            <h1 class="mb-3">طوّر مهاراتك، وابنِ مستقبلك بثقة.</h1>
-            <p class="lead mb-4">اكتشف مسارات تعليمية عملية، تابع تسجيلاتك، وخطّط لخطوتك التالية من مساحة عمل واحدة.</p>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-light text-primary" asp-controller="Courses" asp-action="Index"><i class="bi bi-compass ms-2"></i>استكشف الكورسات</a>
-                @if (Model.IsAuthenticated)
-                {
-                    <a class="btn btn-outline-light" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check ms-2"></i>عرض تسجيلاتي</a>
-                }
-                else
-                {
-                    <a class="btn btn-outline-light" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus ms-2"></i>ابدأ مجانًا</a>
-                }
+<div class="hf-page">
+    <section class="hero hero-hf mb-4">
+        <div class="row align-items-center g-4 hero-content">
+            <div class="col-lg-8">
+                <span class="hero-kicker"><i class="bi bi-stars"></i> مساحة تعلم صُممت حول تقدّمك</span>
+                <h1 class="mb-3 mt-3">مرحبًا @displayName،<br /><span class="text-info">خطوتك التالية</span> تبدأ من هنا.</h1>
+                <p class="mb-4">استكشف المعرفة العملية، اجمع خبرتك في مسار واضح، وارجع إلى كل تسجيلاتك من لوحة واحدة بسيطة وسريعة.</p>
+                <div class="hero-actions">
+                    <a class="btn btn-light btn-lg" asp-controller="Courses" asp-action="Index"><i class="bi bi-compass ms-2"></i>استكشف الكورسات</a>
+                    @if (Model.IsAuthenticated)
+                    {
+                        <a class="btn btn-outline-light btn-lg" asp-controller="Enrollments" asp-action="Index"><i class="bi bi-journal-check ms-2"></i>متابعة تسجيلاتي</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-light btn-lg" asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus ms-2"></i>أنشئ حسابك مجانًا</a>
+                    }
+                </div>
             </div>
-        </div>
-        <div class="col-lg-4 d-none d-lg-block">
-            <div class="hero-art"><i class="bi bi-mortarboard-fill"></i></div>
-        </div>
-    </div>
-</section>
-
-<div class="stats-grid mb-4">
-    <div class="stat-card"><div><div class="label">الكورسات المتاحة</div><div class="value">@courseCount</div><div class="trend"><i class="bi bi-arrow-up-left ms-1"></i>مسارات قابلة للاستكشاف</div></div><span class="stat-icon"><i class="bi bi-collection-play"></i></span></div>
-    <div class="stat-card"><div><div class="label">تسجيلاتي</div><div class="value">@(Model.IsAuthenticated ? enrollmentCount : 0)</div><div class="trend"><i class="bi bi-check2-circle ms-1"></i>تعلّم بوتيرتك</div></div><span class="stat-icon"><i class="bi bi-journal-check"></i></span></div>
-    @if (Model.Role == "Admin")
-    {
-        <div class="stat-card"><div><div class="label">المستخدمون</div><div class="value">@Model.UsersCount</div><div class="trend"><i class="bi bi-shield-check ms-1"></i>حسابات المنصة</div></div><span class="stat-icon"><i class="bi bi-people"></i></span></div>
-        <div class="stat-card"><div><div class="label">كل التسجيلات</div><div class="value">@Model.EnrollmentsCount</div><div class="trend"><i class="bi bi-graph-up-arrow ms-1"></i>مؤشر التفاعل</div></div><span class="stat-icon"><i class="bi bi-bar-chart-line"></i></span></div>
-    }
-    else
-    {
-        <div class="stat-card"><div><div class="label">التعلم متاح</div><div class="value">24/7</div><div class="trend"><i class="bi bi-clock-history ms-1"></i>حين يناسبك</div></div><span class="stat-icon"><i class="bi bi-clock-history"></i></span></div>
-        <div class="stat-card"><div><div class="label">الخطوة التالية</div><div class="value">ابدأ الآن</div><div class="trend"><i class="bi bi-rocket-takeoff ms-1"></i>استثمر في نفسك</div></div><span class="stat-icon"><i class="bi bi-rocket-takeoff"></i></span></div>
-    }
-</div>
-
-<div class="dashboard-grid mb-4">
-    <section class="surface-card dashboard-panel">
-        <div class="panel-head">
-            <div><div class="section-kicker">محتوى مختار</div><h2 class="section-title mb-0">أحدث الكورسات</h2><p>ابدأ من المسار الأقرب إلى هدفك.</p></div>
-            <a class="btn btn-sm btn-outline-primary" asp-controller="Courses" asp-action="Index">عرض الكل <i class="bi bi-arrow-left me-1"></i></a>
-        </div>
-        @if (Model.Courses.Any())
-        {
-            <div class="row g-3">
-                @foreach (var course in Model.Courses.Take(4))
-                {
-                    var excerpt = string.IsNullOrWhiteSpace(course.Description) ? "مسار تعليمي عملي يساعدك على تطوير مهاراتك." : (course.Description.Length > 92 ? course.Description[..92] + "..." : course.Description);
-                    <div class="col-md-6">
-                        <article class="course-card">
-                            <div class="course-cover">
-                                @if (!string.IsNullOrWhiteSpace(course.ImageUrl)) { <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" /> }
-                                <span class="badge bg-light text-primary position-relative">كورس مميز</span><i class="bi bi-code-slash"></i>
-                            </div>
-                            <div class="course-body">
-                                <h3 class="mb-2">@course.Title</h3>
-                                <p class="mb-2">@excerpt</p>
-                                <div class="course-meta"><span><i class="bi bi-person ms-1"></i>@course.InstructorName</span><span class="price">@course.Price.ToString("N2")</span></div>
-                                <a class="btn btn-primary w-100 mt-3" asp-controller="Courses" asp-action="Details" asp-route-id="@course.Id">عرض التفاصيل <i class="bi bi-arrow-left me-1"></i></a>
-                            </div>
-                        </article>
+            <div class="col-lg-4 d-none d-lg-block">
+                <div class="hero-side">
+                    <div class="hero-side-top"><span><i class="bi bi-broadcast-pin ms-1"></i> مساحة التعلم</span><strong>متاحة الآن</strong></div>
+                    <div class="hero-orbit">
+                        <span class="hero-orbit-badge one"><i class="bi bi-lightning-charge-fill"></i>تعلم أسرع</span>
+                        <span class="hero-orbit-badge two"><i class="bi bi-check-circle-fill"></i>تقدم واضح</span>
+                        <span class="hero-orbit-core"><i class="bi bi-mortarboard-fill"></i></span>
                     </div>
-                }
+                    <div class="d-flex justify-content-between text-white-50 small"><span>أكثر من مسار عملي</span><span><i class="bi bi-arrow-left ms-1"></i>ابدأ الاستكشاف</span></div>
+                </div>
             </div>
-        }
-        else
-        {
-            <div class="empty-state"><i class="bi bi-collection"></i><h3 class="mt-3">لا توجد كورسات بعد</h3><p>سيتم عرض الكورسات هنا عند إضافتها.</p></div>
-        }
+        </div>
     </section>
 
-    <aside class="surface-card dashboard-panel">
-        <div class="panel-head">
-            <div><div class="section-kicker">ملخص سريع</div><h2 class="section-title mb-0">نشاطك الأخير</h2><p>آخر التسجيلات المحفوظة في حسابك.</p></div>
-            <i class="bi bi-activity text-primary fs-4"></i>
+    <div class="stats-grid mb-4">
+        <div class="stat-card hf-stat-card">
+            <div><div class="label">الكورسات المتاحة</div><div class="value">@courseCount</div><div class="stat-context"><i class="bi bi-arrow-up-left"></i>مسارات قابلة للاستكشاف</div></div>
+            <span class="stat-icon"><i class="bi bi-collection-play"></i></span>
         </div>
-        @if (Model.IsAuthenticated && Model.MyEnrollments.Any())
+        <div class="stat-card hf-stat-card">
+            <div><div class="label">تسجيلاتي</div><div class="value">@(Model.IsAuthenticated ? enrollmentCount : 0)</div><div class="stat-context"><i class="bi bi-check2-circle"></i>محفوظة في حسابك</div></div>
+            <span class="stat-icon"><i class="bi bi-journal-check"></i></span>
+        </div>
+        @if (Model.Role == "Admin")
         {
-            <div class="activity-list">
-                @foreach (var enrollment in Model.MyEnrollments.OrderByDescending(x => x.EnrolledDate).Take(5))
-                {
-                    <div class="activity-item">
-                        <span class="activity-icon"><i class="bi bi-journal-check"></i></span>
-                        <div class="min-w-0"><strong class="d-block text-truncate">@enrollment.CourseTitle</strong><small>تم التسجيل في @enrollment.EnrolledDate.ToLocalTime().ToString("dd MMMM yyyy")</small></div>
-                    </div>
-                }
-            </div>
-            <a class="btn btn-light w-100 mt-3" asp-controller="Enrollments" asp-action="Index">إدارة تسجيلاتي <i class="bi bi-arrow-left me-1"></i></a>
+            <div class="stat-card hf-stat-card"><div><div class="label">المستخدمون</div><div class="value">@Model.UsersCount</div><div class="stat-context"><i class="bi bi-shield-check"></i>حسابات المنصة</div></div><span class="stat-icon"><i class="bi bi-people"></i></span></div>
+            <div class="stat-card hf-stat-card"><div><div class="label">كل التسجيلات</div><div class="value">@Model.EnrollmentsCount</div><div class="stat-context"><i class="bi bi-graph-up-arrow"></i>مؤشر التفاعل</div></div><span class="stat-icon"><i class="bi bi-bar-chart-line"></i></span></div>
         }
         else
         {
-            <div class="empty-state py-4"><i class="bi bi-compass"></i><h3 class="h6 mt-3">جاهز لاختيار مسارك؟</h3><p class="small">تصفح الكورسات وسجّل في المحتوى الذي يخدم هدفك.</p><a class="btn btn-primary" asp-controller="Courses" asp-action="Index">استكشف الآن</a></div>
+            <div class="stat-card hf-stat-card"><div><div class="label">التعلم متاح</div><div class="value">24/7</div><div class="stat-context"><i class="bi bi-clock-history"></i>حين يناسبك</div></div><span class="stat-icon"><i class="bi bi-clock-history"></i></span></div>
+            <div class="stat-card hf-stat-card"><div><div class="label">الخطوة التالية</div><div class="value">ابدأ الآن</div><div class="stat-context"><i class="bi bi-rocket-takeoff"></i>استثمر في نفسك</div></div><span class="stat-icon"><i class="bi bi-rocket-takeoff"></i></span></div>
         }
-    </aside>
+    </div>
+
+    <div class="dashboard-grid mb-4">
+        <section class="surface-card hf-panel dashboard-panel">
+            <div class="hf-panel-header">
+                <div><span class="hf-eyebrow">محتوى مختار</span><h2>أحدث الكورسات</h2><p>ابدأ من المسار الأقرب إلى هدفك، ثم تابع تقدّمك بثبات.</p></div>
+                <span class="hf-panel-icon"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+            </div>
+            @if (Model.Courses.Any())
+            {
+                <div class="row g-3">
+                    @foreach (var course in Model.Courses.Take(4))
+                    {
+                        var excerpt = string.IsNullOrWhiteSpace(course.Description) ? "مسار تعليمي عملي يساعدك على تطوير مهاراتك." : (course.Description.Length > 92 ? course.Description[..92] + "..." : course.Description);
+                        var instructorInitial = string.IsNullOrWhiteSpace(course.InstructorName) ? "م" : course.InstructorName[..1].ToUpperInvariant();
+                        <div class="col-md-6">
+                            <article class="course-card">
+                                <div class="course-cover">
+                                    @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+                                    {
+                                        <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" />
+                                    }
+                                    <div class="course-cover-top"><span class="badge bg-light text-primary position-relative">متاح الآن</span><span class="small text-white-50 position-relative"><i class="bi bi-play-circle ms-1"></i>مسار عملي</span></div>
+                                    <span class="course-cover-icon"><i class="bi bi-layers-fill"></i></span>
+                                </div>
+                                <div class="course-body">
+                                    <h3 class="mb-2">@course.Title</h3>
+                                    <p class="course-description mb-3">@excerpt</p>
+                                    <div class="course-footer-meta">
+                                        <span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span>
+                                        <span class="price-stack"><small>قيمة الكورس</small><span class="price">@course.Price.ToString("N2")</span></span>
+                                    </div>
+                                    <a class="btn btn-primary w-100 mt-3" asp-controller="Courses" asp-action="Details" asp-route-id="@course.Id">عرض التفاصيل <i class="bi bi-arrow-left me-1"></i></a>
+                                </div>
+                            </article>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state hf-empty"><div class="empty-orb"><i class="bi bi-collection"></i></div><h3 class="mt-3">لا توجد كورسات بعد</h3><p>سيظهر المحتوى هنا فور إضافته إلى المنصة.</p></div>
+            }
+        </section>
+
+        <aside class="surface-card hf-panel dashboard-panel">
+            <div class="hf-panel-header"><div><span class="hf-eyebrow">ملخص سريع</span><h2>نشاطك الأخير</h2><p>آخر التسجيلات المحفوظة في حسابك.</p></div><span class="hf-panel-icon"><i class="bi bi-activity"></i></span></div>
+            @if (Model.IsAuthenticated && Model.MyEnrollments.Any())
+            {
+                <div class="activity-list hf-activity">
+                    @foreach (var enrollment in Model.MyEnrollments.OrderByDescending(x => x.EnrolledDate).Take(5))
+                    {
+                        <div class="activity-item"><span class="activity-icon"><i class="bi bi-journal-check"></i></span><div class="min-w-0"><strong class="d-block text-truncate">@enrollment.CourseTitle</strong><small>تم التسجيل في @enrollment.EnrolledDate.ToLocalTime().ToString("dd MMMM yyyy")</small></div><i class="bi bi-chevron-left me-auto text-muted small"></i></div>
+                    }
+                </div>
+                <a class="btn btn-light w-100 mt-3" asp-controller="Enrollments" asp-action="Index">إدارة تسجيلاتي <i class="bi bi-arrow-left me-1"></i></a>
+            }
+            else
+            {
+                <div class="empty-state hf-empty py-4"><div class="empty-orb"><i class="bi bi-compass"></i></div><h3 class="h6 mt-3">جاهز لاختيار مسارك؟</h3><p class="small">تصفح الكورسات وسجّل في المحتوى الذي يخدم هدفك.</p><a class="btn btn-primary" asp-controller="Courses" asp-action="Index">استكشف الآن</a></div>
+            }
+        </aside>
+    </div>
+
+    <section class="surface-card hf-panel mb-4 p-4 p-lg-5">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8"><span class="hf-eyebrow">تعلّم بوضوح</span><h2 class="section-title mt-2 mb-2">كل مهارة تبدأ بقرار صغير.</h2><p class="hf-subtitle mb-0">اختر كورسًا، ثبّت تسجيلك، واجعل المعرفة جزءًا من روتينك اليومي. المنصة مصممة لتبقى خطواتك واضحة من أول زيارة حتى آخر إنجاز.</p></div>
+            <div class="col-lg-4 text-lg-start"><a class="btn btn-primary btn-lg" asp-controller="Courses" asp-action="Index"><i class="bi bi-arrow-left-circle ms-2"></i>ابدأ مسارك اليوم</a></div>
+        </div>
+    </section>
 </div>

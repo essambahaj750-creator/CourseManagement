@@ -1,14 +1,51 @@
 @model EnrollmentCreateViewModel
+
 @{
     ViewData["Title"] = "إضافة تسجيل";
 }
-<div class="page-heading"><div><h1>إضافة تسجيل</h1><p>سجّل مستخدمًا في كورس من لوحة الإدارة.</p></div><a class="btn btn-outline-secondary" asp-action="Enrollments">إلغاء</a></div>
-<div class="surface-card form-card">
-    <form asp-action="CreateEnrollment" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-        <div class="mb-3"><label asp-for="UserId" class="form-label"></label><select asp-for="UserId" class="form-select"><option value="">اختر المستخدم</option>@foreach (var user in Model.Users) { <option value="@user.Id">@user.FullName — @user.Email</option> }</select><span asp-validation-for="UserId" class="text-danger small"></span></div>
-        <div class="mb-4"><label asp-for="CourseId" class="form-label"></label><select asp-for="CourseId" class="form-select"><option value="">اختر الكورس</option>@foreach (var course in Model.Courses) { <option value="@course.Id">@course.Title — @course.InstructorName</option> }</select><span asp-validation-for="CourseId" class="text-danger small"></span></div>
-        <button class="btn btn-primary" type="submit"><i class="bi bi-journal-plus ms-2"></i>إنشاء التسجيل</button>
-    </form>
+
+<div class="hf-page">
+    <div class="breadcrumbs"><a href="/">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i><a href="/Admin/Enrollments">إدارة التسجيلات</a><i class="bi bi-chevron-left mx-2"></i>إضافة تسجيل</div>
+    <div class="page-heading">
+        <div><span class="hf-eyebrow">إدارة المنصة</span><h1 class="mt-2">إضافة تسجيل</h1><p class="hf-subtitle">سجّل مستخدمًا في كورس من لوحة الإدارة.</p></div>
+        <a class="btn btn-outline-secondary" href="/Admin/Enrollments"><i class="bi bi-arrow-right ms-1"></i>إلغاء</a>
+    </div>
+
+    <div class="hf-form-grid">
+        <section class="surface-card hf-form-shell">
+            <div class="hf-form-header"><span class="hf-panel-icon"><i class="bi bi-journal-plus"></i></span><div><span class="hf-eyebrow">تسجيل جديد</span><h2>بيانات التسجيل</h2><p>اختر المستخدم والمسار التعليمي المطلوب.</p></div></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                <div class="mb-3">
+                    <label class="form-label" for="UserId">المستخدم</label>
+                    <select class="form-select" id="UserId" name="UserId">
+                        <option value="">اختر المستخدم</option>
+                        @foreach (var user in Model.Users)
+                        {
+                            <option value="@user.Id">@user.FullName — @user.Email</option>
+                        }
+                    </select>
+                    @Html.ValidationMessageFor(model => model.UserId, "", new { @class = "text-danger small" })
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="CourseId">الكورس</label>
+                    <select class="form-select" id="CourseId" name="CourseId">
+                        <option value="">اختر الكورس</option>
+                        @foreach (var course in Model.Courses)
+                        {
+                            <option value="@course.Id">@course.Title — @course.InstructorName</option>
+                        }
+                    </select>
+                    @Html.ValidationMessageFor(model => model.CourseId, "", new { @class = "text-danger small" })
+                </div>
+                <div class="d-flex flex-wrap gap-2"><button class="btn btn-primary" type="submit"><i class="bi bi-journal-plus ms-2"></i>إنشاء التسجيل</button><a class="btn btn-light" href="/Admin/Enrollments">العودة للقائمة</a></div>
+            </form>
+        </section>
+        <aside class="surface-card hf-form-aside"><span class="hf-panel-icon"><i class="bi bi-shield-check"></i></span><h3>تسجيل منظم</h3><p>تأكد من اختيار الحساب والكورس الصحيحين قبل الحفظ. سيظهر التسجيل مباشرة في سجل الإدارة وحساب المستخدم.</p><div class="detail-checklist"><span><i class="bi bi-check-circle-fill"></i>تحقق تلقائي من البيانات</span><span><i class="bi bi-check-circle-fill"></i>حماية النموذج</span></div></aside>
+    </div>
 </div>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

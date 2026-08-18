@@ -1,26 +1,50 @@
 @model IEnumerable<EnrollmentDto>
+
 @{
     ViewData["Title"] = "كل التسجيلات";
-    var enrollments = Model.ToList();
+    var enrollments = Model.OrderByDescending(x => x.EnrolledDate).ToList();
     var usersCount = enrollments.Select(x => x.UserId).Distinct().Count();
     var coursesCount = enrollments.Select(x => x.CourseId).Distinct().Count();
 }
 
-<div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i>الإدارة<i class="bi bi-chevron-left mx-2"></i>التسجيلات</div>
-<div class="page-heading"><div><div class="section-kicker">مؤشرات التعلم</div><h1>كل التسجيلات</h1><p>نظرة شاملة على نشاط التعلم والعلاقات بين المستخدمين والكورسات.</p></div><div class="d-flex gap-2"><a class="btn btn-primary" asp-action="CreateEnrollment"><i class="bi bi-journal-plus ms-2"></i>إضافة تسجيل</a><a class="btn btn-outline-primary" asp-controller="Courses" asp-action="Index">الكورسات</a><a class="btn btn-outline-secondary" asp-action="Users">المستخدمون</a></div></div>
+<div class="hf-page">
+    <div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i>الإدارة<i class="bi bi-chevron-left mx-2"></i>التسجيلات</div>
+    <div class="page-heading">
+        <div><span class="hf-eyebrow">مؤشرات التعلم</span><h1 class="mt-2">كل التسجيلات</h1><p class="hf-subtitle">نظرة شاملة على نشاط التعلم والعلاقات بين المستخدمين والكورسات.</p></div>
+        <div class="d-flex gap-2 flex-wrap"><a class="btn btn-primary" asp-action="CreateEnrollment"><i class="bi bi-journal-plus ms-2"></i>إضافة تسجيل</a><a class="btn btn-outline-primary" asp-controller="Courses" asp-action="Index">الكورسات</a><a class="btn btn-outline-secondary" asp-action="Users">المستخدمون</a></div>
+    </div>
 
-<div class="stats-grid mb-4" style="grid-template-columns:repeat(3,1fr)">
-    <div class="stat-card"><div><div class="label">إجمالي التسجيلات</div><div class="value">@enrollments.Count</div><div class="trend"><i class="bi bi-graph-up-arrow ms-1"></i>حركة المنصة</div></div><span class="stat-icon"><i class="bi bi-bar-chart-line"></i></span></div>
-    <div class="stat-card"><div><div class="label">مستخدمون نشطون</div><div class="value">@usersCount</div><div class="trend"><i class="bi bi-people ms-1"></i>طلاب ومدربون</div></div><span class="stat-icon"><i class="bi bi-people"></i></span></div>
-    <div class="stat-card"><div><div class="label">كورسات مسجلة</div><div class="value">@coursesCount</div><div class="trend"><i class="bi bi-collection-play ms-1"></i>محتوى متفاعل</div></div><span class="stat-icon"><i class="bi bi-collection-play"></i></span></div>
-</div>
+    <div class="stats-grid mb-4">
+        <div class="stat-card hf-stat-card"><div><div class="label">إجمالي التسجيلات</div><div class="value">@enrollments.Count</div><div class="stat-context"><i class="bi bi-graph-up-arrow"></i>حركة المنصة</div></div><span class="stat-icon"><i class="bi bi-bar-chart-line"></i></span></div>
+        <div class="stat-card hf-stat-card"><div><div class="label">مستخدمون نشطون</div><div class="value">@usersCount</div><div class="stat-context"><i class="bi bi-people"></i>طلاب ومدربون</div></div><span class="stat-icon"><i class="bi bi-people"></i></span></div>
+        <div class="stat-card hf-stat-card"><div><div class="label">كورسات مسجلة</div><div class="value">@coursesCount</div><div class="stat-context"><i class="bi bi-collection-play"></i>محتوى متفاعل</div></div><span class="stat-icon"><i class="bi bi-collection-play"></i></span></div>
+    </div>
 
-<div class="surface-card table-card datatable-wrap">
-    <div class="card-header-soft d-flex align-items-center justify-content-between gap-2"><div><h2 class="section-title mb-0">سجل التسجيلات</h2><span class="text-muted small">كل سجل يربط مستخدمًا بكورس وتاريخ تسجيل.</span></div><span class="badge badge-soft rounded-pill px-3 py-2"><i class="bi bi-link-45deg ms-1"></i>علاقة مترابطة</span></div>
-    <div class="table-responsive"><table class="table" data-datatable><thead><tr><th>#</th><th>المستخدم</th><th>الكورس</th><th>تاريخ التسجيل</th><th>الإجراءات</th></tr></thead><tbody>
-    @foreach (var enrollment in enrollments)
-    {
-        <tr><td><span class="text-muted">#@enrollment.Id</span></td><td><strong>@enrollment.UserName</strong><div class="small text-muted">مستخدم #@enrollment.UserId</div></td><td><strong>@enrollment.CourseTitle</strong><div class="small text-muted">كورس #@enrollment.CourseId</div></td><td>@enrollment.EnrolledDate.ToLocalTime().ToString("dd MMMM yyyy - HH:mm")</td><td><div class="action-group"><a class="btn btn-sm btn-outline-primary" asp-action="EnrollmentDetails" asp-route-id="@enrollment.Id"><i class="bi bi-eye ms-1"></i>تفاصيل</a><a class="btn btn-sm btn-light" asp-action="EditEnrollment" asp-route-id="@enrollment.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a><form asp-action="DeleteEnrollment" asp-route-id="@enrollment.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="سيتم حذف تسجيل @enrollment.UserName في كورس @enrollment.CourseTitle. هل تريد المتابعة؟"><i class="bi bi-trash ms-1"></i>حذف</button></form></div></td></tr>
-    }
-    </tbody></table></div>
+    <section class="surface-card hf-panel hf-table-shell">
+        <div class="hf-panel-header"><div><span class="hf-eyebrow">العلاقات التعليمية</span><h2>سجل التسجيلات</h2><p>كل سجل يربط مستخدمًا بكورس وتاريخ تسجيل.</p></div><span class="hf-panel-icon"><i class="bi bi-diagram-3-fill"></i></span></div>
+        @if (!enrollments.Any())
+        {
+            <div class="hf-empty empty-state py-5"><div class="empty-orb"><i class="bi bi-journal-x"></i></div><h3 class="mt-3">لا توجد تسجيلات بعد</h3><p>ابدأ بإنشاء تسجيل جديد لربط مستخدم بكورس.</p><a class="btn btn-primary" asp-action="CreateEnrollment">إضافة تسجيل</a></div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle" data-datatable>
+                    <thead><tr><th>#</th><th>المستخدم</th><th>الكورس</th><th>تاريخ التسجيل</th><th>الإجراءات</th></tr></thead>
+                    <tbody>
+                    @foreach (var enrollment in enrollments)
+                    {
+                        <tr>
+                            <td><span class="table-id">#@enrollment.Id</span></td>
+                            <td><strong>@enrollment.UserName</strong><div class="small text-muted">مستخدم #@enrollment.UserId</div></td>
+                            <td><strong>@enrollment.CourseTitle</strong><div class="small text-muted">كورس #@enrollment.CourseId</div></td>
+                            <td>@enrollment.EnrolledDate.ToLocalTime().ToString("dd MMMM yyyy - HH:mm")</td>
+                            <td><div class="action-group"><a class="btn btn-sm btn-outline-primary" asp-action="EnrollmentDetails" asp-route-id="@enrollment.Id"><i class="bi bi-eye ms-1"></i>تفاصيل</a><a class="btn btn-sm btn-light" asp-action="EditEnrollment" asp-route-id="@enrollment.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a><form asp-action="DeleteEnrollment" asp-route-id="@enrollment.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="سيتم حذف تسجيل @enrollment.UserName في كورس @enrollment.CourseTitle. هل تريد المتابعة؟"><i class="bi bi-trash ms-1"></i>حذف</button></form></div></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </div>

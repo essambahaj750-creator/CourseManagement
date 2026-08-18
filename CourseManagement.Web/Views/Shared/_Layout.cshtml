@@ -6,6 +6,8 @@
     var role = User.FindFirstValue(ClaimTypes.Role);
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+    var isAuthPage = ViewData["AuthPage"] is true;
+    var bodyClass = isAuthPage ? "auth-page" : string.Empty;
 }
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -23,7 +25,7 @@
     <link href="https://cdn.jsdelivr.net/npm/datatables.net-dt@2.1.8/css/dataTables.dataTables.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body class="@bodyClass">
     <header class="appbar">
         <div class="container-fluid px-3 px-lg-4 appbar-inner d-flex align-items-center gap-3">
             <button class="btn icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideDrawer" aria-label="فتح القائمة">
@@ -135,7 +137,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net@2.1.8/js/dataTables.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="/js/site.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

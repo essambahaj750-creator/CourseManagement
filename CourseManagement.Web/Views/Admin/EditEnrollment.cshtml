@@ -1,15 +1,42 @@
 @model EnrollmentEditViewModel
+
 @{
     ViewData["Title"] = "تعديل التسجيل";
 }
-<div class="page-heading"><div><h1>تعديل التسجيل</h1><p>غيّر الكورس المرتبط بهذا المستخدم.</p></div><a class="btn btn-outline-secondary" asp-action="Enrollments">إلغاء</a></div>
-<div class="surface-card form-card">
-    <form asp-action="EditEnrollment" asp-route-id="@Model.EnrollmentId" method="post">
-        <input asp-for="EnrollmentId" type="hidden" />
-        <input asp-for="CurrentCourseId" type="hidden" />
-        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-        <div class="mb-4"><label asp-for="CourseId" class="form-label"></label><select asp-for="CourseId" class="form-select"><option value="">اختر الكورس</option>@foreach (var course in Model.Courses) { <option value="@course.Id">@course.Title — @course.InstructorName</option> }</select><span asp-validation-for="CourseId" class="text-danger small"></span></div>
-        <button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التعديل</button>
-    </form>
+
+<div class="hf-page">
+    <div class="breadcrumbs"><a href="/">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i><a href="/Admin/Enrollments">إدارة التسجيلات</a><i class="bi bi-chevron-left mx-2"></i>تعديل التسجيل</div>
+    <div class="page-heading">
+        <div><span class="hf-eyebrow">إدارة المنصة</span><h1 class="mt-2">تعديل التسجيل</h1><p class="hf-subtitle">غيّر الكورس المرتبط بهذا المستخدم مع الاحتفاظ بسجل التسجيل.</p></div>
+        <a class="btn btn-outline-secondary" href="/Admin/Enrollments"><i class="bi bi-arrow-right ms-1"></i>إلغاء</a>
+    </div>
+
+    <div class="hf-form-grid">
+        <section class="surface-card hf-form-shell">
+            <div class="hf-form-header"><span class="hf-panel-icon"><i class="bi bi-pencil-square"></i></span><div><span class="hf-eyebrow">تحديث التسجيل</span><h2>الكورس الجديد</h2><p>اختر المسار التعليمي الذي سيظهر في حساب المستخدم.</p></div></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EnrollmentId" value="@Model.EnrollmentId" />
+                <input type="hidden" name="CurrentCourseId" value="@Model.CurrentCourseId" />
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+                <div class="mb-4">
+                    <label class="form-label" for="CourseId">الكورس الجديد</label>
+                    <select class="form-select" id="CourseId" name="CourseId">
+                        <option value="">اختر الكورس</option>
+                        @foreach (var course in Model.Courses)
+                        {
+                            <option value="@course.Id" selected="@(course.Id == Model.CourseId ? "selected" : null)">@course.Title — @course.InstructorName</option>
+                        }
+                    </select>
+                    @Html.ValidationMessageFor(model => model.CourseId, "", new { @class = "text-danger small" })
+                </div>
+                <div class="d-flex flex-wrap gap-2"><button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التعديل</button><a class="btn btn-light" href="/Admin/Enrollments">العودة للقائمة</a></div>
+            </form>
+        </section>
+        <aside class="surface-card hf-form-aside"><span class="hf-panel-icon"><i class="bi bi-arrow-repeat"></i></span><h3>تحديث آمن</h3><p>سيتم استبدال ارتباط التسجيل بالكورس الجديد دون إنشاء سجل مكرر للمستخدم.</p><div class="detail-checklist"><span><i class="bi bi-check-circle-fill"></i>يحافظ على هوية التسجيل</span><span><i class="bi bi-check-circle-fill"></i>تحديث فوري للقوائم</span></div></aside>
+    </div>
 </div>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
