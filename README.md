@@ -24,8 +24,9 @@ dotnet run --project CourseManagement.API
 
 ## الإعدادات والأسرار
 
-- `JwtSettings:Secret` غير مخزّن في أي ملف إعدادات. التطبيق يرفض الإقلاع إذا كان مفقودًا أو أقصر من 32 حرفًا.
-- لإعداد التطوير باستخدام User Secrets:
+- `JwtSettings:Secret` خاص بمشروع `CourseManagement.API` الذي يصدر JWT؛ لا تضعه داخل Git.
+- مشروع `CourseManagement.Web` يستخدم Cookie Authentication ولا يحتاج `JwtSettings:Secret` عند التشغيل أو الضغط على F5.
+- لإعداد تطوير الـAPI باستخدام User Secrets:
 
 ```bash
 dotnet user-secrets set "JwtSettings:Secret" "ضع-سرًا-عشوائيًا-طويلًا-هنا" --project CourseManagement.API
@@ -94,7 +95,7 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 ### تطبيق ترحيل صورة الكورس
 
-بعد تثبيت .NET SDK، ضع الأسرار خارج Git ثم نفّذ:
+بعد تثبيت .NET SDK، افتح الحل واختر `CourseManagement.Web` كمشروع البدء ثم اضغط `F5` باستخدام Profile `https`. لا يحتاج Web إلى سر JWT؛ نفّذ الأوامر التالية فقط إذا أردت تطبيق Migration يدويًا:
 
 ```bash
 dotnet restore
@@ -102,7 +103,7 @@ dotnet ef database update --project CourseManagement.Infrastructure --startup-pr
 dotnet run --project CourseManagement.Web
 ```
 
-سيُنشأ ملف `coursemanagement.db` تلقائيًا داخل مجلد التشغيل. تأكد من وضع `JwtSettings:Secret` في User Secrets أو متغيرات البيئة، ولا تخزّن الأسرار الحقيقية داخل Git.
+سيُنشأ ملف `coursemanagement.db` تلقائيًا داخل مجلد التشغيل. عند تشغيل مشروع الـAPI المستقل فقط، ضع `JwtSettings:Secret` في User Secrets أو متغيرات البيئة، ولا تخزّن الأسرار الحقيقية داخل Git.
 
 ## الاختبارات وCI
 

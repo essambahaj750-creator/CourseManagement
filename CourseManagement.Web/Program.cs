@@ -24,14 +24,8 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<MvcCookieSecurityEvents>();
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["Secret"];
-if (string.IsNullOrWhiteSpace(secretKey))
-    throw new InvalidOperationException(
-        "JwtSettings:Secret is missing. Set it via user-secrets or environment variable (JwtSettings__Secret); never commit it to source control.");
-
-if (secretKey.Length < 32)
-    throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters long for HMAC-SHA256.");
+// The MVC application uses secure Cookie Authentication. JWT configuration belongs
+// to CourseManagement.API and is intentionally not required for running the Web UI.
 
 builder.Services.AddAuthentication(options =>
     {

@@ -42,7 +42,7 @@ CourseManagement.API.slnx
 CourseManagement.Web
 ```
 
-اضغط عليه بزر الفأرة الأيمن واختر **Set as Startup Project**، ثم شغّله باستخدام Profile باسم `https` أو اضغط `Ctrl + F5`.
+اضغط عليه بزر الفأرة الأيمن واختر **Set as Startup Project**، ثم اختر Profile باسم `https` من شريط التشغيل واضغط `F5`. سيفتح المتصفح تلقائيًا على واجهة MVC؛ لا يحتاج مشروع Web إلى JwtSettings لأن مصادقته تعتمد على Cookie آمن.
 
 بعد التشغيل افتح:
 
@@ -56,9 +56,6 @@ https://localhost:7026/Account/Login
 
 ```powershell
 dotnet restore
-
-dotnet user-secrets init --project CourseManagement.Web/CourseManagement.Web.csproj
-dotnet user-secrets set "JwtSettings:Secret" "CourseManagement-local-development-secret-2026" --project CourseManagement.Web/CourseManagement.Web.csproj
 
 dotnet run --project CourseManagement.Web/CourseManagement.Web.csproj --launch-profile https
 ```
@@ -91,7 +88,7 @@ run-mvc.bat
 CourseManagement.Web/CourseManagement.Web.csproj
 ```
 
-وسيطلب مفتاح JWT مؤقتًا ثم يفتح واجهة MVC على منفذ HTTPS.
+سيفتح واجهة MVC على منفذ HTTPS. لا يطلب هذا الملف مفتاح JWT لأن مشروع Web يستخدم Cookie؛ مفتاح JWT مطلوب فقط عند تشغيل مشروع `CourseManagement.API` المستقل.
 
 ## أهم صفحات الواجهة
 

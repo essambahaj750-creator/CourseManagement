@@ -49,7 +49,14 @@ public sealed class HomeController(
 
     [Route("Error")]
     [AllowAnonymous]
-    public IActionResult Error() => View(new ErrorViewModel { RequestId = HttpContext.TraceIdentifier });
+    public IActionResult Error(int? statusCode = null, string? traceId = null)
+    {
+        Response.StatusCode = statusCode is >= 400 and <= 599 ? statusCode.Value : StatusCodes.Status500InternalServerError;
+        return View(new ErrorViewModel
+        {
+            RequestId = string.IsNullOrWhiteSpace(traceId) ? HttpContext.TraceIdentifier : traceId
+        });
+    }
 
     private int GetUserId()
     {

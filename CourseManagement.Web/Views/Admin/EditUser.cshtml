@@ -2,13 +2,31 @@
 @{
     ViewData["Title"] = "تعديل المستخدم";
 }
-<div class="page-heading"><div><h1>تعديل المستخدم</h1><p>حدّث بيانات الملف الشخصي.</p></div><a class="btn btn-outline-secondary" asp-action="Users">إلغاء</a></div>
-<div class="surface-card form-card">
-    <form asp-action="EditUser" asp-route-id="@(ViewData["UserId"])" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
-        <div class="mb-3"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
-        <div class="mb-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger small"></span></div>
-        <button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التغييرات</button>
-    </form>
+
+<div class="hf-page">
+    <div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i><a asp-action="Users">إدارة المستخدمين</a><i class="bi bi-chevron-left mx-2"></i>تعديل المستخدم</div>
+    <div class="page-heading">
+        <div><span class="hf-eyebrow">إدارة الملف</span><h1 class="mt-2">تعديل بيانات المستخدم</h1><p class="hf-subtitle">حدّث بيانات الملف الشخصي دون تغيير صلاحيات الحساب من هذه الصفحة.</p></div>
+        <a class="btn btn-light" asp-action="Users"><i class="bi bi-arrow-right ms-2"></i>العودة للمستخدمين</a>
+    </div>
+
+    <div class="hf-form-grid">
+        <section class="surface-card hf-form-shell">
+            <div class="hf-form-header"><span class="table-icon"><i class="bi bi-person-gear"></i></span><div><span class="hf-eyebrow">ملف المستخدم</span><h2>المعلومات الأساسية</h2><p>احفظ التعديلات بعد مراجعة الاسم والبريد الإلكتروني.</p></div></div>
+            <form asp-action="EditUser" asp-route-id="@(ViewData["UserId"])" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small mb-4"></div>
+                <div class="form-section">
+                    <div class="mb-3"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" autocomplete="name" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+                    <div class="mb-3"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" autocomplete="email" dir="ltr" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 justify-content-end"><a class="btn btn-light" asp-action="Users">إلغاء</a><button class="btn btn-primary" type="submit"><i class="bi bi-save ms-2"></i>حفظ التغييرات</button></div>
+            </form>
+        </section>
+        <aside class="hf-form-aside process-card">
+            <span class="process-number">01</span><span class="hf-eyebrow text-white-50 mt-4">إرشاد سريع</span><h2 class="h5 mt-2">تعديل مسؤول</h2><p class="small text-white-50 lh-lg">تأكد من أن البريد الإلكتروني يعود إلى المستخدم الصحيح. تغيير البريد قد يؤثر على تسجيل الدخول وإشعارات الحساب.</p>
+            <div class="process-list"><span><i class="bi bi-check-circle-fill"></i>راجع البيانات قبل الحفظ</span><span><i class="bi bi-check-circle-fill"></i>لا تشارك بيانات الدخول</span><span><i class="bi bi-check-circle-fill"></i>غيّر الدور من شاشة الإدارة</span></div>
+        </aside>
+    </div>
 </div>
+
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

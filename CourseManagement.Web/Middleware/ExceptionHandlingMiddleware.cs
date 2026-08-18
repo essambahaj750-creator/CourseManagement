@@ -33,6 +33,21 @@ public sealed class ExceptionHandlingMiddleware(
                     exception.GetType().Name, context.Request.Method, context.Request.Path);
             }
 
+            var acceptsHtml = context.Request.Headers.Accept
+                .ToString()
+                .Contains("text/html", StringComparison.OrdinalIgnoreCase);
+
+            if (acceptsHtml)
+            {
+                context.Response.Clear();
+                context.Response.StatusCode = status;
+                context.Request.Path = "/Error";
+                context.Request.QueryString = new QueryString(
+                    $"?statusCode={status}&traceId={Uri.EscapeDataString(context.TraceIdentifier)}");
+                await next(context);
+                return;
+            }
+
             context.Response.Clear();
             context.Response.StatusCode = status;
             context.Response.ContentType = "application/problem+json";
