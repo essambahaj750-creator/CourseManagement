@@ -60,22 +60,34 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
     private AuthResponseDto GenerateToken(User user)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
-        var secret = jwtSettings["Secret"];
+        var expiryHours = double.TryParse(jwtSettings["ExpiryHours"], out var h) && h > 0 ? h : 2;
+        var expiresAt = DateTime.UtcNow.AddHours(expiryHours);
+        var securityStamp = user.SecurityStamp.ToString("N");
 
+        // The MVC Web project uses Cookie Authentication. It shares the domain
+        // service with the API for registration/login, but it must not require or
+        // manufacture a JWT that the Web application never consumes.
+        var issueJwt = bool.TryParse(configuration["JwtSettings:IssueToken"], out var issueToken) && issueToken;
+        if (!issueJwt)
+        {
+            return BuildAuthResponse(user, string.Empty, expiresAt, securityStamp);
+        }
+
+        var secret = jwtSettings["Secret"];
         if (string.IsNullOrWhiteSpace(secret))
             throw new InvalidOperationException("JwtSettings:Secret is not configured.");
 
-        var expiryHours = double.TryParse(jwtSettings["ExpiryHours"], out var h) && h > 0 ? h : 2;
-        var expiresAt = DateTime.UtcNow.AddHours(expiryHours);
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        if (secret.Length < 32)
+            throw new InvalidOperationException("JwtSettings:Secret must be at least 32 characters long for HMAC-SHA256.");
 
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var descriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(
             [
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("jti", Guid.NewGuid().ToString("N")),
-                new Claim("security_stamp", user.SecurityStamp.ToString("N")),
+                new Claim("security_stamp", securityStamp),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName)
@@ -87,15 +99,19 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
             SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         };
 
-        return new AuthResponseDto
+        var token = new JsonWebTokenHandler().CreateToken(descriptor);
+        return BuildAuthResponse(user, token, expiresAt, securityStamp);
+    }
+
+    private static AuthResponseDto BuildAuthResponse(User user, string token, DateTime expiresAt, string securityStamp)
+        => new()
         {
-            Token = new JsonWebTokenHandler().CreateToken(descriptor),
+            Token = token,
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
             ExpiresAtUtc = expiresAt,
-            SecurityStamp = user.SecurityStamp.ToString("N")
+            SecurityStamp = securityStamp
         };
-    }
 }
