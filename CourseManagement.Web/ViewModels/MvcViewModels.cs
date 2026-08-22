@@ -87,6 +87,53 @@ public sealed class CourseFormViewModel
     public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price, ImageUrl = ImageUrl };
 }
 
+public sealed class CourseFilterViewModel
+{
+    [Display(Name = "البحث")]
+    public string? Q { get; set; }
+
+    [Display(Name = "المدرّس")]
+    public int? InstructorId { get; set; }
+
+    [Range(0, 1_000_000)]
+    [Display(Name = "أقل سعر")]
+    public decimal? MinPrice { get; set; }
+
+    [Range(0, 1_000_000)]
+    [Display(Name = "أعلى سعر")]
+    public decimal? MaxPrice { get; set; }
+
+    public string Sort { get; set; } = "featured";
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 9;
+
+    public bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(Q) || InstructorId.HasValue || MinPrice.HasValue || MaxPrice.HasValue ||
+        (!string.IsNullOrWhiteSpace(Sort) && !string.Equals(Sort, "featured", StringComparison.OrdinalIgnoreCase));
+
+    public CourseFilterDto ToDto() => new()
+    {
+        Q = Q,
+        InstructorId = InstructorId,
+        MinPrice = MinPrice,
+        MaxPrice = MaxPrice,
+        Sort = Sort,
+        Page = Page,
+        PageSize = PageSize
+    };
+}
+
+public sealed class CoursesIndexViewModel
+{
+    public IReadOnlyList<CourseResponseDto> Courses { get; init; } = [];
+    public IReadOnlyList<InstructorOptionDto> Instructors { get; init; } = [];
+    public CourseFilterViewModel Filters { get; init; } = new();
+    public int TotalCount { get; init; }
+    public int TotalPages { get; init; }
+
+    public bool HasResults => Courses.Count > 0;
+}
+
 public sealed class RoleFormViewModel
 {
     public int UserId { get; set; }

@@ -146,3 +146,41 @@ dotnet ef database update --project CourseManagement.Infrastructure --startup-pr
 ### التحقق البصري
 
 تم التحقق محليًا من أن `/Account/Login` و`/Account/Register` يعيدان `HTTP 200` وتظهر فيهما الهوية البصرية العربية الجديدة. كما يعيد `/health` القيمة `200`، ونجحت اختبارات xUnit الأربعة بعد إعادة التصميم.
+
+
+## فلترة كتالوج الكورسات — Week 8
+
+أضيفت طبقة فلترة مشتركة بين Domain وApplication وInfrastructure، لذلك تُنفذ الشروط داخل EF Core/SQLite بدل تحميل كل الكورسات ثم فلترتها في المتصفح. تدعم الفلترة البحث في العنوان والوصف واسم المدرّس، المدرّس، نطاق السعر، الترتيب، والتقسيم الصفحي.
+
+### مسارات REST API الجديدة
+
+| Method | المسار | الوصف |
+|---|---|---|
+| GET | `/api/course/search` | بحث الكتالوج مع الفلاتر والصفحات |
+| GET | `/api/course/instructors` | قائمة المدرّسين المستخدمة في خيارات الفلترة |
+
+مثال:
+
+```text
+GET /api/course/search?q=flutter&minPrice=10&maxPrice=500&sort=price-low&page=1&pageSize=6
+```
+
+القيم المدعومة لـ`sort` هي `featured` و`newest` و`price-low` و`price-high` و`title`. يعيد endpoint البحث `items` و`totalCount` و`page` و`pageSize` و`totalPages`، مما يجعله مناسبًا لشاشة Flutter تحتوي على بحث، فلاتر، فرز، وترقيم صفحات.
+
+### واجهة MVC
+
+صفحة `/Courses` تستخدم النموذج نفسه عبر `CoursesController`، وتوفر لوحة فلاتر متجاوبة تشمل البحث، المدرّس، أقل سعر، أعلى سعر، والترتيب. تحفظ الفلاتر في Query String، لذلك يمكن نسخ الرابط أو استخدام زر الرجوع دون فقدان حالة البحث. على الهاتف تتحول اللوحة إلى Drawer، وتتوفر حالة فارغة، ملخص للفلاتر، وترقيم صفحات واضح.
+
+### حدود الفلاتر الحالية
+
+نموذج البيانات الحالي يحتوي على العنوان والوصف والسعر والصورة والمدرّس فقط، لذلك لا تعرض الواجهة فلاتر وهمية مثل التصنيف أو المستوى أو المدة. إضافة هذه الأبعاد مستقبلًا تتطلب حقولًا وMigration جديدة في Domain وDbContext ثم توسيع `CourseFilterDto` و`CourseSearchCriteria` وواجهات العملاء.
+
+### خريطة Week 8
+
+| المتطلب | التطبيق داخل المشروع |
+|---|---|
+| Architecture | Clean Architecture: Domain، Application، Infrastructure، API، Web |
+| Screens | Dashboard، Course Catalog، Course Details، Enrollments، Admin |
+| Navigation | AppBar، Drawer، Bottom Navigation، روابط Back وQuery String |
+| API Integration | `/api/course/search` و`/api/course/instructors` بعقد paginated واضح |
+| UI State | نتائج، حالة فارغة، فلاتر مطبقة، أخطاء، تحقق، واستجابة للهاتف |

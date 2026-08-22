@@ -59,3 +59,9 @@ Authorization: Bearer {{token}}
 ### إلغاء تسجيلي من كورس
 DELETE {{host}}/api/enrollment/course/1
 Authorization: Bearer {{token}}
+
+### بحث الكتالوج — فلاتر وترتيب وتقسيم صفحات (عام)
+GET {{host}}/api/course/search?q=flutter&minPrice=10&maxPrice=500&sort=price-low&page=1&pageSize=6
+
+### خيارات المدرّسين للفلتر (عام)
+GET {{host}}/api/course/instructors

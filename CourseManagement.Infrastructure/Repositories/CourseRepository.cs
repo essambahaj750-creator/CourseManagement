@@ -1,5 +1,6 @@
 using CourseManagement.Domain.Entities;
 using CourseManagement.Domain.Interfaces;
+using CourseManagement.Domain.Models;
 using CourseManagement.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,63 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
 {
     public async Task<IEnumerable<Course>> GetAllAsync() =>
         await context.Courses.AsNoTracking().Include(c => c.Instructor).ToListAsync();
+
+    public async Task<CourseSearchResult> SearchAsync(CourseSearchCriteria criteria)
+    {
+        criteria = criteria.Normalize();
+
+        var query = context.Courses
+            .AsNoTracking()
+            .Include(c => c.Instructor)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(criteria.Query))
+        {
+            var term = criteria.Query.Trim();
+            query = query.Where(c =>
+                c.Title.Contains(term) ||
+                c.Description.Contains(term) ||
+                c.Instructor.FullName.Contains(term));
+        }
+
+        if (criteria.InstructorId.HasValue)
+            query = query.Where(c => c.InstructorId == criteria.InstructorId.Value);
+
+        if (criteria.MinPrice.HasValue)
+            query = query.Where(c => c.Price >= criteria.MinPrice.Value);
+
+        if (criteria.MaxPrice.HasValue)
+            query = query.Where(c => c.Price <= criteria.MaxPrice.Value);
+
+        query = criteria.SortBy switch
+        {
+            CourseSortBy.PriceLowToHigh => query.OrderBy(c => c.Price).ThenByDescending(c => c.Id),
+            CourseSortBy.PriceHighToLow => query.OrderByDescending(c => c.Price).ThenByDescending(c => c.Id),
+            CourseSortBy.Title => query.OrderBy(c => c.Title).ThenByDescending(c => c.Id),
+            CourseSortBy.Newest => query.OrderByDescending(c => c.Id),
+            _ => query.OrderByDescending(c => c.Id)
+        };
+
+        var totalCount = await query.CountAsync();
+        var skip = (criteria.Page - 1) * criteria.PageSize;
+        var items = await query.Skip(skip).Take(criteria.PageSize).ToListAsync();
+
+        return new CourseSearchResult(items, totalCount);
+    }
+
+    public async Task<IReadOnlyList<CourseInstructorOption>> GetInstructorOptionsAsync()
+    {
+        var rawOptions = await context.Courses
+            .AsNoTracking()
+            .Select(c => new { c.InstructorId, Name = c.Instructor.FullName })
+            .ToListAsync();
+
+        return rawOptions
+            .GroupBy(option => option.InstructorId)
+            .Select(group => new CourseInstructorOption(group.Key, group.First().Name))
+            .OrderBy(option => option.Name)
+            .ToList();
+    }
 
     public async Task<Course?> GetByIdAsync(int id) =>
         await context.Courses.AsNoTracking()

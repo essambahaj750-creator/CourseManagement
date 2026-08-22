@@ -15,6 +15,16 @@ public class CourseController(ICourseService courseService) : ControllerBase
     public async Task<IActionResult> GetAll() =>
         Ok(await courseService.GetAllCoursesAsync());
 
+    /// <summary>بحث الكتالوج مع الفلاتر والترتيب والتقسيم الصفحي</summary>
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] CourseFilterDto filter) =>
+        Ok(await courseService.SearchCoursesAsync(filter));
+
+    /// <summary>قائمة المدرّسين المتاحين للفلاتر</summary>
+    [HttpGet("instructors")]
+    public async Task<IActionResult> GetInstructors() =>
+        Ok(await courseService.GetInstructorOptionsAsync());
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

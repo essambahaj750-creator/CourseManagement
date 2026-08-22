@@ -14,6 +14,32 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
         return courses.Select(MapToResponseDto);
     }
 
+    public async Task<CourseCatalogDto> SearchCoursesAsync(CourseFilterDto filter)
+    {
+        var criteria = filter.ToCriteria();
+        var result = await courseRepository.SearchAsync(criteria);
+
+        return new CourseCatalogDto
+        {
+            Items = result.Items.Select(MapToResponseDto).ToList(),
+            TotalCount = result.TotalCount,
+            Page = criteria.Page,
+            PageSize = criteria.PageSize
+        };
+    }
+
+    public async Task<IReadOnlyList<InstructorOptionDto>> GetInstructorOptionsAsync()
+    {
+        var instructors = await courseRepository.GetInstructorOptionsAsync();
+        return instructors
+            .Select(instructor => new InstructorOptionDto
+            {
+                Id = instructor.Id,
+                Name = instructor.Name
+            })
+            .ToList();
+    }
+
     public async Task<CourseResponseDto?> GetCourseByIdAsync(int id)
     {
         var course = await courseRepository.GetByIdAsync(id);

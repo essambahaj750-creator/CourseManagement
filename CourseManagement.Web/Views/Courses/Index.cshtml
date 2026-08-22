@@ -1,106 +1,281 @@
-@model IEnumerable<CourseResponseDto>
+@model CoursesIndexViewModel
 
 @{
     ViewData["Title"] = "الكورسات";
-    var courses = Model.ToList();
-    var searchTerm = ViewData["SearchTerm"] as string;
+    var filters = Model.Filters;
     var canManage = User.IsInRole("Instructor") || User.IsInRole("Admin");
+    var selectedInstructor = filters.InstructorId.HasValue
+        ? Model.Instructors.FirstOrDefault(item => item.Id == filters.InstructorId.Value)?.Name
+        : null;
+    var sortLabel = filters.Sort?.ToLowerInvariant() switch
+    {
+        "newest" => "الأحدث أولًا",
+        "price-low" => "السعر: من الأقل للأعلى",
+        "price-high" => "السعر: من الأعلى للأقل",
+        "title" => "الترتيب الأبجدي",
+        _ => "اختيارات مميزة"
+    };
+    var resultsLabel = Model.TotalCount == 1 ? "كورس واحد" : $"{Model.TotalCount} كورسات";
+    string PageUrl(int page) => Url.Action("Index", "Courses", new
+    {
+        q = filters.Q,
+        instructorId = filters.InstructorId,
+        minPrice = filters.MinPrice,
+        maxPrice = filters.MaxPrice,
+        sort = filters.Sort,
+        page,
+        pageSize = filters.PageSize
+    }) ?? "/Courses";
 }
 
-<div class="hf-page">
-    <div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i>استكشاف الكورسات</div>
-    <div class="page-heading">
-        <div><span class="hf-eyebrow">مكتبة التعلم</span><h1 class="mt-2">استكشف الكورسات</h1><p class="hf-subtitle">محتوى عملي مصمم ليأخذ مهاراتك خطوة بعد خطوة.</p></div>
-        @if (canManage)
-        {
-            <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg ms-2"></i>إضافة كورس</a>
-        }
+<div class="hf-page catalog-page">
+    <div class="breadcrumbs">
+        <a asp-controller="Home" asp-action="Index">الرئيسية</a>
+        <i class="bi bi-chevron-left mx-2"></i>
+        استكشاف الكورسات
     </div>
 
-    <div class="hf-toolbar mb-4">
-        <form asp-action="Index" method="get" class="row g-2 align-items-center">
-            <div class="col-lg-8"><label class="visually-hidden" for="courseSearch">بحث في الكورسات</label><div class="position-relative"><i class="bi bi-search position-absolute top-50 translate-middle-y me-3 text-muted"></i><input id="courseSearch" class="form-control pe-5" name="q" value="@searchTerm" type="search" placeholder="ابحث بالعنوان أو الوصف أو اسم المدرب..." autocomplete="off" /></div></div>
-            <div class="col-sm-6 col-lg-2"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-search ms-1"></i> بحث</button></div>
-            @if (!string.IsNullOrWhiteSpace(searchTerm))
+    <div class="page-heading catalog-heading">
+        <div>
+            <span class="hf-eyebrow">مكتبة التعلم</span>
+            <h1 class="mt-2">استكشف الكورسات</h1>
+            <p class="hf-subtitle">ابحث، قارن، واختر المسار الذي يطابق هدفك القادم.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-light d-lg-none" type="button" data-filter-toggle aria-expanded="false" aria-controls="courseFilters">
+                <i class="bi bi-sliders2 ms-2"></i> الفلاتر
+            </button>
+            @if (canManage)
             {
-                <div class="col-sm-6 col-lg-2"><a class="btn btn-light w-100" asp-action="Index"><i class="bi bi-x-lg ms-1"></i> مسح</a></div>
+                <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg ms-2"></i>إضافة كورس</a>
             }
-        </form>
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-3 border-top">
-            <span class="hf-muted-label"><i class="bi bi-shield-check ms-1 text-success"></i>نتائج موثوقة ومحدثة</span>
-            <div class="d-flex align-items-center gap-2"><span class="small text-muted">طريقة العرض</span><div class="view-switch" aria-label="طريقة عرض الكورسات"><button class="btn active" type="button" title="عرض الشبكة"><i class="bi bi-grid-3x3-gap-fill"></i></button><button class="btn" type="button" title="عرض القائمة"><i class="bi bi-list-ul"></i></button></div></div>
         </div>
     </div>
 
-    @if (courses.Any())
-    {
-        <div class="d-flex align-items-end justify-content-between gap-2 mb-3"><div><h2 class="section-title mb-1">المحتوى المتاح</h2><span class="text-muted small">@courses.Count كورس @(string.IsNullOrWhiteSpace(searchTerm) ? "متاح للتعلم" : $"مطابق لعبارة «{searchTerm}»")</span></div><span class="badge badge-soft rounded-pill px-3 py-2"><i class="bi bi-stars ms-1"></i>اختيارات عملية</span></div>
-        <div class="row g-4 mb-5 course-grid">
-            @foreach (var course in courses)
-            {
-                var excerpt = string.IsNullOrWhiteSpace(course.Description) ? "مسار عملي لتطوير مهاراتك." : (course.Description.Length > 105 ? course.Description[..105] + "..." : course.Description);
-                var instructorInitial = string.IsNullOrWhiteSpace(course.InstructorName) ? "م" : course.InstructorName[..1].ToUpperInvariant();
-                <div class="col-md-6 col-xl-4">
-                    <article class="course-card">
-                        <div class="course-cover">
-                            @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+    <div class="catalog-layout">
+        <aside class="catalog-filter-panel" id="courseFilters" aria-label="فلاتر الكورسات">
+            <div class="filter-panel-head">
+                <div>
+                    <span class="hf-eyebrow">تحكم دقيق</span>
+                    <h2>تصفية النتائج</h2>
+                </div>
+                <span class="filter-panel-icon"><i class="bi bi-sliders2"></i></span>
+            </div>
+            <p class="filter-panel-copy">استخدم أكثر من فلتر للوصول إلى الكورس الأنسب بسرعة.</p>
+
+            <form asp-action="Index" method="get" class="catalog-filter-form">
+                <div class="filter-field">
+                    <label for="courseSearch">كلمة البحث</label>
+                    <div class="filter-input-wrap">
+                        <i class="bi bi-search"></i>
+                        <input id="courseSearch" class="form-control" name="q" value="@filters.Q" type="search" placeholder="عنوان، وصف، مدرب..." autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="filter-field">
+                    <label for="instructorId">المدرّس</label>
+                    <select id="instructorId" name="instructorId" class="form-select">
+                        <option value="">كل المدرّسين</option>
+                        @foreach (var instructor in Model.Instructors)
+                        {
+                            if (filters.InstructorId == instructor.Id)
                             {
-                                <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" />
+                                <option value="@instructor.Id" selected>@instructor.Name</option>
                             }
-                            <div class="course-cover-top"><span class="badge bg-light text-primary position-relative">متاح الآن</span><span class="small text-white-50 position-relative"><i class="bi bi-play-circle ms-1"></i>تعلم عملي</span></div>
-                            <span class="course-cover-icon"><i class="bi bi-layers-fill"></i></span>
+                            else
+                            {
+                                <option value="@instructor.Id">@instructor.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>نطاق السعر</label>
+                    <div class="price-inputs">
+                        <div>
+                            <span>من</span>
+                            <input class="form-control" name="minPrice" type="number" min="0" step="0.01" value="@(filters.MinPrice?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)" placeholder="0" />
                         </div>
-                        <div class="course-body">
-                            <h3 class="mb-2">@course.Title</h3><p class="course-description mb-3">@excerpt</p>
-                            <div class="course-footer-meta"><span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span><span class="price-stack"><small>قيمة الكورس</small><span class="price">@course.Price.ToString("N2")</span></span></div>
-                            <a class="btn btn-primary w-100 mt-3" asp-action="Details" asp-route-id="@course.Id">استكشف الكورس <i class="bi bi-arrow-left me-1"></i></a>
+                        <div>
+                            <span>إلى</span>
+                            <input class="form-control" name="maxPrice" type="number" min="0" step="0.01" value="@(filters.MaxPrice?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)" placeholder="∞" />
                         </div>
-                    </article>
+                    </div>
+                </div>
+
+                <div class="filter-field">
+                    <label for="sort">ترتيب النتائج</label>
+                    <select id="sort" name="sort" class="form-select">
+                        @if (string.Equals(filters.Sort, "newest", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="featured">اختيارات مميزة</option>
+                            <option value="newest" selected>الأحدث أولًا</option>
+                            <option value="price-low">السعر: من الأقل للأعلى</option>
+                            <option value="price-high">السعر: من الأعلى للأقل</option>
+                            <option value="title">الترتيب الأبجدي</option>
+                        }
+                        else if (string.Equals(filters.Sort, "price-low", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="featured">اختيارات مميزة</option>
+                            <option value="newest">الأحدث أولًا</option>
+                            <option value="price-low" selected>السعر: من الأقل للأعلى</option>
+                            <option value="price-high">السعر: من الأعلى للأقل</option>
+                            <option value="title">الترتيب الأبجدي</option>
+                        }
+                        else if (string.Equals(filters.Sort, "price-high", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="featured">اختيارات مميزة</option>
+                            <option value="newest">الأحدث أولًا</option>
+                            <option value="price-low">السعر: من الأقل للأعلى</option>
+                            <option value="price-high" selected>السعر: من الأعلى للأقل</option>
+                            <option value="title">الترتيب الأبجدي</option>
+                        }
+                        else if (string.Equals(filters.Sort, "title", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="featured">اختيارات مميزة</option>
+                            <option value="newest">الأحدث أولًا</option>
+                            <option value="price-low">السعر: من الأقل للأعلى</option>
+                            <option value="price-high">السعر: من الأعلى للأقل</option>
+                            <option value="title" selected>الترتيب الأبجدي</option>
+                        }
+                        else
+                        {
+                            <option value="featured" selected>اختيارات مميزة</option>
+                            <option value="newest">الأحدث أولًا</option>
+                            <option value="price-low">السعر: من الأقل للأعلى</option>
+                            <option value="price-high">السعر: من الأعلى للأقل</option>
+                            <option value="title">الترتيب الأبجدي</option>
+                        }
+                    </select>
+                </div>
+
+                <input type="hidden" name="pageSize" value="@filters.PageSize" />
+                <button class="btn btn-primary w-100 filter-submit" type="submit"><i class="bi bi-check2-circle ms-2"></i>تطبيق الفلاتر</button>
+                @if (filters.HasActiveFilters)
+                {
+                    <a class="btn btn-link w-100 filter-reset" asp-action="Index"><i class="bi bi-arrow-counterclockwise ms-2"></i>إعادة ضبط الفلاتر</a>
+                }
+            </form>
+
+            <div class="filter-tip">
+                <i class="bi bi-lightbulb"></i>
+                <div><strong>نصيحة سريعة</strong><span>جرّب البحث باسم المهارة أو المدرّس للوصول إلى نتيجة أدق.</span></div>
+            </div>
+        </aside>
+
+        <main class="catalog-results">
+            <div class="course-results-toolbar">
+                <div>
+                    <div class="results-kicker"><span class="status-dot"></span> الكتالوج محدث الآن</div>
+                    <h2 class="section-title mb-1">النتائج المتاحة</h2>
+                    <p class="text-muted mb-0">@resultsLabel ضمن مكتبة منصة المعرفة</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted d-none d-md-inline">طريقة العرض</span>
+                    <div class="view-switch" aria-label="طريقة عرض الكورسات">
+                        <button class="btn active" type="button" title="عرض الشبكة" aria-label="عرض الشبكة" aria-pressed="true"><i class="bi bi-grid-3x3-gap-fill"></i></button>
+                        <button class="btn" type="button" title="عرض القائمة" aria-label="عرض القائمة" aria-pressed="false"><i class="bi bi-list-ul"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            @if (filters.HasActiveFilters)
+            {
+                <div class="filter-summary" aria-label="الفلاتر المطبقة">
+                    <span class="filter-summary-title"><i class="bi bi-funnel-fill"></i> الفلاتر المطبقة</span>
+                    @if (!string.IsNullOrWhiteSpace(filters.Q))
+                    {
+                        <span class="filter-chip"><i class="bi bi-search"></i> @filters.Q</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(selectedInstructor))
+                    {
+                        <span class="filter-chip"><i class="bi bi-person-video3"></i> @selectedInstructor</span>
+                    }
+                    @if (filters.MinPrice.HasValue || filters.MaxPrice.HasValue)
+                    {
+                        <span class="filter-chip"><i class="bi bi-cash-stack"></i> @(filters.MinPrice?.ToString("N2") ?? "0") – @(filters.MaxPrice?.ToString("N2") ?? "∞")</span>
+                    }
+                    <span class="filter-chip"><i class="bi bi-sort-down"></i> @sortLabel</span>
+                    <a class="filter-clear-inline" asp-action="Index">مسح الكل</a>
                 </div>
             }
-        </div>
 
-        <div class="page-heading mb-3"><div><span class="hf-eyebrow">إدارة البيانات</span><h2 class="section-title mt-2 mb-0">سجل الكورسات</h2><p class="hf-subtitle">جدول قابل للبحث والفرز لمراجعة البيانات بسرعة.</p></div></div>
-        <div class="hf-table-shell datatable-wrap mb-4">
-            <div class="table-responsive">
-                <table class="table" data-datatable>
-                    <thead><tr><th>الكورس</th><th>المدرب</th><th>السعر</th><th>الإجراءات</th></tr></thead>
-                    <tbody>
-                    @foreach (var course in courses)
+            @if (Model.HasResults)
+            {
+                <div class="course-grid row g-4 mb-4">
+                    @foreach (var course in Model.Courses)
                     {
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
+                        var excerpt = string.IsNullOrWhiteSpace(course.Description)
+                            ? "مسار عملي لتطوير مهاراتك."
+                            : (course.Description.Length > 105 ? course.Description[..105] + "..." : course.Description);
+                        var instructorInitial = string.IsNullOrWhiteSpace(course.InstructorName) ? "م" : course.InstructorName[..1].ToUpperInvariant();
+                        <div class="col-md-6 col-xl-4">
+                            <article class="course-card">
+                                <div class="course-cover">
                                     @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
                                     {
-                                        <img class="table-thumb" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" />
+                                        <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" />
                                     }
-                                    else
-                                    {
-                                        <span class="table-thumb bg-light"><i class="bi bi-image text-muted"></i></span>
-                                    }
-                                    <div><strong>@course.Title</strong><div class="small text-muted">#@course.Id</div></div>
+                                    <div class="course-cover-top"><span class="badge bg-light text-primary position-relative">متاح الآن</span><span class="small text-white-50 position-relative"><i class="bi bi-play-circle ms-1"></i>تعلم عملي</span></div>
+                                    <span class="course-cover-icon"><i class="bi bi-layers-fill"></i></span>
                                 </div>
-                            </td>
-                            <td>@course.InstructorName</td><td><span class="price">@course.Price.ToString("N2")</span></td>
-                            <td>
-                                <div class="action-group">
-                                    <a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@course.Id"><i class="bi bi-eye ms-1"></i>تفاصيل</a>
-                                    @if (canManage && (User.IsInRole("Admin") || course.InstructorId.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value))
-                                    {
-                                        <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@course.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a>
-                                    }
+                                <div class="course-body">
+                                    <h3 class="mb-2">@course.Title</h3>
+                                    <p class="course-description mb-3">@excerpt</p>
+                                    <div class="course-footer-meta"><span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span><span class="price-stack"><small>قيمة الكورس</small><span class="price">@course.Price.ToString("N2")</span></span></div>
+                                    <a class="btn btn-primary w-100 mt-3" asp-action="Details" asp-route-id="@course.Id">استكشف الكورس <i class="bi bi-arrow-left me-1"></i></a>
                                 </div>
-                            </td>
-                        </tr>
+                            </article>
+                        </div>
                     }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="surface-card hf-empty empty-state py-5"><div class="empty-orb"><i class="bi bi-search"></i></div><h3 class="mt-3">لم نجد كورسات مطابقة</h3><p>جرّب عبارة بحث مختلفة أو عد إلى القائمة الكاملة.</p><a class="btn btn-primary" asp-action="Index"><i class="bi bi-arrow-repeat ms-1"></i>عرض كل الكورسات</a></div>
-    }
+                </div>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav class="pagination-premium" aria-label="تنقل صفحات الكورسات">
+                        <span class="pagination-label">صفحة @filters.Page من @Model.TotalPages</span>
+                        <div class="pagination-actions">
+                            @if (filters.Page > 1)
+                            {
+                                <a class="page-arrow" href="@PageUrl(filters.Page - 1)" aria-label="الصفحة السابقة"><i class="bi bi-chevron-right"></i></a>
+                            }
+                            else
+                            {
+                                <span class="page-arrow disabled"><i class="bi bi-chevron-right"></i></span>
+                            }
+                            @for (var pageNumber = Math.Max(1, filters.Page - 2); pageNumber <= Math.Min(Model.TotalPages, filters.Page + 2); pageNumber++)
+                            {
+                                if (pageNumber == filters.Page)
+                                {
+                                    <span class="page-number active">@pageNumber</span>
+                                }
+                                else
+                                {
+                                    <a class="page-number" href="@PageUrl(pageNumber)">@pageNumber</a>
+                                }
+                            }
+                            @if (filters.Page < Model.TotalPages)
+                            {
+                                <a class="page-arrow" href="@PageUrl(filters.Page + 1)" aria-label="الصفحة التالية"><i class="bi bi-chevron-left"></i></a>
+                            }
+                            else
+                            {
+                                <span class="page-arrow disabled"><i class="bi bi-chevron-left"></i></span>
+                            }
+                        </div>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="surface-card hf-empty catalog-empty">
+                    <div class="empty-orb"><i class="bi bi-search"></i></div>
+                    <h3 class="mt-3">لم نجد نتائج مطابقة</h3>
+                    <p>وسّع نطاق البحث أو أزل أحد الفلاتر للوصول إلى كامل المكتبة.</p>
+                    <a class="btn btn-primary" asp-action="Index"><i class="bi bi-arrow-repeat ms-1"></i>عرض كل الكورسات</a>
+                </div>
+            }
+        </main>
+    </div>
 </div>

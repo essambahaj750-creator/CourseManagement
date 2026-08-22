@@ -26,6 +26,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const filterToggle = document.querySelector('[data-filter-toggle]');
+    const filterPanel = document.querySelector('#courseFilters');
+    if (filterToggle && filterPanel) {
+        filterToggle.addEventListener('click', () => {
+            const isOpen = filterPanel.classList.toggle('is-open');
+            filterToggle.setAttribute('aria-expanded', String(isOpen));
+            document.body.classList.toggle('filters-open', isOpen);
+        });
+
+        filterPanel.querySelectorAll('a, button[type="submit"]').forEach((element) => {
+            element.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    filterPanel.classList.remove('is-open');
+                    filterToggle.setAttribute('aria-expanded', 'false');
+                    document.body.classList.remove('filters-open');
+                }
+            });
+        });
+    }
+
     document.querySelectorAll('.view-switch').forEach((switcher) => {
         const buttons = [...switcher.querySelectorAll('button')];
         const grid = document.querySelector('.course-grid');

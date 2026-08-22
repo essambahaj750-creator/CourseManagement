@@ -1,10 +1,13 @@
 using CourseManagement.Application.DTOs;
+using CourseManagement.Domain.Models;
 
 namespace CourseManagement.Application.Interfaces;
 
 public interface ICourseService
 {
     Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync();
+    Task<CourseCatalogDto> SearchCoursesAsync(CourseFilterDto filter);
+    Task<IReadOnlyList<InstructorOptionDto>> GetInstructorOptionsAsync();
     Task<CourseResponseDto?> GetCourseByIdAsync(int id);
     Task<IEnumerable<CourseResponseDto>> GetCoursesByInstructorAsync(int instructorId);
     Task<CourseResponseDto> CreateCourseAsync(CourseDto dto, int instructorId);

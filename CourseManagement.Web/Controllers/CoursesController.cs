@@ -12,20 +12,22 @@ public sealed class CoursesController(ICourseService courseService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
-    public async Task<IActionResult> Index([FromQuery] string? q)
+    public async Task<IActionResult> Index([FromQuery] CourseFilterViewModel filter)
     {
-        var courses = await courseService.GetAllCoursesAsync();
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            var term = q.Trim();
-            courses = courses.Where(course =>
-                course.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                course.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                course.InstructorName.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
+        var catalog = await courseService.SearchCoursesAsync(filter.ToDto());
+        var instructors = await courseService.GetInstructorOptionsAsync();
 
-        ViewData["SearchTerm"] = q;
-        return View(courses);
+        filter.Page = catalog.Page;
+        filter.PageSize = catalog.PageSize;
+
+        return View(new CoursesIndexViewModel
+        {
+            Courses = catalog.Items,
+            Instructors = instructors,
+            Filters = filter,
+            TotalCount = catalog.TotalCount,
+            TotalPages = catalog.TotalPages
+        });
     }
 
     [HttpGet("Details/{id:int}")]
