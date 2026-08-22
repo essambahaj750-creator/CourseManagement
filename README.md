@@ -11,6 +11,7 @@ Web API لإدارة الكورسات والتسجيلات، مبني بمعما
 | `CourseManagement.Infrastructure` | EF Core DbContext والمستودعات والخدمات (تطبيق الواجهات) |
 | `CourseManagement.API` | REST API وJWT وSwagger وHealth Check — مستقل عن واجهة MVC |
 | `CourseManagement.Web` | ASP.NET Core MVC: Controllers وViews وwwwroot وCookie Authentication |
+| `CourseManagement.Flutter` | تطبيق Flutter مستقل: RTL UI، JWT client، كتالوج، تسجيلات، وإدارة محمية حسب الدور |
 
 ## التشغيل
 
@@ -184,3 +185,27 @@ GET /api/course/search?q=flutter&minPrice=10&maxPrice=500&sort=price-low&page=1&
 | Navigation | AppBar، Drawer، Bottom Navigation، روابط Back وQuery String |
 | API Integration | `/api/course/search` و`/api/course/instructors` بعقد paginated واضح |
 | UI State | نتائج، حالة فارغة، فلاتر مطبقة، أخطاء، تحقق، واستجابة للهاتف |
+
+## تطبيق Flutter المستقل
+
+يوجد تطبيق Flutter مستقل داخل `CourseManagement.Flutter` يعمل كعميل حقيقي لـ`CourseManagement.API` عبر JWT Bearer، وليس مجرد واجهة تجريبية. يشمل التطبيق المصادقة، استعادة الجلسة، الكتالوج مع الفلاتر server-side، تفاصيل الكورس، التسجيلات، الملف الشخصي، وحراسة مسارات الإدارة. كما أضيفت شاشة CRUD لإدارة الكورسات للـInstructor/Admin، مع إدارة المستخدمين والتسجيلات للـAdmin.
+
+للتشغيل، ابدأ API أولًا واضبط `JwtSettings:Secret` و`Cors:AllowedOrigins` خارج Git، ثم نفّذ من مجلد Flutter:
+
+```bash
+cd CourseManagement.Flutter
+flutter pub get
+flutter run -d chrome --dart-define=API_BASE_URL=https://localhost:7026
+```
+
+للمحاكي Android استخدم `https://10.0.2.2:<port>` بدل `localhost`، وللهاتف الفعلي استخدم عنوان LAN مع شهادة HTTPS موثوقة. توجد التعليمات التفصيلية وخريطة الوظائف والاختبارات في `CourseManagement.Flutter/README.md`.
+
+| المسار | الغرض |
+|---|---|
+| `/` | لوحة Flutter الرئيسية |
+| `/courses` | كتالوج وفلاتر وصفحات |
+| `/courses/:id` | تفاصيل وتسجيل/إلغاء التسجيل |
+| `/enrollments` | تسجيلات الطالب |
+| `/manage/courses` | CRUD للكورسات للـInstructor/Admin |
+| `/admin/users` | إدارة أدوار المستخدمين للـAdmin |
+| `/admin/enrollments` | مراجعة التسجيلات للـAdmin |
