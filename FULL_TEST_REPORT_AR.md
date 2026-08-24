@@ -21,6 +21,7 @@
 | API | CORS origin غير مصرح | مرفوض كما هو مطلوب |
 | MVC | صفحات عامة ومحمية وجلسة Cookie | 11/11 ناجحة |
 | Postman | Collection عبر Newman | 33/33 طلبًا، 54/54 assertion، 0 فشل |
+| GitHub Actions | `build-and-test` و`flutter-build-and-test` | كلاهما completed/success على `098e5f4` |
 
 ## الاختبار الكلي End‑to‑End
 
