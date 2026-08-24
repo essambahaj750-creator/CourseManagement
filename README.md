@@ -81,7 +81,7 @@ Middleware مركزي يحوّل استثناءات منطق الأعمال إل
 
 تمت إضافة مشروع MVC مستقل باسم `CourseManagement.Web` داخل الحل، مطابق لنمط المشاريع المنفصلة في Solution Explorer. يحتوي `CourseManagement.Web` على Controllers وViewModels وViews وwwwroot ويستخدم Cookie آمنًا لجلسة Razor MVC، بينما يبقى `CourseManagement.API` مشروع REST API مستقلًا مع JWT Bearer وSwagger. تبدأ الواجهة من المسار `/` بعد تشغيل `CourseManagement.Web/CourseManagement.Web.csproj`، ولا تُفتح Razor Views بالنقر المزدوج من File Explorer لأنها تُعرض أثناء تشغيل ASP.NET Core.
 
-للتشغيل السريع في Windows، افتح مجلد الحل الذي يحتوي على `CourseManagement.API.slnx` وانقر `run-mvc.bat`؛ سيشغّل الملف مشروع `CourseManagement.Web` مباشرة. أو اجعل `CourseManagement.Web` هو Startup Project في Visual Studio. راجع `RUN_MVC_AR.md` للتعليمات التفصيلية. استخدم رابط HTTPS الذي يظهر في Terminal، وغالبًا يكون `https://localhost:7026/Account/Login`.
+للتشغيل السريع في Windows، افتح مجلد الحل الذي يحتوي على `CourseManagement.API.slnx` وانقر `run-mvc.bat`؛ سيشغّل الملف مشروع `CourseManagement.Web` مباشرة. أو اجعل `CourseManagement.Web` هو Startup Project في Visual Studio. راجع `RUN_MVC_AR.md` للتعليمات التفصيلية. استخدم رابط HTTPS الذي يظهر في Terminal، وغالبًا يكون `https://localhost:7027/Account/Login`؛ API يبقى على `https://localhost:7026`.
 
 ### أهم المسارات
 

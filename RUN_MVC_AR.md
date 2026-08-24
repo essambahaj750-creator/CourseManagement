@@ -42,12 +42,12 @@ CourseManagement.API.slnx
 CourseManagement.Web
 ```
 
-اضغط عليه بزر الفأرة الأيمن واختر **Set as Startup Project**، ثم اختر Profile باسم `https` من شريط التشغيل واضغط `F5`. سيفتح المتصفح تلقائيًا على واجهة MVC؛ لا يحتاج مشروع Web إلى JwtSettings لأن مصادقته تعتمد على Cookie آمن.
+اضغط عليه بزر الفأرة الأيمن واختر **Set as Startup Project**، ثم اختر Profile باسم `https` من شريط التشغيل واضغط `F5`. سيفتح المتصفح تلقائيًا على واجهة MVC، غالبًا عبر `https://localhost:7027`; يبقى API على `https://localhost:7026`. لا يحتاج مشروع Web إلى JwtSettings لأن مصادقته تعتمد على Cookie آمن.
 
 بعد التشغيل افتح:
 
 ```text
-https://localhost:7026/Account/Login
+https://localhost:7027/Account/Login
 ```
 
 ## التشغيل من Terminal

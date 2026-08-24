@@ -1,0 +1,1008 @@
+{
+  "info": {
+    "_postman_id": "d28dd9e4-4cf6-4c58-bb89-60494bf4f3a2",
+    "name": "CourseManagement API - Full Test Suite",
+    "description": "اختبار متسلسل كامل لـ CourseManagement API. شغّل مشروع CourseManagement.API وليس CourseManagement.Web، وتأكد أن JwtSettings:IssueToken=true وأن JwtSettings:Secret موجود في User Secrets. بيانات Admin الافتراضية هي admin@local.test، وكلمة المرور الموجودة في SeedAdmin. شغّل Run Collection بالترتيب؛ المصادقة JWT Bearer وتحفظ تلقائيًا في adminToken وstudentToken. إذا كانت شهادة localhost تطويرية عطّل SSL certificate verification في Postman فقط لبيئة التطوير المحلية.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7026"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@local.test"
+    },
+    {
+      "key": "adminPassword",
+      "value": "CHANGE_ME"
+    },
+    {
+      "key": "studentEmail",
+      "value": "student@example.com"
+    },
+    {
+      "key": "studentPassword",
+      "value": "Student_Postman_2026!"
+    },
+    {
+      "key": "searchText",
+      "value": "Postman"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "studentToken",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "courseId",
+      "value": ""
+    },
+    {
+      "key": "deleteCourseId",
+      "value": ""
+    },
+    {
+      "key": "enrollmentId",
+      "value": ""
+    },
+    {
+      "key": "adminExpiresAtUtc",
+      "value": ""
+    },
+    {
+      "key": "studentExpiresAtUtc",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Health & Auth",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"health 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"healthy response\",()=>pm.expect(pm.response.text()).to.include(\"Healthy\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Protected Endpoint Before Login - 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"unauthenticated request 401\",()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Admin login 200\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"adminToken\",j.token||\"\");",
+                  "pm.collectionVariables.set(\"adminId\",String(j.userId||\"\"));",
+                  "pm.collectionVariables.set(\"adminExpiresAtUtc\",j.expiresAtUtc||\"\");",
+                  "pm.test(\"Admin login JWT returned\",()=>pm.expect(j.token).to.be.ok);",
+                  "pm.test(\"admin role\",()=>pm.expect(pm.response.json().role).eql(\"Admin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin profile 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"profile role is Admin\",()=>pm.expect(pm.response.json().role).eql(\"Admin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fullName\":\"طالب اختبار Postman\",\"email\":\"{{studentEmail}}\",\"password\":\"{{studentPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"studentEmail\",\"student.\"+Date.now()+\"@example.com\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Student register 200\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"studentToken\",j.token||\"\");",
+                  "pm.collectionVariables.set(\"studentId\",String(j.userId||\"\"));",
+                  "pm.collectionVariables.set(\"studentExpiresAtUtc\",j.expiresAtUtc||\"\");",
+                  "pm.test(\"Student register JWT returned\",()=>pm.expect(j.token).to.be.ok);",
+                  "pm.collectionVariables.set(\"studentEmail\",pm.response.json().email||pm.collectionVariables.get(\"studentEmail\"));",
+                  "pm.test(\"public registration creates Student\",()=>pm.expect(pm.response.json().role).eql(\"Student\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student profile 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"profile role is Student\",()=>pm.expect(pm.response.json().role).eql(\"Student\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Catalog & Filters",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course list 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"course list is array\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Instructors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/instructors"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"instructors 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"instructors is array\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search With Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/search?q={{searchText}}&minPrice=0&maxPrice=1000000&sort=price-low&page=1&pageSize=6"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"filtered search 200\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.test(\"paginated contract\",()=>{pm.expect(j.items).to.be.an(\"array\");pm.expect(j.totalCount).to.be.a(\"number\");pm.expect(j.totalPages).to.be.a(\"number\");});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Empty State",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/search?q=postman-no-match-{{$timestamp}}&page=1&pageSize=6"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"empty search 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"empty search has items array\",()=>pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Course CRUD",
+      "item": [
+        {
+          "name": "Create Main Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"كورس اختبار Postman {{$timestamp}}\",\"description\":\"كورس تجريبي لاختبار REST API عبر Postman.\",\"price\":49.5,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course created 201\",()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"courseId\",String(j.id));",
+                  "pm.test(\"course id returned\",()=>pm.expect(j.id).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Course By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course details 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"course id matches\",()=>pm.expect(String(pm.response.json().id)).eql(pm.collectionVariables.get(\"courseId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Main Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"كورس Postman محدث\",\"description\":\"تم تحديث بيانات الكورس من Collection.\",\"price\":59.5,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course updated 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"updated title\",()=>pm.expect(pm.response.json().title).eql(\"كورس Postman محدث\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Disposable Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"كورس حذف Postman {{$timestamp}}\",\"description\":\"كورس مؤقت للتأكد من DELETE.\",\"price\":10,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"disposable course created 201\",()=>pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"deleteCourseId\",String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Disposable Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{deleteCourseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"disposable course deleted 204\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Deleted Disposable Course - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{deleteCourseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"deleted course 404\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Enrollments & Authorization",
+      "item": [
+        {
+          "name": "Enroll Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"courseId\":{{courseId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"enrollment created 201\",()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"enrollmentId\",String(j.id));",
+                  "pm.test(\"enrollment course matches\",()=>pm.expect(String(j.courseId)).eql(pm.collectionVariables.get(\"courseId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/my"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"my enrollments 200\",()=>pm.response.to.have.status(200));",
+                  "const courseId=pm.collectionVariables.get(\"courseId\");",
+                  "pm.test(\"my enrollment contains course\",()=>pm.expect(pm.response.json().some(x=>String(x.courseId)===courseId)).eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Enrollment By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/{{enrollmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"enrollment details 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"enrollment id matches\",()=>pm.expect(String(pm.response.json().id)).eql(pm.collectionVariables.get(\"enrollmentId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Enrollments By User Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/user/{{studentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user enrollments 200\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Tries All Enrollments - 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student forbidden from all enrollments\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Gets All Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"all enrollments 200\",()=>pm.response.to.have.status(200));",
+                  "const courseId=pm.collectionVariables.get(\"courseId\");",
+                  "pm.test(\"admin list contains course\",()=>pm.expect(pm.response.json().some(x=>String(x.courseId)===courseId)).eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Gets Course Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/course/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course enrollments 200\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Unenrolls",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/course/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"unenrollment 204\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Removed Enrollment - 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/{{enrollmentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"removed enrollment 404\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Users & Roles",
+      "item": [
+        {
+          "name": "Admin Gets Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"users 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"users is array\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Tries Users List - 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student forbidden from users list\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Reads Admin Profile - 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{adminId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"IDOR protection 403\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Reads Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin reads student 200\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Promotes Student To Instructor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}/role",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"role\":\"Instructor\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"role updated 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"role is Instructor\",()=>pm.expect(pm.response.json().role).eql(\"Instructor\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Profile After Role Change",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"updated student profile 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"stored role is Instructor\",()=>pm.expect(pm.response.json().role).eql(\"Instructor\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99 - Cleanup",
+      "item": [
+        {
+          "name": "Delete Main Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"main course deleted 204\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Deleted Main Course - 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"main course 404 after cleanup\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
