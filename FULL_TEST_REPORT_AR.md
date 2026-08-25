@@ -22,7 +22,7 @@
 | MVC | صفحات عامة ومحمية وجلسة Cookie | 11/11 ناجحة |
 | MVC | Cover + Asset E2E | ناجح: إنشاء الكورس مع صورة محلية، عرض الغلاف، رفع/download/Anti-Forgery delete/course cleanup |
 | Postman | Collection عبر Newman بعد إضافة cover وassets | 46 طلبًا، 75 assertion، 0 فشل |
-| GitHub Actions | `build-and-test` و`flutter-build-and-test` | آخر تشغيل ناجح موثق على `098e5f4`؛ سيتم التحقق من commit الغلاف بعد الدفع |
+| GitHub Actions | `build-and-test` و`flutter-build-and-test` | ناجح على commit `5b5f11b` |
 
 ## الاختبار الكلي End‑to‑End
 
@@ -85,7 +85,7 @@ API HTTP:  http://localhost:5205
 
 اختبار Flutter Web البصري التفاعلي الكامل يحتاج متصفحًا متاحًا؛ أداة المتصفح المدمجة لم تكن متاحة في جلسة التدقيق الحالية. تم بدلًا من ذلك التحقق من `flutter analyze` وunit tests وWeb Release assets وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
 
-**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build محليًا، ونجحت Collection Postman بعد إضافة اختبارات cover. يلزم دفع هذا التحديث الجديد إلى GitHub وانتظار CI الخاص به قبل إعلان النسخة النهائية على الفرع البعيد، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
+**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build محليًا، ونجحت Collection Postman بعد إضافة اختبارات cover. اكتمل CI بنجاح على commit `5b5f11b`، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
  اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
 
 **المؤلف:** Manus AI
