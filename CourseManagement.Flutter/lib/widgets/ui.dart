@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/network/api_client.dart';
 import '../core/theme/app_theme.dart';
 import '../models/models.dart';
 
@@ -88,7 +89,7 @@ class CourseCover extends StatelessWidget {
         children: [
           if (course.imageUrl != null)
             Image.network(
-              course.imageUrl!,
+              _resolveCoverUrl(course.imageUrl!),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) =>
                   const SizedBox.shrink(),
@@ -150,6 +151,13 @@ class CourseCover extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _resolveCoverUrl(String value) {
+    final parsed = Uri.tryParse(value);
+    if (parsed?.hasScheme == true) return value;
+    final base = ApiClient.defaultBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    return '$base${value.startsWith('/') ? value : '/$value'}';
   }
 }
 

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using CourseManagement.Application.Common;
+using CourseManagement.Application.DTOs;
 using CourseManagement.Domain.Enums;
 using CourseManagement.Web.Security;
 using CourseManagement.Web.ViewModels;
@@ -60,6 +61,16 @@ public sealed class CoursesController(
         }
 
         return View(new CourseDetailsViewModel { Course = course, CanAccessAssets = canAccessAssets });
+    }
+
+    [HttpGet("Details/{id:int}/Cover")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Cover(int id, CancellationToken cancellationToken)
+    {
+        var cover = await assetService.OpenCoverAsync(id, cancellationToken);
+        return cover is null
+            ? NotFound()
+            : File(cover.Content, cover.ContentType, enableRangeProcessing: false);
     }
 
     [HttpPost("Details/{id:int}/Assets")]
@@ -150,18 +161,45 @@ public sealed class CoursesController(
     [HttpPost("Create")]
     [Authorize(Roles = "Instructor,Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CourseFormViewModel model)
+    public async Task<IActionResult> Create(CourseFormViewModel model, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return View(model);
 
+        CourseResponseDto? course = null;
         try
         {
-            var course = await courseService.CreateCourseAsync(model.ToDto(), GetUserId());
+            course = await courseService.CreateCourseAsync(model.ToDto(), GetUserId());
+            if (model.CoverImage is not null)
+            {
+                await using var content = model.CoverImage.OpenReadStream();
+                await assetService.UploadCoverAsync(
+                    course.Id,
+                    model.CoverImage.FileName,
+                    model.CoverImage.ContentType,
+                    model.CoverImage.Length,
+                    content,
+                    GetUserId(),
+                    User.IsInRole("Admin"),
+                    cancellationToken);
+            }
+
             TempData["Success"] = "تم إنشاء الكورس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }
         catch (Exception ex)
         {
+            if (course is not null)
+            {
+                try
+                {
+                    await courseService.DeleteCourseAsync(course.Id, GetUserId(), User.IsInRole("Admin"));
+                }
+                catch
+                {
+                    // Preserve the original validation/upload error for the user.
+                }
+            }
+
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
         }
@@ -180,15 +218,14 @@ public sealed class CoursesController(
             Id = course.Id,
             Title = course.Title,
             Description = course.Description,
-            Price = course.Price,
-            ImageUrl = course.ImageUrl
+            Price = course.Price
         });
     }
 
     [HttpPost("Edit/{id:int}")]
     [Authorize(Roles = "Instructor,Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, CourseFormViewModel model)
+    public async Task<IActionResult> Edit(int id, CourseFormViewModel model, CancellationToken cancellationToken)
     {
         if (id != model.Id) return BadRequest();
         if (!ModelState.IsValid) return View(model);
@@ -196,6 +233,20 @@ public sealed class CoursesController(
         try
         {
             var course = await courseService.UpdateCourseAsync(id, model.ToDto(), GetUserId(), User.IsInRole("Admin"));
+            if (model.CoverImage is not null)
+            {
+                await using var content = model.CoverImage.OpenReadStream();
+                await assetService.UploadCoverAsync(
+                    id,
+                    model.CoverImage.FileName,
+                    model.CoverImage.ContentType,
+                    model.CoverImage.Length,
+                    content,
+                    GetUserId(),
+                    User.IsInRole("Admin"),
+                    cancellationToken);
+            }
+
             TempData["Success"] = "تم تحديث الكورس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }

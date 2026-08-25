@@ -74,6 +74,54 @@ public sealed class CourseAssetsTests
         Assert.Single(files.SavedNames);
     }
 
+    [Fact]
+    public async Task UploadCover_StoresMetadataUpdatesCoursePathAndCanOpenImage()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
+        var assets = new FakeAssetRepository();
+        var files = new FakeFileStorage();
+        var service = CreateService(course, assets, files, enrolled: false);
+
+        await service.UploadCoverAsync(
+            course.Id,
+            "../cover.png",
+            "image/png",
+            4,
+            new MemoryStream(new byte[] { 1, 2, 3, 4 }),
+            requesterId: course.InstructorId,
+            isAdmin: false);
+
+        Assert.Equal("/api/course/7/cover", course.ImageUrl);
+        var cover = Assert.Single(assets.Items);
+        Assert.Equal(CourseAssetType.CoverImage, cover.Type);
+        Assert.Equal("cover.png", cover.OriginalFileName);
+        Assert.Equal("image/png", cover.ContentType);
+        Assert.Single(files.SavedNames);
+
+        var opened = await service.OpenCoverAsync(course.Id);
+        Assert.NotNull(opened);
+        Assert.Equal("cover.png", opened.DownloadName);
+        await opened.Content.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task UploadCover_RejectsUnsupportedImageExtension()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
+        var files = new FakeFileStorage();
+        var service = CreateService(course, new FakeAssetRepository(), files, enrolled: false);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.UploadCoverAsync(
+            course.Id,
+            "cover.gif",
+            "image/gif",
+            8,
+            new MemoryStream(new byte[8]),
+            requesterId: course.InstructorId,
+            isAdmin: false));
+        Assert.Empty(files.SavedNames);
+    }
+
     [Theory]
     [InlineData("lesson.exe", "application/octet-stream", 1)]
     [InlineData("lesson.mp4", "application/pdf", 1)]
@@ -203,7 +251,8 @@ public sealed class CourseAssetsTests
             new FakeCourseRepository(course),
             new FakeEnrollmentRepository(enrolled),
             files,
-            Options.Create(new FileUploadOptions()));
+            Options.Create(new FileUploadOptions()),
+            NullLogger<CourseAssetService>.Instance);
     }
 
     private static string CreateTempDirectory()

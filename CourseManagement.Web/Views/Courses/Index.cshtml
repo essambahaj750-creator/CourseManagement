@@ -215,7 +215,7 @@
                                 <div class="course-cover">
                                     @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
                                     {
-                                        <img class="course-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="lazy" />
+                                        <img class="course-cover-image" src="@Url.Action("Cover", "Courses", new { id = course.Id })" alt="غلاف @course.Title" loading="lazy" />
                                     }
                                     <div class="course-cover-top"><span class="badge bg-light text-primary position-relative">متاح الآن</span><span class="small text-white-50 position-relative"><i class="bi bi-play-circle ms-1"></i>تعلم عملي</span></div>
                                     <span class="course-cover-icon"><i class="bi bi-layers-fill"></i></span>

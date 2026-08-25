@@ -259,7 +259,6 @@ class ApiClient {
     required String title,
     required String description,
     required double price,
-    String? imageUrl,
   }) async {
     final json = await _jsonRequest(
       'POST',
@@ -269,7 +268,6 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        'imageUrl': imageUrl?.trim().isEmpty == true ? null : imageUrl?.trim(),
       },
     );
     return Course.fromJson(json);
@@ -280,7 +278,6 @@ class ApiClient {
     required String title,
     required String description,
     required double price,
-    String? imageUrl,
   }) async {
     final json = await _jsonRequest(
       'PUT',
@@ -290,7 +287,6 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        'imageUrl': imageUrl?.trim().isEmpty == true ? null : imageUrl?.trim(),
       },
     );
     return Course.fromJson(json);
@@ -299,6 +295,49 @@ class ApiClient {
   Future<void> deleteCourse(int id) async {
     await _jsonRequest('DELETE', '/api/course/$id', authenticated: true);
   }
+
+  Future<Course> uploadCourseCover({
+    required int courseId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    final session = await sessionStore.read();
+    if (session == null) {
+      throw const ApiException('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');
+    }
+
+    final request =
+        http.MultipartRequest('POST', _uri('/api/course/$courseId/cover'))
+          ..headers['Accept'] = 'application/json'
+          ..headers['Authorization'] = 'Bearer ${session.token}'
+          ..files.add(
+            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+          );
+
+    try {
+      final streamed = await request.send().timeout(
+        const Duration(minutes: 2),
+      );
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _extractError(response),
+          statusCode: response.statusCode,
+        );
+      }
+      return Course.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw const ApiException(
+        'تعذر رفع صورة الغلاف. تحقق من نوع الصورة وحجمها ثم حاول مجددًا.',
+      );
+    }
+  }
+
+  Uri courseCoverUri(int courseId) => _uri('/api/course/$courseId/cover');
 
   Future<List<CourseAsset>> getCourseAssets(int courseId) async {
     final list = await _jsonListRequest(

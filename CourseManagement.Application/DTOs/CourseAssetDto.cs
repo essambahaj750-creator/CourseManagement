@@ -10,7 +10,13 @@ public sealed class CourseAssetDto
     public string ContentType { get; init; } = "application/octet-stream";
     public long SizeBytes { get; init; }
     public CourseAssetType Type { get; init; }
-    public string TypeLabel => Type == CourseAssetType.Video ? "Video" : "Attachment";
+    public string TypeLabel => Type switch
+    {
+        CourseAssetType.Video => "Video",
+        CourseAssetType.Attachment => "Attachment",
+        CourseAssetType.CoverImage => "CoverImage",
+        _ => "Unknown"
+    };
     public DateTime CreatedAtUtc { get; init; }
     public string DownloadUrl => $"/api/course/{CourseId}/assets/{Id}/download";
 }

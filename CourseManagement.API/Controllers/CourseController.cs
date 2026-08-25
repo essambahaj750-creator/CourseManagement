@@ -8,7 +8,9 @@ namespace CourseManagement.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CourseController(ICourseService courseService) : ControllerBase
+public class CourseController(
+    ICourseService courseService,
+    ICourseAssetService assetService) : ControllerBase
 {
     /// <summary>كتالوج الكورسات — عام</summary>
     [HttpGet]
@@ -31,6 +33,43 @@ public class CourseController(ICourseService courseService) : ControllerBase
         var course = await courseService.GetCourseByIdAsync(id);
         if (course == null)
             return NotFound(new { message = "Course not found" });
+        return Ok(course);
+    }
+
+    [HttpGet("{id:int}/cover")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetCover(int id, CancellationToken cancellationToken)
+    {
+        var cover = await assetService.OpenCoverAsync(id, cancellationToken);
+        return cover is null
+            ? NotFound(new { message = "Course cover not found" })
+            : File(cover.Content, cover.ContentType, enableRangeProcessing: false);
+    }
+
+    [HttpPost("{id:int}/cover")]
+    [Authorize(Roles = "Instructor,Admin")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(10L * 1024 * 1024)]
+    public async Task<ActionResult<CourseResponseDto>> UploadCover(
+        int id,
+        IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        if (file is null)
+            return BadRequest(new { message = "A cover image is required." });
+
+        await using var content = file.OpenReadStream();
+        await assetService.UploadCoverAsync(
+            id,
+            file.FileName,
+            file.ContentType,
+            file.Length,
+            content,
+            User.GetUserId(),
+            User.IsAdmin(),
+            cancellationToken);
+
+        var course = await courseService.GetCourseByIdAsync(id);
         return Ok(course);
     }
 

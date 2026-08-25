@@ -89,7 +89,15 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
 
     public async Task UpdateAsync(Course course)
     {
-        context.Courses.Update(course);
+        // Queries return AsNoTracking entities, but Create + cover upload can share
+        // one DbContext and still have the original Course in the local tracker.
+        // Update that tracked instance when present; otherwise attach only Course.
+        var tracked = context.Courses.Local.FirstOrDefault(item => item.Id == course.Id);
+        if (tracked is not null)
+            context.Entry(tracked).CurrentValues.SetValues(course);
+        else
+            context.Entry(course).State = EntityState.Modified;
+
         await context.SaveChangesAsync();
     }
 

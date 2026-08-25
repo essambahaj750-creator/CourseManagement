@@ -82,11 +82,10 @@ public sealed class CourseFormViewModel
     [Display(Name = "السعر")]
     public decimal Price { get; set; }
 
-    [Url, RegularExpression(@"^https?://", ErrorMessage = "يجب أن يبدأ رابط الصورة بـ http:// أو https://"), StringLength(500)]
-    [Display(Name = "رابط صورة الكورس")]
-    public string? ImageUrl { get; set; }
+    [Display(Name = "صورة غلاف الكورس")]
+    public IFormFile? CoverImage { get; set; }
 
-    public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price, ImageUrl = ImageUrl };
+    public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price };
 }
 
 public sealed class CourseAssetUploadViewModel

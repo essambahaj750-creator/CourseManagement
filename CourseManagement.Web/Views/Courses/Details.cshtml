@@ -24,7 +24,7 @@
 <section class="detail-cover mb-4">
     @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
     {
-        <img class="detail-cover-image" src="@course.ImageUrl" alt="غلاف @course.Title" loading="eager" />
+        <img class="detail-cover-image" src="@Url.Action("Cover", "Courses", new { id = course.Id })" alt="غلاف @course.Title" loading="eager" />
     }
     <div class="detail-cover-overlay"></div><div class="detail-cover-content"><span class="badge bg-light text-primary mb-3"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span><h1 class="display-6 fw-bold">@course.Title</h1><p class="mb-0 opacity-75"><i class="bi bi-person ms-1"></i>بواسطة @course.InstructorName</p></div>
 </section>

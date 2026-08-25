@@ -4,25 +4,25 @@
 
 تم تدقيق نسخة `professional-refactor` كمنظومة Full‑Stack تشمل ASP.NET Core REST API، واجهة ASP.NET Core MVC، SQLite، JWT، Cookie Authentication، Postman، وتطبيق Flutter مستقل. نُفذت الاختبارات على خوادم معزولة وقواعد SQLite مؤقتة حتى لا تختلط بيانات الاختبار ببيئة المستخدم.
 
-النتيجة الحالية: **نجحت اختبارات ميزة أصول الكورسات الجديدة والاختبارات السابقة بعد إصلاح binding نموذج MVC وترتيب Collection؛ لا يوجد فشل في آخر تشغيل موثق.**
+النتيجة الحالية: **نجحت اختبارات ميزة رفع صورة الغلاف المحلية، وأصول الكورس، والاختبارات السابقة بعد إصلاح binding نموذج MVC وتعارض EF tracking وترتيب Collection؛ لا يوجد فشل في آخر تشغيل نهائي.**
 
 ## نتائج الاختبارات الجزئية
 
 | الطبقة | الاختبار | النتيجة |
 |---|---|---:|
 | .NET | Release build للحل كاملًا | ناجح، 0 تحذير و0 خطأ |
-| .NET | اختبارات xUnit بعد إضافة CourseAssetsTests | 14/14 ناجحة |
+| .NET | اختبارات xUnit بعد إضافة اختبارات الغلاف | 16/16 ناجحة |
 | Flutter | `flutter analyze` بعد file_picker/video_player | ناجح، No issues found |
 | Flutter | Unit tests | 4/4 ناجحة |
 | Flutter | Web Release build | ناجح |
-| API | Asset multipart E2E على SQLite معزولة | ناجح: upload/list/download/permissions/delete/cleanup |
+| API | Cover + Asset multipart E2E على SQLite معزولة | ناجح: cover upload/public download/validation/permissions ثم video/attachment/list/download/enrollment/delete/cleanup |
 | API | Smoke test السابق الشامل | 38/38 ناجحة |
 | API | Validation/Security negative test السابق | 21/21 ناجحة |
 | API | CORS origin مسموح/غير مصرح | قُبل المسموح ورُفض غير المصرح |
 | MVC | صفحات عامة ومحمية وجلسة Cookie | 11/11 ناجحة |
-| MVC | Asset E2E من Details | ناجح: upload/download/Anti-Forgery delete/course cleanup |
-| Postman | Collection عبر Newman بعد إضافة assets | 44 طلبًا، 71 assertion، 0 فشل |
-| GitHub Actions | `build-and-test` و`flutter-build-and-test` | كلاهما completed/success على `098e5f4` |
+| MVC | Cover + Asset E2E | ناجح: إنشاء الكورس مع صورة محلية، عرض الغلاف، رفع/download/Anti-Forgery delete/course cleanup |
+| Postman | Collection عبر Newman بعد إضافة cover وassets | 46 طلبًا، 75 assertion، 0 فشل |
+| GitHub Actions | `build-and-test` و`flutter-build-and-test` | آخر تشغيل ناجح موثق على `098e5f4`؛ سيتم التحقق من commit الغلاف بعد الدفع |
 
 ## الاختبار الكلي End‑to‑End
 
@@ -38,12 +38,13 @@
 8. تغيير كلمة مرور Student، إعادة الدخول بالكلمة الجديدة، ورفض الكلمة القديمة.
 9. إلغاء التسجيل والتحقق من `404` بعد الحذف، ثم حذف الكورس والمستخدم التجريبي.
 10. اختبار Collection Postman نفسها مع حفظ التوكنات والـIDs تلقائيًا.
-11. رفع فيديو ومرفق حقيقيين عبر multipart، التحقق من metadata وContent-Disposition، ومنع الطالب قبل enrollment ثم السماح بعده.
-12. حذف الأصل مع منع الطالب، ثم حذف الكورس والتحقق من اختفاء الملف الفيزيائي من مجلد uploads.
+11. إنشاء الكورس مع رفع صورة غلاف محلية عبر multipart، قراءة الغلاف من endpoint داخلي، رفض GIF، ومنع الطالب من استبدال الغلاف.
+12. رفع فيديو ومرفق حقيقيين عبر multipart، التحقق من metadata وContent-Disposition، ومنع الطالب قبل enrollment ثم السماح بعده.
+13. حذف الأصل مع منع الطالب، ثم حذف الكورس والتحقق من اختفاء الغلاف والملفات الفيزيائية من مجلد uploads.
 
 ## اختبار MVC التكاملي
 
-تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور. كما نجح اختبار asset E2E من `/Courses/Details/{id}`: إنشاء كورس، رفع فيديو ومرفق، تنزيل bytes بالاسم الصحيح، حذف الأصل عبر Anti-Forgery، ثم حذف الكورس وتنظيف uploads.
+تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور. كما نجح اختبار Cover + Asset E2E: إنشاء كورس من نموذج MVC مع صورة محلية، ظهور الغلاف من `/Courses/Details/{id}/Cover`، رفع فيديو ومرفق، تنزيل bytes بالاسم الصحيح، حذف الأصل عبر Anti-Forgery، ثم حذف الكورس وتنظيف uploads.
 
 ## العيوب التي كُشفت وأُصلحت
 
@@ -64,13 +65,17 @@ API HTTP:  http://localhost:5205
 
 كانت أداة التدقيق المؤقتة تتحقق من Cookie باسم ASP.NET الافتراضي، بينما المشروع يستخدم الاسم الأمني الصريح `CourseManagement.Mvc`. تم تصحيح أداة الاختبار، وبعدها نجح اختبار MVC كاملًا. لا يوجد عيب في Cookie الخاص بالتطبيق.
 
+### تعارض EF tracking عند إنشاء الكورس ورفع الغلاف
+
+كشف اختبار MVC أن إنشاء الكورس ثم رفع الغلاف ضمن نفس طلب `Create` كان يحمّل نسخة Course غير متعقّبة مع نسخة أخرى ما زالت داخل DbContext، مما أدى إلى `Unexpected entry.EntityState: Detached` أو تعارض duplicate tracked entity. تم إصلاح `CourseRepository.UpdateAsync` ليحدّث الكيان المحلي المتعقّب عند وجوده، أو يرفق Course فقط عند عدم وجوده، دون تتبع Instructor navigation. أعيد الاختبار من قاعدة SQLite نظيفة ونجح.
+
 ### اختلاف في body تغيير كلمة المرور
 
 أظهر الاختبار أن `ChangePasswordDto` يتطلب `ConfirmNewPassword`، فتم تصحيح smoke test ليطابق عقد API. هذا ليس عيبًا في التطبيق؛ بل كان body الاختبار ناقصًا.
 
 ## فحوص الأمان
 
-أكدت النتائج أن التسجيل العام ينشئ Student فقط، وأن المستخدم غير المسجل يحصل على `401`، وأن Student يحصل على `403` عند طلب وظائف الإدارة أو إنشاء كورس أو قراءة بيانات مستخدم آخر. وفي الأصول، حصل الطالب غير المسجّل على `403` للقائمة والتنزيل والرفع والحذف، ثم حصل على `200` للقائمة والتنزيل بعد enrollment، بينما نجح Admin في الرفع والحذف. كما تم اختبار CORS بقائمة origins صريحة؛ origin المسموح قُبل وorigin غير المصرح لم يحصل على `Access-Control-Allow-Origin`.
+أكدت النتائج أن التسجيل العام ينشئ Student فقط، وأن المستخدم غير المسجل يحصل على `401`، وأن Student يحصل على `403` عند طلب وظائف الإدارة أو إنشاء كورس أو قراءة بيانات مستخدم آخر. وفي الأصول، حصل الطالب غير المسجّل على `403` للقائمة والتنزيل والرفع والحذف، ثم حصل على `200` للقائمة والتنزيل بعد enrollment، بينما نجح Admin في الرفع والحذف. كما تم اختبار CORS بقائمة origins صريحة؛ origin المسموح قُبل وorigin غير المصرح لم يحصل على `Access-Control-Allow-Origin`. صورة الغلاف العامة لا تكشف مجلد التخزين، بينما رفعها واستبدالها محصوران بالمالك أو Admin.
 
 ## ملاحظات التشغيل
 
@@ -80,6 +85,7 @@ API HTTP:  http://localhost:5205
 
 اختبار Flutter Web البصري التفاعلي الكامل يحتاج متصفحًا متاحًا؛ أداة المتصفح المدمجة لم تكن متاحة في جلسة التدقيق الحالية. تم بدلًا من ذلك التحقق من `flutter analyze` وunit tests وWeb Release assets وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
 
-**حالة التسليم:** ميزة أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build، وجاهزة للعرض الأكاديمي بعد سحب التغييرات وتشغيل CI، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه. اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
+**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build محليًا، ونجحت Collection Postman بعد إضافة اختبارات cover. يلزم دفع هذا التحديث الجديد إلى GitHub وانتظار CI الخاص به قبل إعلان النسخة النهائية على الفرع البعيد، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
+ اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
 
 **المؤلف:** Manus AI

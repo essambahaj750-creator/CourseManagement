@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -43,20 +45,32 @@ class _CourseManagementPageState extends State<CourseManagementPage> {
     try {
       final api = context.read<ApiClient>();
       if (course == null) {
-        await api.createCourse(
+        final created = await api.createCourse(
           title: draft.title,
           description: draft.description,
           price: draft.price,
-          imageUrl: draft.imageUrl,
         );
+        if (draft.coverBytes != null && draft.coverFileName != null) {
+          await api.uploadCourseCover(
+            courseId: created.id,
+            fileName: draft.coverFileName!,
+            bytes: draft.coverBytes!,
+          );
+        }
       } else {
         await api.updateCourse(
           id: course.id,
           title: draft.title,
           description: draft.description,
           price: draft.price,
-          imageUrl: draft.imageUrl,
         );
+        if (draft.coverBytes != null && draft.coverFileName != null) {
+          await api.uploadCourseCover(
+            courseId: course.id,
+            fileName: draft.coverFileName!,
+            bytes: draft.coverBytes!,
+          );
+        }
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -650,13 +664,15 @@ class _CourseDraft {
     required this.title,
     required this.description,
     required this.price,
-    required this.imageUrl,
+    required this.coverFileName,
+    required this.coverBytes,
   });
 
   final String title;
   final String description;
   final double price;
-  final String? imageUrl;
+  final String? coverFileName;
+  final Uint8List? coverBytes;
 }
 
 class _CourseFormDialog extends StatefulWidget {
@@ -673,7 +689,8 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
   late final TextEditingController _title;
   late final TextEditingController _description;
   late final TextEditingController _price;
-  late final TextEditingController _imageUrl;
+  String? _coverFileName;
+  Uint8List? _coverBytes;
 
   @override
   void initState() {
@@ -684,7 +701,6 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
     _price = TextEditingController(
       text: course == null ? '0' : course.price.toStringAsFixed(2),
     );
-    _imageUrl = TextEditingController(text: course?.imageUrl ?? '');
   }
 
   @override
@@ -692,8 +708,35 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
     _title.dispose();
     _description.dispose();
     _price.dispose();
-    _imageUrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickCover() async {
+    final picked = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+    );
+    if (picked == null || !mounted) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    if (bytes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر قراءة صورة الغلاف من الجهاز.')),
+      );
+      return;
+    }
+    if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('حجم صورة الغلاف يجب ألا يتجاوز 5MB.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _coverFileName = picked.name;
+      _coverBytes = bytes;
+    });
   }
 
   void _submit() {
@@ -704,7 +747,8 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
         title: _title.text.trim(),
         description: _description.text.trim(),
         price: double.parse(_price.text.trim()),
-        imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
+        coverFileName: _coverFileName,
+        coverBytes: _coverBytes,
       ),
     );
   }
@@ -788,22 +832,30 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
                 },
               ),
               const SizedBox(height: 14),
-              TextFormField(
-                controller: _imageUrl,
-                keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'رابط صورة اختياري',
-                  hintText: 'https://example.com/course.jpg',
-                  prefixIcon: Icon(Icons.image_outlined),
+              OutlinedButton.icon(
+                onPressed: _pickCover,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text(
+                  _coverFileName ??
+                      (widget.course?.imageUrl != null
+                          ? 'اختيار صورة جديدة (يوجد غلاف حالي)'
+                          : 'اختيار صورة الغلاف من الجهاز'),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return null;
-                  final uri = Uri.tryParse(value.trim());
-                  return uri != null &&
-                          (uri.scheme == 'http' || uri.scheme == 'https')
-                      ? null
-                      : 'يجب أن يبدأ الرابط بـ http:// أو https://';
-                },
+              ),
+              if (_coverFileName != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'الصورة المختارة: $_coverFileName',
+                  style: const TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 4),
+              const Text(
+                'JPG أو PNG أو WebP — الحد الأقصى 5MB. اتركه فارغًا للحفاظ على الغلاف الحالي.',
+                style: TextStyle(color: AppTheme.muted, fontSize: 11),
               ),
               const SizedBox(height: 22),
               Row(

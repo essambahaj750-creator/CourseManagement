@@ -64,7 +64,7 @@ public class CourseService(
             Title = dto.Title.Trim(),
             Description = dto.Description.Trim(),
             Price = dto.Price,
-            ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim(),
+            ImageUrl = null,
             InstructorId = instructorId
         };
 
@@ -87,7 +87,6 @@ public class CourseService(
         course.Title = dto.Title.Trim();
         course.Description = dto.Description.Trim();
         course.Price = dto.Price;
-        course.ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim();
 
         await courseRepository.UpdateAsync(course);
         return MapToResponseDto(course);

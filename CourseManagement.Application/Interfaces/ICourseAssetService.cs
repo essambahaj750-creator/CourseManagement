@@ -28,6 +28,20 @@ public interface ICourseAssetService
         bool isAdmin,
         CancellationToken cancellationToken = default);
 
+    Task UploadCoverAsync(
+        int courseId,
+        string originalFileName,
+        string contentType,
+        long length,
+        Stream content,
+        int requesterId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
+
+    Task<CourseAssetDownload?> OpenCoverAsync(
+        int courseId,
+        CancellationToken cancellationToken = default);
+
     Task<CourseAssetDownload> OpenDownloadAsync(
         int courseId,
         int assetId,

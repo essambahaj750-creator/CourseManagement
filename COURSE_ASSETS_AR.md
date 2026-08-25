@@ -1,12 +1,12 @@
 # نظام فيديوهات ومرفقات الكورسات
 
-يوفر مشروع **CourseManagement** نظام أصول حقيقيًا للكورسات. يستطيع مالك الكورس من دور `Instructor` أو أي `Admin` اختيار فيديو أو مرفق من جهازه ورفعه عبر `multipart/form-data`. يستطيع الطالب المسجّل عرض الأصول المصرّح بها، تشغيل الفيديو المحمي من Flutter، وتنزيل المرفقات. لا توجد أزرار وهمية ولا تخزين لملفات الفيديو داخل SQLite.
+يوفر مشروع **CourseManagement** نظام ملفات حقيقيًا للكورسات. يستطيع مالك الكورس من دور `Instructor` أو أي `Admin` اختيار صورة غلاف، فيديو، أو مرفق من جهازه ورفعه عبر `multipart/form-data`. يستطيع الطالب المسجّل عرض الأصول التعليمية المصرّح بها، تشغيل الفيديو المحمي من Flutter، وتنزيل المرفقات. لا توجد أزرار وهمية ولا تخزين لملفات الصور أو الفيديو داخل SQLite، ولا يحتاج المستخدم إلى إدخال رابط صورة خارجي.
 
 ## التصميم والمسؤوليات
 
 | الجزء | المسؤولية |
 |---|---|
-| `CourseAsset` | حفظ metadata فقط: الاسم الأصلي، النوع، MIME، الحجم، وقت الإنشاء، واسم التخزين العشوائي |
+| `CourseAsset` | حفظ metadata فقط: الاسم الأصلي، النوع (`Video` أو `Attachment` أو `CoverImage`)، MIME، الحجم، وقت الإنشاء، واسم التخزين العشوائي |
 | `CourseAssetService` | التحقق من الاسم والامتداد وMIME والحجم والصلاحية، وربط الملف بالكورس |
 | `LocalFileStorage` | حفظ bytes خارج قاعدة البيانات باسم GUID، مع ملف مؤقت ثم move ذري وحماية path traversal |
 | `CourseAssetsController` | REST endpoints المحمية للقائمة والرفع والتنزيل والحذف |
@@ -30,7 +30,9 @@ CourseManagement.Uploads/
   "FileUploads": {
     "RootPath": "../CourseManagement.Uploads",
     "MaxVideoBytes": 536870912,
-    "MaxAttachmentBytes": 52428800
+    "MaxAttachmentBytes": 52428800,
+    "MaxCoverImageBytes": 5242880,
+    "AllowedCoverImageExtensions": [ ".jpg", ".jpeg", ".png", ".webp" ]
   }
 }
 ```
@@ -43,6 +45,7 @@ CourseManagement.Uploads/
 |---|---|---:|---|
 | Video | `.mp4`, `.webm`, `.mov`, `.m4v` | 512MB | `type=1` |
 | Attachment | `.pdf`, `.doc`, `.docx`, `.ppt`, `.pptx`, `.xls`, `.xlsx`, `.zip`, `.txt` | 50MB | `type=2` |
+| CoverImage | `.jpg`, `.jpeg`, `.png`, `.webp` | 5MB | endpoint الغلاف، وليس `type` |
 
 يتحقق الخادم من الامتداد ومحتوى MIME. يُقبل `application/octet-stream` كحالة توافق مع بعض متصفحات وأنظمة اختيار الملفات، لكن الامتداد والحد الأقصى لا يمكن تجاوزهما. الاسم الأصلي يُنظّف بواسطة `Path.GetFileName` ويُحفظ الاسم الفيزيائي الداخلي بصيغة GUID مع امتداد مسموح؛ لذلك لا يستطيع اسم الملف إنشاء مسار خارج مجلد التخزين.
 
@@ -50,12 +53,22 @@ CourseManagement.Uploads/
 
 | Method | Endpoint | الصلاحية |
 |---|---|---|
+| `GET` | `/api/course/{courseId}/cover` | عام للعرض فقط بعد رفع الغلاف |
+| `POST` | `/api/course/{courseId}/cover` | مالك الكورس من Instructor أو Admin |
 | `GET` | `/api/course/{courseId}/assets` | مالك الكورس، Admin، أو Student مسجّل في الكورس |
 | `POST` | `/api/course/{courseId}/assets` | مالك الكورس من Instructor أو Admin |
 | `GET` | `/api/course/{courseId}/assets/{assetId}/download` | مالك الكورس، Admin، أو Student مسجّل |
 | `DELETE` | `/api/course/{courseId}/assets/{assetId}` | مالك الكورس من Instructor أو Admin |
 
-طلب الرفع يجب أن يكون `multipart/form-data` ويحتوي:
+طلب غلاف الكورس يجب أن يكون `multipart/form-data` ويحتوي على الحقل `file` فقط:
+
+```text
+file: صورة محلية من جهاز المستخدم (JPG/PNG/WebP، حتى 5MB)
+```
+
+يرجع API بعد نجاح رفع الغلاف كائن الكورس مع `imageUrl` مولّد من الخادم مثل `/api/course/{courseId}/cover`. هذا المسار للاستخدام الداخلي في العرض، ولا يكتبه المستخدم ولا يشير إلى موقع خارجي.
+
+أما طلب الأصول التعليمية فيجب أن يكون `multipart/form-data` ويحتوي:
 
 ```text
 file: الملف المحلي
@@ -84,7 +97,7 @@ flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=https://localhost:7026
 ```
 
-للمدير أو المدرب افتح **إدارة الكورسات** ثم اضغط **الملفات** داخل بطاقة الكورس. اختر النوع، اضغط **اختيار ورفع**، ثم اختر ملفًا حقيقيًا من الجهاز. التطبيق يرسل الملف إلى API باستخدام Bearer token ويحدّث القائمة بعد النجاح. الأزرار الموجودة في القائمة تنفذ تنزيلًا عبر endpoint المحمي أو حذفًا عبر API، وليست مجرد controls شكلية.
+للمدير أو المدرب افتح **إدارة الكورسات** ثم اضغط إضافة أو تعديل. من حقل **صورة الغلاف** اضغط اختيار الصورة من الجهاز؛ لا يوجد حقل رابط. بعد حفظ الكورس اضغط **الملفات** داخل بطاقة الكورس لإضافة فيديوهات ومرفقات تعليمية من الجهاز. التطبيق يرسل الملفات إلى API باستخدام Bearer token ويحدّث الواجهة بعد النجاح. الأزرار الموجودة في القوائم تنفذ رفعًا وتنزيلًا وحذفًا حقيقيًا، وليست مجرد controls شكلية.
 
 للطالب افتح تفاصيل الكورس. قبل التسجيل تظهر رسالة قفل ولا تُجلب bytes أو metadata. بعد نجاح التسجيل، يجلب التطبيق `/assets` ويعرض المرفقات مع زر تنزيل، ويشغّل الفيديو عبر `video_player` مع Authorization header. على Android Emulator استخدم `https://10.0.2.2:<port>` بدل `localhost`. على الهاتف الفعلي استخدم عنوان LAN وشهادة HTTPS موثوقة؛ لا تضف TLS bypass داخل التطبيق.
 
@@ -96,7 +109,8 @@ flutter run -d chrome --dart-define=API_BASE_URL=https://localhost:7026
 03 - Course Assets (Multipart & Permissions)
 ```
 
-يختبر المجلد رفع فيديو، قائمة Admin، منع الطالب قبل التسجيل، منع رفع الطالب، رفض الامتداد غير المسموح، رفع مرفق، السماح بعد enrollment، التنزيل، منع الحذف للطالب، وحذف الأصل للـAdmin. توجد fixtures صغيرة بلا بيانات حساسة في `tests/assets/`، ويمكن استخدام مساراتها من جذر المستودع عند تشغيل Newman أو Postman.
+يختبر المجلد رفع صورة غلاف، عرضها من endpoint محلي، رفع فيديو، قائمة Admin، منع الطالب قبل التسجيل، منع رفع الطالب، رفض غلاف GIF، رفض الامتداد غير المسموح، رفع مرفق، السماح بعد enrollment، التنزيل، منع الحذف للطالب، وحذف الأصل للـAdmin.
+ توجد fixtures صغيرة بلا بيانات حساسة في `tests/assets/`، ويمكن استخدام مساراتها من جذر المستودع عند تشغيل Newman أو Postman.
 
 لتشغيل collection محليًا، اضبط `baseUrl` وبيانات Admin في Postman Environment فقط. قيمة `adminPassword` الافتراضية هي `CHANGE_ME` عمدًا؛ استبدلها في بيئة Postman المحلية ولا تحفظ كلمة المرور في Git.
 
