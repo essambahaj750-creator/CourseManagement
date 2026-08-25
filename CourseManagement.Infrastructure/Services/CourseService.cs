@@ -3,10 +3,15 @@ using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
 using CourseManagement.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace CourseManagement.Infrastructure.Services;
 
-public class CourseService(ICourseRepository courseRepository) : ICourseService
+public class CourseService(
+    ICourseRepository courseRepository,
+    ICourseAssetRepository assetRepository,
+    IFileStorage fileStorage,
+    ILogger<CourseService> logger) : ICourseService
 {
     public async Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync()
     {
@@ -96,7 +101,27 @@ public class CourseService(ICourseRepository courseRepository) : ICourseService
         if (!isAdmin && course.InstructorId != requesterId)
             throw new ForbiddenAccessException("You can only delete your own courses.");
 
+        // Read metadata before the cascade deletes CourseAssets rows.
+        var assets = await assetRepository.GetByCourseIdAsync(id);
         await courseRepository.DeleteAsync(id);
+
+        // Database access is already revoked. Clean physical files best-effort and log
+        // failures so an unavailable disk does not make a successful DB delete look failed.
+        foreach (var asset in assets)
+        {
+            try
+            {
+                await fileStorage.DeleteAsync(asset.StoredFileName);
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(
+                    exception,
+                    "Could not delete stored asset {StoredFileName} for deleted course {CourseId}.",
+                    asset.StoredFileName,
+                    id);
+            }
+        }
     }
 
     private static CourseResponseDto MapToResponseDto(Course course) => new()

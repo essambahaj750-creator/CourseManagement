@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -297,6 +298,108 @@ class ApiClient {
 
   Future<void> deleteCourse(int id) async {
     await _jsonRequest('DELETE', '/api/course/$id', authenticated: true);
+  }
+
+  Future<List<CourseAsset>> getCourseAssets(int courseId) async {
+    final list = await _jsonListRequest(
+      'GET',
+      '/api/course/$courseId/assets',
+      authenticated: true,
+    );
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(CourseAsset.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<CourseAsset> uploadCourseAsset({
+    required int courseId,
+    required String fileName,
+    required Uint8List bytes,
+    required CourseAssetType type,
+  }) async {
+    final session = await sessionStore.read();
+    if (session == null) {
+      throw const ApiException('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');
+    }
+
+    final request =
+        http.MultipartRequest('POST', _uri('/api/course/$courseId/assets'))
+          ..headers['Accept'] = 'application/json'
+          ..headers['Authorization'] = 'Bearer ${session.token}'
+          ..fields['type'] = type == CourseAssetType.video ? '1' : '2'
+          ..files.add(
+            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+          );
+
+    try {
+      final streamed = await request.send().timeout(
+        const Duration(minutes: 30),
+      );
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _extractError(response),
+          statusCode: response.statusCode,
+        );
+      }
+      return CourseAsset.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw const ApiException(
+        'تعذر رفع الملف. تحقق من الاتصال وحجم الملف ثم حاول مجددًا.',
+      );
+    }
+  }
+
+  Uri courseAssetDownloadUri({required int courseId, required int assetId}) =>
+      _uri('/api/course/$courseId/assets/$assetId/download');
+
+  Future<Uint8List> downloadCourseAsset({
+    required int courseId,
+    required int assetId,
+  }) async {
+    final session = await sessionStore.read();
+    if (session == null) {
+      throw const ApiException('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');
+    }
+
+    try {
+      final response = await _client
+          .get(
+            _uri('/api/course/$courseId/assets/$assetId/download'),
+            headers: {
+              'Accept': '*/*',
+              'Authorization': 'Bearer ${session.token}',
+            },
+          )
+          .timeout(const Duration(minutes: 10));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _extractError(response),
+          statusCode: response.statusCode,
+        );
+      }
+      return response.bodyBytes;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw const ApiException('تعذر تنزيل الملف من الخادم.');
+    }
+  }
+
+  Future<void> deleteCourseAsset({
+    required int courseId,
+    required int assetId,
+  }) async {
+    await _jsonRequest(
+      'DELETE',
+      '/api/course/$courseId/assets/$assetId',
+      authenticated: true,
+    );
   }
 
   Future<List<Enrollment>> getMyEnrollments() async {

@@ -14,14 +14,16 @@
 | REST Courses | الكتالوج، البحث، الفلاتر، المدرسون، التفاصيل، CRUD | نتائج صحيحة مع 404 للمورد غير الموجود |
 | REST Enrollments | التسجيل، تسجيلاتي، الإلغاء، منع التكرار والـIDOR | 201/204، و403 أو 404 حسب قاعدة الملكية |
 | REST Users/Roles | قائمة المستخدمين، الملف الشخصي، تغيير الدور والحذف | Admin فقط ينفذ إدارة المستخدمين، والطالب يحصل على 403 |
+| REST Course Assets | multipart upload، metadata، download bytes وRange، delete، filename/MIME/size validation | 201/200/204 للعقد الصحيح، 400 للملف غير المسموح، و403 قبل enrollment أو دون ownership |
+| Asset Storage | حفظ bytes خارج SQLite، اسم GUID، منع path traversal، rollback، cleanup عند حذف الكورس | لا BLOB في SQLite، لا public static access، ولا ملفات يتيمة بعد حذف الكورس |
 | Security | عدم قبول role من التسجيل العام، صلاحيات Admin/Instructor، انتهاء/إبطال الجلسة | لا يمكن تجاوز الصلاحيات عبر تغيير الرابط أو body |
-| MVC | Login/Register/ChangePassword، الكتالوج والفلاتر، CRUD، التسجيلات، Admin | HTTP 200 للصفحات، POST آمن بـAnti‑Forgery، وإعادة توجيه وصلاحيات صحيحة |
-| Flutter | analyze، unit tests، Web Release، router guards، حالات loading/error/empty | لا مشاكل تحليل، الاختبارات تمر، والبناء ينجح |
+| MVC | Login/Register/ChangePassword، الكتالوج والفلاتر، CRUD، التسجيلات، Admin، رفع وتنزيل وحذف الأصول | HTTP 200 للصفحات، POST آمن بـAnti‑Forgery، وأصل محمي بالـCookie |
+| Flutter | analyze، unit tests، Web Release، router guards، picker، multipart، video player، download | لا مشاكل تحليل، الاختبارات تمر، والبناء ينجح وتعمل flows الأصول فعليًا |
 | Postman | تشغيل Collection بالترتيب مع حفظ token وIDs | كل اختبار ناجح، مع اعتبار 401/403/404 المقصودة نجاحًا أمنيًا |
 
 ## الاختبار الكلي End‑to‑End
 
-يبدأ الاختبار بتشغيل API على SQLite مؤقتة وبـJWT Secret خاص بالبيئة. بعد Health Check يتم تسجيل دخول Admin وإنشاء Student، ثم اختبار الكتالوج والفلاتر، إنشاء وتعديل وحذف كورس، تسجيل الطالب وإلغاء التسجيل، فحص قواعد الملكية، تغيير الدور، ثم تنظيف البيانات التجريبية. يعاد الاختبار بعد أي إصلاح.
+يبدأ الاختبار بتشغيل API على SQLite مؤقتة ومجلد uploads مؤقت وبـJWT Secret خاص بالبيئة. بعد Health Check يتم تسجيل دخول Admin وإنشاء Student، ثم إنشاء كورس ورفع فيديو ومرفق فعليين عبر multipart. يتحقق الاختبار من metadata والتنزيل والـContent-Disposition، ومن منع الطالب قبل enrollment ثم السماح له بعد التسجيل، ومن منع رفع/حذف الطالب، ورفض الامتداد غير المسموح. أخيرًا يحذف الأصل والكورس ويتحقق من اختفاء الملفات الفيزيائية، ثم يكمل تدفقات الكتالوج والفلاتر والتسجيلات وقواعد الملكية والتنظيف.
 
 ## قيود بيئة الاختبار
 

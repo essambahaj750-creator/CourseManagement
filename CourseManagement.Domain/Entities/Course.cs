@@ -11,4 +11,5 @@ public class Course
     // ÚáÇŞÉ ãÚ ÇáãÏÑÈ (User)
     public int InstructorId { get; set; }
     public User Instructor { get; set; } = null!;
+    public ICollection<CourseAsset> Assets { get; set; } = [];
 }

@@ -1,5 +1,6 @@
 ﻿using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Interfaces;
+using CourseManagement.Application.Options;
 using CourseManagement.Infrastructure.Data;
 using CourseManagement.Infrastructure.Repositories;
 using CourseManagement.Infrastructure.Services;
@@ -7,6 +8,7 @@ using CourseManagement.API.Middleware;
 using CourseManagement.API.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -21,10 +23,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<ICourseAssetRepository, CourseAssetRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICourseAssetService, CourseAssetService>();
+builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUploads"));
+builder.Services.Configure<FormOptions>(options =>
+    options.MultipartBodyLengthLimit = 512L * 1024 * 1024);
 builder.Services.AddScoped<JwtSecurityStampEvents>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

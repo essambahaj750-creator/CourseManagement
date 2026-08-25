@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CourseManagement.Application.DTOs;
+using CourseManagement.Domain.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace CourseManagement.Web.ViewModels;
 
@@ -85,6 +87,22 @@ public sealed class CourseFormViewModel
     public string? ImageUrl { get; set; }
 
     public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price, ImageUrl = ImageUrl };
+}
+
+public sealed class CourseAssetUploadViewModel
+{
+    [Display(Name = "الملف")]
+    public IFormFile? File { get; set; }
+
+    [Display(Name = "نوع الملف")]
+    public CourseAssetType Type { get; set; } = CourseAssetType.Attachment;
+}
+
+public sealed class CourseDetailsViewModel
+{
+    public CourseResponseDto Course { get; init; } = new();
+    public CourseAssetUploadViewModel Upload { get; init; } = new();
+    public bool CanAccessAssets { get; init; }
 }
 
 public sealed class CourseFilterViewModel

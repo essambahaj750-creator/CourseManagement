@@ -139,6 +139,56 @@ class Enrollment {
   );
 }
 
+enum CourseAssetType { video, attachment }
+
+class CourseAsset {
+  const CourseAsset({
+    required this.id,
+    required this.courseId,
+    required this.originalFileName,
+    required this.contentType,
+    required this.sizeBytes,
+    required this.type,
+    required this.createdAtUtc,
+    required this.downloadUrl,
+  });
+
+  final int id;
+  final int courseId;
+  final String originalFileName;
+  final String contentType;
+  final int sizeBytes;
+  final CourseAssetType type;
+  final DateTime createdAtUtc;
+  final String downloadUrl;
+
+  bool get isVideo => type == CourseAssetType.video;
+  String get typeLabel => isVideo ? 'فيديو' : 'مرفق';
+
+  String get sizeLabel {
+    if (sizeBytes < 1024 * 1024) {
+      return '${(sizeBytes / 1024).ceil()} KB';
+    }
+    return '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  factory CourseAsset.fromJson(Map<String, dynamic> json) {
+    final typeValue = (json['type'] as num?)?.toInt() ?? 2;
+    return CourseAsset(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      courseId: (json['courseId'] as num?)?.toInt() ?? 0,
+      originalFileName: json['originalFileName'] as String? ?? 'ملف',
+      contentType: json['contentType'] as String? ?? 'application/octet-stream',
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+      type: typeValue == 1 ? CourseAssetType.video : CourseAssetType.attachment,
+      createdAtUtc:
+          DateTime.tryParse(json['createdAtUtc'] as String? ?? '')?.toUtc() ??
+          DateTime.now().toUtc(),
+      downloadUrl: json['downloadUrl'] as String? ?? '',
+    );
+  }
+}
+
 class UserSummary {
   const UserSummary({
     required this.id,

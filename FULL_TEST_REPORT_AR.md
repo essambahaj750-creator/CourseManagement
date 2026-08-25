@@ -4,23 +4,24 @@
 
 تم تدقيق نسخة `professional-refactor` كمنظومة Full‑Stack تشمل ASP.NET Core REST API، واجهة ASP.NET Core MVC، SQLite، JWT، Cookie Authentication، Postman، وتطبيق Flutter مستقل. نُفذت الاختبارات على خوادم معزولة وقواعد SQLite مؤقتة حتى لا تختلط بيانات الاختبار ببيئة المستخدم.
 
-النتيجة الحالية: **كل الاختبارات التي تم تنفيذها نجحت بعد إصلاح عيب تعارض منافذ MVC وAPI، وتصحيح أداة اختبار MVC التي كانت تفترض اسم Cookie غير صحيح.**
+النتيجة الحالية: **نجحت اختبارات ميزة أصول الكورسات الجديدة والاختبارات السابقة بعد إصلاح binding نموذج MVC وترتيب Collection؛ لا يوجد فشل في آخر تشغيل موثق.**
 
 ## نتائج الاختبارات الجزئية
 
 | الطبقة | الاختبار | النتيجة |
 |---|---|---:|
 | .NET | Release build للحل كاملًا | ناجح، 0 تحذير و0 خطأ |
-| .NET | اختبارات xUnit | 6/6 ناجحة |
-| Flutter | `flutter analyze` | ناجح، No issues found |
+| .NET | اختبارات xUnit بعد إضافة CourseAssetsTests | 14/14 ناجحة |
+| Flutter | `flutter analyze` بعد file_picker/video_player | ناجح، No issues found |
 | Flutter | Unit tests | 4/4 ناجحة |
 | Flutter | Web Release build | ناجح |
-| API | Smoke test شامل | 38/38 ناجحة |
-| API | Validation/Security negative test | 21/21 ناجحة |
-| API | CORS origin مسموح | ناجح |
-| API | CORS origin غير مصرح | مرفوض كما هو مطلوب |
+| API | Asset multipart E2E على SQLite معزولة | ناجح: upload/list/download/permissions/delete/cleanup |
+| API | Smoke test السابق الشامل | 38/38 ناجحة |
+| API | Validation/Security negative test السابق | 21/21 ناجحة |
+| API | CORS origin مسموح/غير مصرح | قُبل المسموح ورُفض غير المصرح |
 | MVC | صفحات عامة ومحمية وجلسة Cookie | 11/11 ناجحة |
-| Postman | Collection عبر Newman | 33/33 طلبًا، 54/54 assertion، 0 فشل |
+| MVC | Asset E2E من Details | ناجح: upload/download/Anti-Forgery delete/course cleanup |
+| Postman | Collection عبر Newman بعد إضافة assets | 44 طلبًا، 71 assertion، 0 فشل |
 | GitHub Actions | `build-and-test` و`flutter-build-and-test` | كلاهما completed/success على `098e5f4` |
 
 ## الاختبار الكلي End‑to‑End
@@ -37,10 +38,12 @@
 8. تغيير كلمة مرور Student، إعادة الدخول بالكلمة الجديدة، ورفض الكلمة القديمة.
 9. إلغاء التسجيل والتحقق من `404` بعد الحذف، ثم حذف الكورس والمستخدم التجريبي.
 10. اختبار Collection Postman نفسها مع حفظ التوكنات والـIDs تلقائيًا.
+11. رفع فيديو ومرفق حقيقيين عبر multipart، التحقق من metadata وContent-Disposition، ومنع الطالب قبل enrollment ثم السماح بعده.
+12. حذف الأصل مع منع الطالب، ثم حذف الكورس والتحقق من اختفاء الملف الفيزيائي من مجلد uploads.
 
 ## اختبار MVC التكاملي
 
-تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور.
+تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور. كما نجح اختبار asset E2E من `/Courses/Details/{id}`: إنشاء كورس، رفع فيديو ومرفق، تنزيل bytes بالاسم الصحيح، حذف الأصل عبر Anti-Forgery، ثم حذف الكورس وتنظيف uploads.
 
 ## العيوب التي كُشفت وأُصلحت
 
@@ -67,7 +70,7 @@ API HTTP:  http://localhost:5205
 
 ## فحوص الأمان
 
-أكدت النتائج أن التسجيل العام ينشئ Student فقط، وأن المستخدم غير المسجل يحصل على `401`، وأن Student يحصل على `403` عند طلب وظائف الإدارة أو إنشاء كورس أو قراءة بيانات مستخدم آخر، وأن التوكن يحمل الدور الصحيح، وأن تغيير كلمة المرور يرفض القيمة القديمة بعد النجاح. كما تم اختبار CORS بقائمة origins صريحة؛ origin المسموح قُبل وorigin غير المصرح لم يحصل على `Access-Control-Allow-Origin`.
+أكدت النتائج أن التسجيل العام ينشئ Student فقط، وأن المستخدم غير المسجل يحصل على `401`، وأن Student يحصل على `403` عند طلب وظائف الإدارة أو إنشاء كورس أو قراءة بيانات مستخدم آخر. وفي الأصول، حصل الطالب غير المسجّل على `403` للقائمة والتنزيل والرفع والحذف، ثم حصل على `200` للقائمة والتنزيل بعد enrollment، بينما نجح Admin في الرفع والحذف. كما تم اختبار CORS بقائمة origins صريحة؛ origin المسموح قُبل وorigin غير المصرح لم يحصل على `Access-Control-Allow-Origin`.
 
 ## ملاحظات التشغيل
 
@@ -77,6 +80,6 @@ API HTTP:  http://localhost:5205
 
 اختبار Flutter Web البصري التفاعلي الكامل يحتاج متصفحًا متاحًا؛ أداة المتصفح المدمجة لم تكن متاحة في جلسة التدقيق الحالية. تم بدلًا من ذلك التحقق من `flutter analyze` وunit tests وWeb Release assets وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
 
-**حالة التسليم:** جاهز للعرض الأكاديمي بعد سحب التغييرات وتشغيل CI، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
+**حالة التسليم:** ميزة أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build، وجاهزة للعرض الأكاديمي بعد سحب التغييرات وتشغيل CI، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه. اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
 
 **المؤلف:** Manus AI

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
@@ -74,6 +75,13 @@ class _CourseManagementPageState extends State<CourseManagementPage> {
             .showSnackBar(SnackBar(content: Text(error.toString())));
       }
     }
+  }
+
+  Future<void> _manageAssets(Course course) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => CourseAssetsDialog(course: course),
+    );
   }
 
   Future<void> _delete(Course course) async {
@@ -205,6 +213,7 @@ class _CourseManagementPageState extends State<CourseManagementPage> {
                         width: cardWidth,
                         onEdit: () => _openForm(course),
                         onDelete: () => _delete(course),
+                        onManageAssets: () => _manageAssets(course),
                       ),
                   ],
                 );
@@ -223,12 +232,14 @@ class _AdminCourseCard extends StatelessWidget {
     required this.width,
     required this.onEdit,
     required this.onDelete,
+    required this.onManageAssets,
   });
 
   final Course course;
   final double width;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onManageAssets;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -284,12 +295,18 @@ class _AdminCourseCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_rounded, size: 17),
-                        label: const Text('تعديل'),
+                        onPressed: onManageAssets,
+                        icon: const Icon(Icons.folder_copy_outlined, size: 17),
+                        label: const Text('الملفات'),
                       ),
                     ),
                     const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: onEdit,
+                      tooltip: 'تعديل الكورس',
+                      color: AppTheme.blue,
+                      icon: const Icon(Icons.edit_rounded),
+                    ),
                     IconButton(
                       onPressed: onDelete,
                       tooltip: 'حذف الكورس',
@@ -305,6 +322,327 @@ class _AdminCourseCard extends StatelessWidget {
       ),
     ),
   );
+}
+
+class CourseAssetsDialog extends StatefulWidget {
+  const CourseAssetsDialog({required this.course, super.key});
+
+  final Course course;
+
+  @override
+  State<CourseAssetsDialog> createState() => _CourseAssetsDialogState();
+}
+
+class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
+  late Future<List<CourseAsset>> _future;
+  CourseAssetType _type = CourseAssetType.video;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<CourseAsset>> _load() =>
+      context.read<ApiClient>().getCourseAssets(widget.course.id);
+
+  void _refresh() => setState(() => _future = _load());
+
+  Future<void> _pickAndUpload() async {
+    if (_busy) return;
+    final picked = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: [
+        'mp4',
+        'webm',
+        'mov',
+        'm4v',
+        'pdf',
+        'doc',
+        'docx',
+        'ppt',
+        'pptx',
+        'xls',
+        'xlsx',
+        'zip',
+        'txt',
+      ],
+    );
+    if (picked == null || !mounted) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    if (bytes.isEmpty) {
+      _showMessage('تعذر قراءة الملف من الجهاز. حاول اختيار الملف مرة أخرى.');
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      await context.read<ApiClient>().uploadCourseAsset(
+        courseId: widget.course.id,
+        fileName: picked.name,
+        bytes: bytes,
+        type: _type,
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _future = _load();
+      });
+      _showMessage('تم رفع الملف وربطه بالكورس بنجاح.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showMessage(error.toString());
+    }
+  }
+
+  Future<void> _download(CourseAsset asset) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final bytes = await context.read<ApiClient>().downloadCourseAsset(
+        courseId: widget.course.id,
+        assetId: asset.id,
+      );
+      final savedPath = await FilePicker.saveFile(
+        dialogTitle: 'حفظ ${asset.originalFileName}',
+        fileName: asset.originalFileName,
+        bytes: bytes,
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showMessage(
+        savedPath == null ? 'تم إلغاء الحفظ.' : 'تم حفظ الملف على جهازك.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showMessage(error.toString());
+    }
+  }
+
+  Future<void> _delete(CourseAsset asset) async {
+    if (_busy) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الملف؟'),
+        content: Text('سيتم حذف «${asset.originalFileName}» نهائيًا.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await context.read<ApiClient>().deleteCourseAsset(
+        courseId: widget.course.id,
+        assetId: asset.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _future = _load();
+      });
+      _showMessage('تم حذف الملف.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _showMessage(error.toString());
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    return Dialog(
+      child: SizedBox(
+        width: screen.width > 760 ? 700 : screen.width - 32,
+        height: screen.height > 760 ? 640 : screen.height - 80,
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'ملفات «${widget.course.title}»',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _busy ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'ارفع فيديوهات ومرفقات حقيقية من جهازك. الخادم يتحقق من النوع والحجم ويحفظها خارج SQLite.',
+                style: TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 12,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<CourseAssetType>(
+                      initialValue: _type,
+                      decoration: const InputDecoration(
+                        labelText: 'نوع الملف',
+                        prefixIcon: Icon(Icons.category_outlined),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: CourseAssetType.video,
+                          child: Text('فيديو تعليمي'),
+                        ),
+                        DropdownMenuItem(
+                          value: CourseAssetType.attachment,
+                          child: Text('ملف مرفق'),
+                        ),
+                      ],
+                      onChanged: _busy
+                          ? null
+                          : (value) {
+                              if (value != null) setState(() => _type = value);
+                            },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: _busy ? null : _pickAndUpload,
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 17,
+                            height: 17,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.upload_file_rounded),
+                    label: const Text('اختيار ورفع'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(),
+              const SizedBox(height: 6),
+              const Text(
+                'الملفات المرتبطة',
+                style: TextStyle(
+                  color: AppTheme.ink,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: FutureBuilder<List<CourseAsset>>(
+                  future: _future,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return ErrorState(
+                        message: snapshot.error.toString(),
+                        onRetry: _refresh,
+                      );
+                    }
+                    final assets = snapshot.data ?? const <CourseAsset>[];
+                    if (assets.isEmpty) {
+                      return const EmptyState(
+                        title: 'لا توجد ملفات بعد',
+                        message:
+                            'اختر ملفًا من جهازك ليظهر هنا بعد نجاح الرفع.',
+                        icon: Icons.folder_open_rounded,
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: assets.length,
+                      separatorBuilder: (_, index) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final asset = assets[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            asset.isVideo
+                                ? Icons.play_circle_outline_rounded
+                                : Icons.description_outlined,
+                            color: AppTheme.blue,
+                          ),
+                          title: Text(
+                            asset.originalFileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.ink,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${asset.typeLabel} • ${asset.sizeLabel}',
+                          ),
+                          trailing: Wrap(
+                            spacing: 0,
+                            children: [
+                              IconButton(
+                                onPressed: _busy
+                                    ? null
+                                    : () => _download(asset),
+                                tooltip: 'تنزيل',
+                                icon: const Icon(Icons.download_outlined),
+                              ),
+                              IconButton(
+                                onPressed: _busy ? null : () => _delete(asset),
+                                tooltip: 'حذف',
+                                color: AppTheme.danger,
+                                icon: const Icon(Icons.delete_outline_rounded),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CourseDraft {

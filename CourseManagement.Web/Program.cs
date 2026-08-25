@@ -1,4 +1,5 @@
 using CourseManagement.Application.Interfaces;
+using CourseManagement.Application.Options;
 using CourseManagement.Domain.Interfaces;
 using CourseManagement.Infrastructure.Data;
 using CourseManagement.Infrastructure.Repositories;
@@ -7,6 +8,7 @@ using CourseManagement.Web.Middleware;
 using CourseManagement.Web.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.RateLimiting;
 
@@ -18,10 +20,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<ICourseAssetRepository, CourseAssetRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICourseAssetService, CourseAssetService>();
+builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUploads"));
+builder.Services.Configure<FormOptions>(options =>
+    options.MultipartBodyLengthLimit = 512L * 1024 * 1024);
 builder.Services.AddScoped<MvcCookieSecurityEvents>();
 
 // The MVC application uses secure Cookie Authentication. JWT configuration belongs

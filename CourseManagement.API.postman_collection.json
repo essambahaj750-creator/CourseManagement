@@ -65,6 +65,26 @@
     {
       "key": "studentExpiresAtUtc",
       "value": ""
+    },
+    {
+      "key": "videoFile",
+      "value": "tests/assets/course-demo.mp4"
+    },
+    {
+      "key": "attachmentFile",
+      "value": "tests/assets/course-notes.pdf"
+    },
+    {
+      "key": "unsupportedFile",
+      "value": "tests/assets/malware.exe"
+    },
+    {
+      "key": "assetId",
+      "value": ""
+    },
+    {
+      "key": "attachmentAssetId",
+      "value": ""
     }
   ],
   "item": [
@@ -532,7 +552,255 @@
       ]
     },
     {
-      "name": "03 - Enrollments & Authorization",
+      "name": "03 - Course Assets (Before Enrollment)",
+      "description": "شغّل مجلد الأصول بعد إنشاء courseId. استخدم مسارات fixtures بصيغة relative to collection إذا شغلت Newman من جذر المشروع. اختبار الطالب قبل enrollment يجب أن يعيد 403، وبعد enrollment يعيد 200.",
+      "item": [
+        {
+          "name": "Admin Upload Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{videoFile}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"video upload 201\",()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"assetId\",String(j.id||\"\"));",
+                  "pm.test(\"asset id returned\",()=>pm.expect(j.id).to.be.ok);",
+                  "pm.test(\"asset is video\",()=>pm.expect(j.type).eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Lists Course Assets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin asset list 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"asset list contains upload\",()=>pm.expect(pm.response.json().some(x=>String(x.id)===pm.collectionVariables.get(\"assetId\"))).eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Lists Assets Before Enrollment - 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student asset list forbidden before enrollment\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Downloads Before Enrollment - 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets/{{assetId}}/download"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student asset download forbidden before enrollment\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Uploads - 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{videoFile}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student upload forbidden\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unsupported Extension - 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{unsupportedFile}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"unsupported extension rejected\",()=>pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Upload Attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}/assets",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{attachmentFile}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"attachment upload 201\",()=>pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"attachmentAssetId\",String(pm.response.json().id||\"\"));",
+                  "pm.test(\"asset is attachment\",()=>pm.expect(pm.response.json().type).eql(2));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Enrollments & Authorization",
       "item": [
         {
           "name": "Enroll Student",
@@ -573,6 +841,114 @@
                   "pm.test(\"enrollment course matches\",()=>pm.expect(String(j.courseId)).eql(pm.collectionVariables.get(\"courseId\")));"
                 ]
               }
+            }
+          ]
+        },
+        {
+          "name": "Course Asset Access After Enrollment",
+          "description": "يتطلب تنفيذ طلب Enroll Student السابق مباشرة.",
+          "item": [
+            {
+              "name": "Student Lists Assets After Enrollment",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{studentToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/course/{{courseId}}/assets"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"student asset list after enrollment 200\",()=>pm.response.to.have.status(200));",
+                      "pm.test(\"student sees assets after enrollment\",()=>pm.expect(pm.response.json().length).above(0));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Student Downloads After Enrollment",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{studentToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/course/{{courseId}}/assets/{{assetId}}/download"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"student asset download after enrollment 200\",()=>pm.response.to.have.status(200));",
+                      "pm.test(\"download content type returned\",()=>pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"video/\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Student Deletes Asset - 403",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{studentToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/course/{{courseId}}/assets/{{assetId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"student asset delete forbidden\",()=>pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Admin Deletes Video Asset",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{baseUrl}}/api/course/{{courseId}}/assets/{{assetId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"admin asset delete 204\",()=>pm.response.to.have.status(204));"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
@@ -784,7 +1160,7 @@
       ]
     },
     {
-      "name": "04 - Users & Roles",
+      "name": "05 - Users & Roles",
       "item": [
         {
           "name": "Admin Gets Users",

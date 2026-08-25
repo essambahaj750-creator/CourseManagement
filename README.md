@@ -70,6 +70,21 @@ dotnet user-secrets set "SeedAdmin:Password" "كلمة-مرور-قوية-وفر�
 | PUT | `/api/users/{id}/role` | Admin |
 | DELETE | `/api/users/{id}` | Admin |
 
+### أصول الكورس: الفيديوهات والمرفقات المحلية
+
+يوفر النظام رفعًا حقيقيًا من جهاز المستخدم عبر `multipart/form-data`، وليس عناصر واجهة وهمية. تُحفظ bytes في مجلد محلي خارج قاعدة SQLite، بينما تُحفظ في SQLite بيانات الملف فقط مثل الاسم الأصلي الآمن، النوع، MIME، الحجم، وقت الإنشاء، واسم التخزين الداخلي العشوائي. المجلد `CourseManagement.Uploads/` مستبعد من Git ولا يُقدّم عبر `wwwroot` أو static files.
+
+| Method | المسار | الصلاحية | الاستخدام |
+|---|---|---|---|
+| GET | `/api/course/{courseId}/assets` | مالك الكورس أو Admin أو Student مسجّل | قائمة metadata المحمية |
+| POST | `/api/course/{courseId}/assets` | Instructor المالك أو Admin | رفع `file` و`type` بقيمتي `1=Video` أو `2=Attachment` |
+| GET | `/api/course/{courseId}/assets/{assetId}/download` | مالك الكورس أو Admin أو Student مسجّل | تنزيل/stream محمي مع Range support |
+| DELETE | `/api/course/{courseId}/assets/{assetId}` | Instructor المالك أو Admin | حذف metadata والbytes معًا |
+
+الفيديوهات المسموحة هي `mp4` و`webm` و`mov` و`m4v` بحد أقصى 512MB، والمرفقات هي `pdf` و`doc/docx` و`ppt/pptx` و`xls/xlsx` و`zip` و`txt` بحد أقصى 50MB. يتحقق الخادم من الامتداد وMIME والحجم والاسم، ويقبل `application/octet-stream` فقط كحالة توافق شائعة من متصفحات اختيار الملفات، مع بقاء الامتداد والحدود مفروضة. الطالب لا يرى ولا ينزّل الملفات قبل enrollment، حتى لو عرف رقم الكورس.
+
+في MVC افتح `/Courses/Details/{id}` بعد تسجيل الدخول كمالك أو Admin لرفع وإدارة الملفات، بينما يعرض الطالب المسجّل المحتوى داخل صفحة التفاصيل. وفي Flutter استخدم **إدارة الكورسات ← الملفات** لاختيار الملف من الجهاز ورفعه، أو افتح تفاصيل كورس مسجّل لتشغيل الفيديو وتنزيل المرفقات. التفاصيل التشغيلية والأمنية موجودة في `COURSE_ASSETS_AR.md`.
+
 ## معالجة الأخطاء
 
 Middleware مركزي يحوّل استثناءات منطق الأعمال إلى رموز HTTP صحيحة:
@@ -188,7 +203,7 @@ GET /api/course/search?q=flutter&minPrice=10&maxPrice=500&sort=price-low&page=1&
 
 ## تطبيق Flutter المستقل
 
-يوجد تطبيق Flutter مستقل داخل `CourseManagement.Flutter` يعمل كعميل حقيقي لـ`CourseManagement.API` عبر JWT Bearer، وليس مجرد واجهة تجريبية. يشمل التطبيق المصادقة، استعادة الجلسة، الكتالوج مع الفلاتر server-side، تفاصيل الكورس، التسجيلات، الملف الشخصي، وحراسة مسارات الإدارة. كما أضيفت شاشة CRUD لإدارة الكورسات للـInstructor/Admin، مع إدارة المستخدمين والتسجيلات للـAdmin.
+يوجد تطبيق Flutter مستقل داخل `CourseManagement.Flutter` يعمل كعميل حقيقي لـ`CourseManagement.API` عبر JWT Bearer، وليس مجرد واجهة تجريبية. يشمل التطبيق المصادقة، استعادة الجلسة، الكتالوج مع الفلاتر server-side، تفاصيل الكورس، التسجيلات، الملف الشخصي، وحراسة مسارات الإدارة. كما أضيفت شاشة CRUD لإدارة الكورسات للـInstructor/Admin، مع إدارة المستخدمين والتسجيلات للـAdmin. وتدعم شاشة إدارة الكورس اختيار فيديو أو مرفق من جهاز المستخدم ورفعه multipart، كما يدعم الطالب المسجّل تشغيل الفيديو المحمي وتنزيل المرفقات من خلال Bearer token.
 
 للتشغيل، ابدأ API أولًا واضبط `JwtSettings:Secret` و`Cors:AllowedOrigins` خارج Git، ثم نفّذ من مجلد Flutter:
 
