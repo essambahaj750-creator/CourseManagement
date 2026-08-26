@@ -1,0 +1,634 @@
+<title>CourseManagement Audit Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
+
+<style>
+  :root {
+    --ground:      #F7F8FA;
+    --surface:     #FFFFFF;
+    --surface-2:   #F0F3F8;
+    --ink:         #16202E;
+    --ink-2:       #4B5871;
+    --ink-3:       #6B7893;
+    --line:        #DEE3EC;
+    --line-strong: #C4CCDA;
+    --accent:      #2456C8;
+    --accent-soft: #E7EDFB;
+
+    --crit:        #A4133C;
+    --crit-soft:   #FBE8ED;
+    --high:        #A8501C;
+    --high-soft:   #FBEDE2;
+    --med:         #74580E;
+    --med-soft:    #F8F1DC;
+    --low:         #3F5A6B;
+    --low-soft:    #EAF0F4;
+    --fixed:       #10654B;
+    --fixed-soft:  #E2F2EC;
+
+    --shadow: 0 1px 2px rgba(22,32,46,.05), 0 8px 24px -12px rgba(22,32,46,.12);
+
+    --measure: 68ch;
+    --sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --arabic: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0F151F;
+      --surface:     #161D28;
+      --surface-2:   #1D2631;
+      --ink:         #E9EDF4;
+      --ink-2:       #A3B0C5;
+      --ink-3:       #808EA6;
+      --line:        #29323F;
+      --line-strong: #3A4553;
+      --accent:      #86A8F7;
+      --accent-soft: #1B2740;
+
+      --crit:        #F5879F;
+      --crit-soft:   #3A1622;
+      --high:        #EFA678;
+      --high-soft:   #362016;
+      --med:         #DFC463;
+      --med-soft:    #2F2814;
+      --low:         #A5BBC8;
+      --low-soft:    #1C2830;
+      --fixed:       #74D4B1;
+      --fixed-soft:  #122E26;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0F151F;
+    --surface:     #161D28;
+    --surface-2:   #1D2631;
+    --ink:         #E9EDF4;
+    --ink-2:       #A3B0C5;
+    --ink-3:       #808EA6;
+    --line:        #29323F;
+    --line-strong: #3A4553;
+    --accent:      #86A8F7;
+    --accent-soft: #1B2740;
+
+    --crit:        #F5879F;
+    --crit-soft:   #3A1622;
+    --high:        #EFA678;
+    --high-soft:   #362016;
+    --med:         #DFC463;
+    --med-soft:    #2F2814;
+    --low:         #A5BBC8;
+    --low-soft:    #1C2830;
+    --fixed:       #74D4B1;
+    --fixed-soft:  #122E26;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 96px;
+  }
+
+  /* ---- masthead ---- */
+  .masthead { border-bottom: 2px solid var(--ink); padding-bottom: 22px; }
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  }
+  .eyebrow span::after { content: "·"; margin-left: 10px; color: var(--line-strong); }
+  .eyebrow span:last-child::after { content: ""; }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 6vw, 54px);
+    line-height: 1.06;
+    letter-spacing: -.02em;
+    margin: 14px 0 12px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-family: var(--serif);
+    font-size: clamp(17px, 2.2vw, 20px);
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  /* ---- counts ---- */
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 12px;
+    margin: 30px 0 0;
+    padding: 0; list-style: none;
+  }
+  .count {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--sev, var(--line-strong));
+    border-radius: 4px;
+    padding: 14px 16px 16px;
+    box-shadow: var(--shadow);
+  }
+  .count b {
+    display: block;
+    font-family: var(--serif);
+    font-size: 40px; font-weight: 600; line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--sev, var(--ink));
+  }
+  .count i {
+    font-style: normal; display: block; margin-top: 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  .count s { display: block; text-decoration: none; font-size: 12.5px; color: var(--ink-3); margin-top: 3px; }
+
+  /* ---- sections ---- */
+  section { margin-top: 56px; }
+  h2 {
+    font-family: var(--serif);
+    font-size: clamp(24px, 3.4vw, 31px);
+    font-weight: 600; letter-spacing: -.015em;
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line-strong);
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 12px; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin: 34px 0 14px;
+  }
+  .lede { color: var(--ink-2); max-width: var(--measure); margin: 14px 0 0; }
+  p { max-width: var(--measure); }
+
+  /* ---- resolved strip ---- */
+  .resolved {
+    margin-top: 26px;
+    background: var(--fixed-soft);
+    border: 1px solid var(--fixed);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  .resolved h3 { margin: 0 0 12px; color: var(--fixed); }
+  .resolved ul { margin: 0; padding-left: 20px; }
+  .resolved li { margin-bottom: 9px; color: var(--ink); }
+  .resolved li:last-child { margin-bottom: 0; }
+
+  /* ---- finding ---- */
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--sev);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .fhead { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+  .fid {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    color: var(--sev); letter-spacing: .02em;
+  }
+  .ftitle { font-weight: 600; font-size: 16.5px; flex: 1 1 320px; }
+  .finding p { margin: 10px 0 0; font-size: 14.5px; color: var(--ink-2); max-width: none; }
+  .finding p strong { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: var(--mono); font-size: .855em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: .1em .35em;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .fix { margin-top: 11px !important; padding-top: 10px; border-top: 1px dashed var(--line-strong); font-size: 14px !important; }
+  .fix b { color: var(--accent); font-weight: 700; }
+
+  .chip {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 500;
+    letter-spacing: .03em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: var(--chip-bg, var(--surface-2));
+    color: var(--chip-fg, var(--ink-2));
+    border: 1px solid var(--chip-bd, var(--line));
+  }
+  .v-cmd  { --chip-bg: var(--fixed-soft);  --chip-fg: var(--fixed);  --chip-bd: var(--fixed); }
+  .v-code { --chip-bg: var(--accent-soft); --chip-fg: var(--accent); --chip-bd: var(--accent); }
+  .v-run  { --chip-bg: var(--med-soft);    --chip-fg: var(--med);    --chip-bd: var(--med); }
+
+  .sev-crit  { --sev: var(--crit); }
+  .sev-high  { --sev: var(--high); }
+  .sev-med   { --sev: var(--med); }
+  .sev-low   { --sev: var(--low); }
+  .sev-fixed { --sev: var(--fixed); }
+
+  /* ---- tables ---- */
+  .scroll { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    background: var(--surface-2);
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.ids { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .yes { color: var(--fixed); font-weight: 700; }
+  .no  { color: var(--crit); font-weight: 700; }
+
+  /* ---- strengths ---- */
+  .strengths { columns: 2 260px; column-gap: 32px; margin-top: 16px; padding: 0; list-style: none; }
+  .strengths li {
+    break-inside: avoid;
+    padding-left: 20px; position: relative;
+    margin-bottom: 11px; font-size: 14.5px; color: var(--ink-2);
+  }
+  .strengths li::before {
+    content: "✓"; position: absolute; left: 0;
+    color: var(--fixed); font-weight: 700;
+  }
+  .strengths li strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- ordered remediation ---- */
+  .order { list-style: none; counter-reset: step; padding: 0; margin-top: 18px; }
+  .order li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 18px 52px;
+    border-left: 2px solid var(--line-strong);
+    margin-left: 15px;
+  }
+  .order li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .order li::before {
+    content: counter(step);
+    position: absolute; left: -16px; top: -2px;
+    width: 30px; height: 30px;
+    background: var(--accent); color: var(--ground);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .order b { display: block; font-size: 15.5px; color: var(--ink); }
+  .order span { font-size: 14px; color: var(--ink-2); }
+
+  /* ---- arabic ---- */
+  .ar {
+    direction: rtl; text-align: right;
+    font-family: var(--arabic);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-right: 4px solid var(--accent);
+    border-radius: 4px;
+    padding: 20px 22px;
+    margin-top: 20px;
+    line-height: 1.95;
+    color: var(--ink-2);
+    box-shadow: var(--shadow);
+  }
+  .ar h3 { margin: 0 0 10px; color: var(--accent); letter-spacing: 0; font-size: 15px; text-transform: none; }
+  .ar p { max-width: none; margin: 0 0 12px; }
+  .ar p:last-child { margin-bottom: 0; }
+  .ar code { direction: ltr; display: inline-block; }
+
+  /* ---- chain callout ---- */
+  .chain {
+    margin-top: 18px;
+    background: var(--high-soft);
+    border: 1px solid var(--high);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  .chain h3 { margin: 0 0 10px; color: var(--high); }
+  .chain p { color: var(--ink); max-width: none; margin: 0; font-size: 14.5px; }
+
+  footer {
+    margin-top: 60px; padding-top: 20px;
+    border-top: 2px solid var(--ink);
+    font-size: 13px; color: var(--ink-3);
+  }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 560px) { .strengths { columns: 1; } }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Full-stack audit</span><span>26–27 Aug 2026</span><span>branch professional-refactor</span>
+    </div>
+    <h1>CourseManagement Audit Register</h1>
+    <p class="standfirst">Six read-only phases across an ASP.NET Core API, an MVC web app, a Flutter client and EF Core/SQLite. Two critical defects found and fixed; fourteen high-severity findings remain open. Every row below is marked with how it was established.</p>
+  </header>
+
+  <ul class="counts">
+    <li class="count sev-fixed"><b>2</b><i>Fixed</i><s>verified by test</s></li>
+    <li class="count sev-high"><b>14</b><i>High</i><s>open</s></li>
+    <li class="count sev-med"><b>~50</b><i>Medium</i><s>open</s></li>
+    <li class="count sev-low"><b>~20</b><i>Low</i><s>open</s></li>
+    <li class="count"><b>7</b><i>Clean</i><s>injection classes</s></li>
+  </ul>
+
+  <div class="resolved">
+    <h3>Resolved during this audit</h3>
+    <ul>
+      <li><strong>C1 — JWT signing key and admin password present in git history.</strong> Key rotated to 88 chars and both admin password hashes re-derived in each database, with security stamps rotated to kill live sessions. Verified <code>newPasswordAccepted=True</code>, <code>securityStampRotated=True</code>, <code>integrity_check=ok</code>. The historical values remain readable in history and are treated as burned.</li>
+      <li><strong>C2 — a capital letter in an email address locked the owner out permanently.</strong> Lookups lowercased the input while writes preserved case, and SQLite compares TEXT with BINARY collation. Fixed on both sides via <code>User.NormalizeEmail</code> and <code>COLLATE NOCASE</code>; migration verified up and down against a copy of real data with zero rows lost. 26/26 tests pass, and the regression test was confirmed to fail without the fix.</li>
+    </ul>
+  </div>
+
+  <div class="ar">
+    <h3>الملخص التنفيذي</h3>
+    <p>تم تنفيذ تدقيق كامل على ست مراحل. النتيجة العامة أن المشروع أقوى بكثير مما يبدو: لا توجد ثغرات حقن من أي نوع، وحماية CSRF مفعّلة على جميع نماذج MVC الثمانية عشر، وصلاحيات الملفات مفروضة على مستوى الخدمة، ورفع الملفات حقيقي من الجهاز وليس وهميًا.</p>
+    <p>لكن أخطر ما وُجد ليس ثغرة تقليدية، بل أن <strong>عقد رسائل الأخطاء يُسقط سبب فشل أي عملية رفع</strong> ويستبدله برسالة عامة، فيُعمي المستخدم والاختبارات معًا. لذلك يبدأ ترتيب المعالجة من ثقة CI وهيكل الاختبارات، ثم عقد الأخطاء، قبل أي شيء آخر.</p>
+    <p>السجل التفصيلي الكامل بالعربية موجود في الملف <code>AUDIT_FINDINGS_REGISTER_AR.md</code> داخل المستودع.</p>
+  </div>
+
+  <section>
+    <h2>Verified strengths</h2>
+    <p class="lede">Established by exhaustive search or direct code reading, not assumed. These should survive any remediation.</p>
+    <ul class="strengths">
+      <li><strong>No injection of any class.</strong> Zero <code>FromSqlRaw</code>, <code>Html.Raw</code>, <code>Process.Start</code>, <code>BinaryFormatter</code>, or server-side <code>HttpClient</code> — so no SQL injection, no view XSS, no command injection, no unsafe deserialization, no SSRF surface.</li>
+      <li><strong>CSRF protection on all 18 MVC POST actions</strong>, counted individually.</li>
+      <li><strong>Instant session revocation</strong> — the security stamp is re-validated on every authenticated request in both apps, and fails closed.</li>
+      <li><strong>Open redirect blocked</strong> by <code>Url.IsLocalUrl</code>.</li>
+      <li><strong>Mass assignment closed</strong> — no <code>InstructorId</code> or <code>ImageUrl</code> on the course DTO, no <code>Role</code> on register, owner forced from the token.</li>
+      <li><strong>Uploads are sound at the core</strong> — server-generated GUID filenames, traversal blocked with a passing test, stored outside the web root, orphan cleanup on metadata failure.</li>
+      <li><strong>IDOR closed</strong> on enrollment and user endpoints.</li>
+      <li><strong>CORS fails closed</strong> on empty or wildcard origins and is never combined with credentials.</li>
+      <li><strong>Stable pagination</strong> — every sort carries an <code>Id</code> tiebreaker, so no row is duplicated or skipped between pages.</li>
+      <li><strong>WAL enabled</strong> on both databases; migrations guarded by <code>__EFMigrationsLock</code>; auto-migration off in production by default.</li>
+      <li><strong>Flutter uploads are genuinely local</strong>, with extension allowlists mirroring the server exactly.</li>
+      <li><strong>Course preview before saving is real</strong>, and <strong>authenticated video streaming works</strong> via an <code>Authorization</code> header against a range-enabled endpoint.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Open high-severity findings</h2>
+    <p class="lede">Fourteen findings. Each carries its evidence path and how it was established.</p>
+
+    <h3>Error contract</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">SEC-S8</span>
+        <span class="ftitle">Upload failures never tell anyone why</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>ExceptionHandlingMiddleware.cs:68-71</code>, both apps. <code>ArgumentException</code> becomes 400 with the real message <strong>discarded</strong> and replaced by <em>"One or more request values are invalid."</em> Every carefully written validation reason — the 50 MB limit, the rejected extension — is thrown away. Flutter's error extractor reads exactly that <code>detail</code> field.</p>
+      <p class="fix"><b>Fix</b> a <code>ValidationException</code> carrying a safe user-facing message surfaced in <code>detail</code>. <b>Test</b> assert the size and extension reasons reach the client verbatim.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">SEC-S1</span>
+        <span class="ftitle">Internal detail leaked, and accounts enumerable</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>ExceptionHandlingMiddleware.cs:76-79</code>. <code>InvalidOperationException</code> returns 409 with <code>ex.Message</code> <strong>verbatim</strong>, leaking configuration text such as <code>"JwtSettings:Secret is not configured."</code> to anonymous callers, and enumerating accounts via <em>"User with this email already exists."</em></p>
+      <p class="fix"><b>Fix</b> map to a generic 409; introduce a conflict type carrying only vetted messages. <b>Test</b> assert configuration text never appears in a response body.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FUNC-F6</span>
+        <span class="ftitle">Raw exception text rendered into the MVC UI in 11 places</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p>Seven in <code>AdminController</code>, two in <code>EnrollmentsController</code>, two in <code>CoursesController</code>. This is a workaround for SEC-S8 swallowing messages, but it surfaces internal text to end users.</p>
+    </div>
+
+    <h3>File upload</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">SEC-S13</span>
+        <span class="ftitle">Content-type validation is fully bypassable, and no signature check exists</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>CourseAssetService.cs:274</code> and <code>:297</code> both <code>return true</code> the moment the declared type is <code>application/octet-stream</code> — a value the client controls entirely. The MIME check therefore contributes <strong>no security value at all</strong>, and there is <strong>no magic-byte validation anywhere</strong> in the project despite being an explicit requirement. The extension allowlist is the only real gate.</p>
+      <p class="fix"><b>Fix</b> drop the octet-stream bypass, sniff signatures for JPEG/PNG/WebP/MP4/PDF/ZIP, and persist a <em>server-derived</em> content type. <b>Test</b> upload a <code>.png</code> containing HTML and expect 400.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">SEC-S14</span>
+        <span class="ftitle">Cover replacement is not atomic and can break a cover permanently</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>CourseAssetService.cs:127-175</code> with <code>CourseAssetRepository.cs:28</code>. <code>AddAsync</code> commits immediately, so if the following course update fails, the <code>catch</code> deletes the <strong>new file</strong> but leaves the <strong>committed metadata row</strong> — and the old row is already gone. The cover is then permanently unresolvable. No transaction spans the operation anywhere in the codebase.</p>
+      <p class="fix"><b>Fix</b> one transaction around the replacement; delete the old file only after commit. <b>Test</b> fault-inject mid-replacement and assert the cover still resolves.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">SEC-S15</span>
+        <span class="ftitle">512 MB accepted against a 50 MB cap, with no upload rate limiting</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>RequestSizeLimit(512MB)</code> sits on attachment upload in both apps while the service cap is 50 MB, so 512 MB is spooled to disk before rejection. No <code>EnableRateLimiting</code> on <strong>any</strong> upload endpoint — throttling is applied to authentication only.</p>
+      <p class="fix"><b>Fix</b> per-type size limits, streaming multipart with a hard ceiling, and an upload limiter. <b>Test</b> assert 413 for oversized and 429 on burst.</p>
+    </div>
+
+    <h3>Data</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">DATA-D1</span>
+        <span class="ftitle">UTC is lost end-to-end, and the two clients guess in opposite directions</span>
+        <span class="chip v-cmd">proved by command</span>
+      </div>
+      <p>SQLite stores timestamps as <code>2026-08-26 13:50:41.9517705</code> — <strong>no <code>Z</code>, no offset</strong> — so <code>DateTimeKind</code> is lost on read and the JSON carries no designator. Flutter then guesses inconsistently: <code>enrolledDate</code> uses <code>.toLocal()</code> while <code>createdAtUtc</code> uses <code>.toUtc()</code>. On a UTC+3 machine both are wrong by three hours, <strong>in opposite directions</strong>. Only <code>expiresAtUtc</code> is correct, because it is computed in memory and keeps its kind.</p>
+      <p class="fix"><b>Fix</b> persist and serialize with an explicit UTC designator; make the client parse strictly. <b>Test</b> a serialization contract test asserting the <code>Z</code> suffix survives a round trip.</p>
+    </div>
+
+    <h3>Cross-client consistency</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FUNC-H3</span>
+        <span class="ftitle">Every MVC-uploaded cover renders as a broken image</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>CourseAssetService.cs:152</code> hardcodes <code>ImageUrl = "/api/course/{id}/cover"</code>, but MVC serves covers at <code>/Courses/Details/{id}/Cover</code>. Three views render <code>&lt;img src="@course.ImageUrl"&gt;</code> and all three 404. Flutter is unaffected because it resolves the path against its API base URL.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FUNC-F1</span>
+        <span class="ftitle">A cover can be replaced but never removed</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p>The asset listing filters out cover images, so no client can ever learn a cover's asset id — and the delete endpoint requires one. Nothing clears <code>Course.ImageUrl</code> either. The Flutter UI states the limitation outright: "leave empty to keep the current cover".</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FUNC-F2</span>
+        <span class="ftitle">Admin tables are configured for a different library than the one loaded</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>site.js:13-25</code> passes <code>searchable</code>, <code>sortable</code>, <code>perPage</code>, <code>perPageSelect</code> and <code>labels</code> — simple-datatables options — while the layout loads <strong>DataTables.net 2.1.8</strong>, which expects <code>searching</code>, <code>ordering</code>, <code>pageLength</code> and <code>language</code>. The configuration is ignored and the tables render with English defaults, contradicting the Arabic requirement.</p>
+    </div>
+
+    <h3>Flutter client</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FLU-FL1</span>
+        <span class="ftitle">Android Emulator has no working configuration at all</span>
+        <span class="chip v-code">proved by code read</span>
+        <span class="chip v-run">needs runtime check</span>
+      </div>
+      <p>Three issues compound. <code>API_BASE_URL</code> is a <strong>compile-time</strong> constant defaulting to <code>https://localhost:7026</code>, with no runtime platform switch and no <code>10.0.2.2</code>. The manifest declares neither <code>usesCleartextTraffic</code> nor a network security config, so Android 9+ blocks <code>http://10.0.2.2:5205</code>. And <code>https://10.0.2.2:7026</code> fails TLS because the ASP.NET development certificate is self-signed and untrusted on the emulator.</p>
+      <p class="fix"><b>Fix</b> resolve the base URL at runtime per platform, and add a debug-only network security config trusting cleartext to <code>10.0.2.2</code>.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FLU-FL2</span>
+        <span class="ftitle">Large video uploads crash the app before any request is sent</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>admin_courses_page.dart:527</code> picks with <code>withData: true</code> then wraps the bytes in <code>MultipartFile.fromBytes</code>, with <strong>no size validation whatsoever</strong>. A 2 GB file is materialised whole and then duplicated, so the app runs out of memory before the network call. The cover path, by contrast, <em>does</em> check 5 MB.</p>
+      <p class="fix"><b>Fix</b> validate against the server caps before reading, and stream from a path rather than buffering bytes.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FLU-FL3</span>
+        <span class="ftitle">No 401 handling anywhere, so revocation strands the user</span>
+        <span class="chip v-cmd">proved by command</span>
+      </div>
+      <p>The entire client contains exactly <strong>one</strong> status-code check — a 403 in the course details page — and <code>logout()</code> is only reached from two explicit taps. Any server-side revocation (password change, role change, deactivation, or <strong>the JWT secret rotated during this audit</strong>) leaves the app apparently authenticated with every screen erroring and no route back to login.</p>
+      <p class="fix"><b>Fix</b> intercept 401 centrally, clear the session and let the router redirect. <b>Test</b> a widget test asserting a 401 response drives navigation to login.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">FLU-FL4</span>
+        <span class="ftitle">The declared typeface is not bundled, so all typography is inert</span>
+        <span class="chip v-cmd">proved by command</span>
+      </div>
+      <p><code>app_theme.dart:27</code> declares <code>fontFamily: 'Cairo'</code>, but the project contains zero font files, <code>pubspec.yaml</code> declares no <code>fonts:</code> section, and <code>web/index.html</code> has no font link. The app silently falls back to platform defaults everywhere — including Web, where Arabic gets whatever the browser chooses.</p>
+    </div>
+
+    <h3>Infrastructure</h3>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">OPS-H9</span>
+        <span class="ftitle">Continuous integration gates nothing</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p>The workflow pins Flutter <code>3.47.1</code> while the environment runs <code>3.35.7</code> with dependencies deliberately pinned for 3.35, and <code>pull_request.branches</code> is set to <code>main</code> while the default branch is <strong><code>master</code></strong>. No pull request into the main line is ever checked, and CI results do not represent the local toolchain.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="fhead">
+        <span class="fid">TEST-M1</span>
+        <span class="ftitle">There are no HTTP-level tests, and the API project has none at all</span>
+        <span class="chip v-code">proved by code read</span>
+      </div>
+      <p><code>Microsoft.AspNetCore.Mvc.Testing</code> is referenced and <code>public partial class Program;</code> exists in both hosts — both unused. The test project references only the web app, so JWT authentication, rate limiting, CORS and the exception middleware are entirely untested.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Medium findings by area</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Area</th><th>IDs</th><th>Substance</th></tr></thead>
+        <tbody>
+          <tr><td>Authentication</td><td class="ids">SEC-S2…S5</td><td>Login timing oracle reveals account existence · password policy inconsistent (8 on register, 12 on change) with no complexity rule · no account lockout, limiter is per-IP only, and the password-change endpoint has none · <strong>MVC cookie lifetime is actually governed by <code>JwtSettings:ExpiryHours</code></strong>, overriding the 8-hour setting and disabling sliding expiration</td></tr>
+          <tr><td>Security headers</td><td class="ids">SEC-S10</td><td>No <code>nosniff</code>, CSP, frame options, referrer policy, or HSTS — and covers are served inline with a client-influenced content type</td></tr>
+          <tr><td>Supply chain</td><td class="ids">FUNC-F5</td><td>Five external scripts loaded with <strong>no <code>integrity</code> attribute</strong> on authenticated admin pages, with no CSP to constrain them</td></tr>
+          <tr><td>Uploads</td><td class="ids">SEC-S16, S17</td><td>No storage quota, so an authenticated user can exhaust the disk · asset delete commits the row then deletes the file with no error handling</td></tr>
+          <tr><td>Data</td><td class="ids">DATA-D2…D5</td><td>No concurrency token, so detached updates write every column and silently lose concurrent changes · no backup procedure, and naive copying is unsafe under WAL and must capture the uploads directory too · <strong>two divergent databases sharing one uploads folder</strong> · no test proves cascade or restrict actually fire</td></tr>
+          <tr><td>Architecture</td><td class="ids">ARCH</td><td>All business logic sits in Infrastructure rather than Application · abstractions split across three homes · no unit-of-work, which is the direct cause of SEC-S14 · duplicated cross-cutting code between the two hosts that <strong>has already diverged</strong> — <code>GetUserId()</code> throws in one and returns <code>0</code> in the other</td></tr>
+          <tr><td>Performance</td><td class="ids">—</td><td>Instructor options loads every course row and groups in memory on a <em>public</em> endpoint · three unpaginated collection endpoints · SQLite search is case-sensitive</td></tr>
+          <tr><td>Functional</td><td class="ids">FUNC-F3, F4, F7</td><td>Duplicate-submit lock re-enables after a fixed 8 seconds, permitting a duplicate upload mid-flight · the same lock fires even when validation blocks submission · <strong>no publish workflow exists anywhere in the stack</strong></td></tr>
+          <tr><td>Flutter</td><td class="ids">FLU-FL5…FL15</td><td>Admin course list silently capped at 24 with no paging · filter dropdowns desync from state after reset · <strong>contrast 3.73:1 against a 4.5:1 requirement</strong> on 10–12px text, plus two 42px touch targets · localization incomplete, so Material widgets render English · no upload progress or cancellation · Flutter leaves an orphan course where MVC compensates · duplicated loading state producing an unhandled async error · <code>intl</code> declared but unused · video playback has no seek bar</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why remediation starts with the error contract</h2>
+    <div class="chain">
+      <h3>One chain, three layers</h3>
+      <p>The Flutter file picker offers video <em>and</em> attachment extensions in a single dialog while the type comes from a separate dropdown. Choose <code>video</code> with a <code>.pdf</code> and the server rejects it correctly — but SEC-S8 discards the reason, so the client reads <code>detail</code> and displays "One or more request values are invalid." A user hits this on a very common mistake and learns nothing. The same blindness applies to the test suite, which is why the error contract is fixed before anything that depends on observing failures.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Remediation order</h2>
+    <p class="lede">A real sequence: each step makes the next one verifiable.</p>
+    <ol class="order">
+      <li><b>CI trust and a test harness</b><span>OPS-H9 and TEST-M1. Until CI runs on <code>master</code> with the correct SDK and HTTP-level tests exist, no fix can be shown to be safe.</span></li>
+      <li><b>The error contract</b><span>SEC-S1, SEC-S8, FUNC-F6. Currently masks every other failure from both users and tests.</span></li>
+      <li><b>The upload gate</b><span>SEC-S13, S14, S15, S17, plus the client-side guard in FLU-FL2.</span></li>
+      <li><b>Timestamps and the cover lifecycle</b><span>DATA-D1, FUNC-H3, FUNC-F1. Cheap, user-visible today, and each needs a contract test.</span></li>
+      <li><b>The three Flutter blockers</b><span>FLU-FL1, FL3, FL4 — emulator connectivity, session revocation, and typography.</span></li>
+      <li><b>Hardening</b><span>Authentication (SEC-S2–S5), data integrity (DATA-D2, D6), then accessibility and UI (FLU-FL7, FL8) and the remaining medium findings.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Limits of this audit</h2>
+    <p class="lede">What was executed versus what was inferred. Nothing unexecuted is claimed as passing.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Activity</th><th>Status</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>.NET build and test</td><td class="yes">Executed</td><td class="ids">0 warnings, 0 errors · 26/26 passed</td></tr>
+          <tr><td>Flutter analyze, test, web build</td><td class="yes">Executed</td><td class="ids">No issues · 4/4 passed · built</td></tr>
+          <tr><td>Migration against real data copy</td><td class="yes">Executed</td><td class="ids">Up and down, zero rows lost</td></tr>
+          <tr><td>Injection, authorization, contract review</td><td class="yes">Executed</td><td class="ids">Code read, paths and lines cited</td></tr>
+          <tr><td>Real upload and download over HTTP</td><td class="no">Not run</td><td class="ids">Requires a running server</td></tr>
+          <tr><td>Android Emulator and physical device</td><td class="no">Not run</td><td class="ids">Requires an emulator</td></tr>
+          <tr><td>Video playback and RTL layout, visually</td><td class="no">Not run</td><td class="ids">Not visually inspected</td></tr>
+          <tr><td>CI status on GitHub</td><td class="no">Not run</td><td class="ids">Not checked</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Findings register for CourseManagement, branch <code>professional-refactor</code>. Severity and verification state are recorded per finding; the full Arabic register lives at <code>AUDIT_FINDINGS_REGISTER_AR.md</code> in the repository. Secret values are never reproduced in this document.
+  </footer>
+
+</div>
