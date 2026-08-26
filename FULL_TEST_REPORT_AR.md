@@ -23,7 +23,7 @@
 | MVC | Cover + Asset + Preview E2E | ناجح: معاينة Create/Edit، إنشاء الكورس مع صورة محلية، عرض الغلاف، رفع/download/Anti-Forgery delete/course cleanup |
 | Postman | Collection عبر Newman بعد إضافة cover وassets | 46 طلبًا، 75 assertion، 0 فشل |
 | Flutter | وجود مكوّن معاينة الطالب وبطاقات Hero الجديدة | تحقق static + Web build ناجح |
-| GitHub Actions | `build-and-test` و`flutter-build-and-test` | ناجح على commit `5b5f11b` |
+| GitHub Actions | `build-and-test` و`flutter-build-and-test` | ناجح على commit `8d2fcb0` |
 
 ## الاختبار الكلي End‑to‑End
 
@@ -87,7 +87,7 @@ API HTTP:  http://localhost:5205
 
 اختبار Flutter Web البصري التفاعلي الكامل داخل متصفح مضمّن لم يكن متاحًا في جلسة التدقيق الحالية؛ تم بدلًا من ذلك التحقق من مكوّنات المعاينة والتصميم static، و`flutter analyze` وunit tests وWeb Release build وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
 
-**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع معاينة قبل النشر وأصول الكورسات وإعادة تصميم Flutter مكتملة محليًا ومتحقق منها على REST وMVC وFlutter Web build، ونجحت Collection Postman. يلزم دفع commit الواجهة الجديد وتشغيل CI الخاص به قبل إعلان النسخة البعيدة النهائية، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
+**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع معاينة قبل النشر وأصول الكورسات وإعادة تصميم Flutter مكتملة ومتحقق منها على REST وMVC وFlutter Web build، ونجحت Collection Postman. اكتمل CI بنجاح على commit `8d2fcb0`، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
  اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
 
 **المؤلف:** Manus AI
