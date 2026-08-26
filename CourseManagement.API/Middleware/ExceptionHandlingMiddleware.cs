@@ -35,7 +35,6 @@ public sealed class ExceptionHandlingMiddleware(
 
             context.Response.Clear();
             context.Response.StatusCode = status;
-            context.Response.ContentType = "application/problem+json";
 
             var problem = new ProblemDetails
             {
@@ -46,7 +45,13 @@ public sealed class ExceptionHandlingMiddleware(
             };
             problem.Extensions["traceId"] = context.TraceIdentifier;
 
-            await context.Response.WriteAsJsonAsync(problem);
+            // The content type must be passed to WriteAsJsonAsync: setting
+            // Response.ContentType beforehand is overwritten with application/json,
+            // which hides the RFC 7807 media type from clients that key off it.
+            await context.Response.WriteAsJsonAsync(
+                problem,
+                options: null,
+                contentType: "application/problem+json");
         }
     }
 

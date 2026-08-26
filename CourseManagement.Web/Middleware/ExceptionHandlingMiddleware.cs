@@ -50,7 +50,6 @@ public sealed class ExceptionHandlingMiddleware(
 
             context.Response.Clear();
             context.Response.StatusCode = status;
-            context.Response.ContentType = "application/problem+json";
 
             var problem = new ProblemDetails
             {
@@ -61,7 +60,12 @@ public sealed class ExceptionHandlingMiddleware(
             };
             problem.Extensions["traceId"] = context.TraceIdentifier;
 
-            await context.Response.WriteAsJsonAsync(problem);
+            // Kept in step with CourseManagement.API: setting Response.ContentType
+            // beforehand is overwritten by WriteAsJsonAsync with application/json.
+            await context.Response.WriteAsJsonAsync(
+                problem,
+                options: null,
+                contentType: "application/problem+json");
         }
     }
 
