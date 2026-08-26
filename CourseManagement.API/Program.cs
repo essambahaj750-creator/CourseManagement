@@ -62,6 +62,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Limits are configurable so operators can tune them per environment and so the
+// policy itself is testable: an integration suite needs a high ceiling for
+// ordinary requests and a deliberately low one to assert throttling.
+var authRateLimiting = builder.Configuration.GetSection("RateLimiting:Auth");
+var authPermitLimit = authRateLimiting.GetValue<int?>("PermitLimit") ?? 10;
+var authWindowSeconds = authRateLimiting.GetValue<int?>("WindowSeconds") ?? 60;
+if (authPermitLimit < 1)
+    throw new InvalidOperationException("RateLimiting:Auth:PermitLimit must be at least 1.");
+if (authWindowSeconds < 1)
+    throw new InvalidOperationException("RateLimiting:Auth:WindowSeconds must be at least 1.");
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -69,8 +81,8 @@ builder.Services.AddRateLimiter(options =>
         httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 10,
-            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = authPermitLimit,
+            Window = TimeSpan.FromSeconds(authWindowSeconds),
             QueueLimit = 0,
             AutoReplenishment = true
         }));
