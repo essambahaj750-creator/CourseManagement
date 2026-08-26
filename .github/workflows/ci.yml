@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, mvc-implementation, professional-refactor ]
+    branches: [ master, mvc-implementation, professional-refactor ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 permissions:
   contents: read
@@ -44,7 +44,11 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.1'
+          # Must match the SDK this project is developed and pinned against.
+          # pubspec.yaml requires Dart >=3.9.2 and several dependencies are held
+          # at exact versions for Flutter 3.35 compatibility, so a newer SDK here
+          # would test a combination nobody runs locally.
+          flutter-version: '3.35.7'
           channel: stable
           cache: true
 
