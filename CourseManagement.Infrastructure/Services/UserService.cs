@@ -28,7 +28,7 @@ public class UserService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
 
-        var newEmail = dto.Email.Trim();
+        var newEmail = User.NormalizeEmail(dto.Email);
         var emailChanged = !string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase);
 
         if (emailChanged && await userRepository.ExistsAsync(newEmail))

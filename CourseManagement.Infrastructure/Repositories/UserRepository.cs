@@ -13,9 +13,12 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     public async Task<User?> GetByIdAsync(int id) =>
         await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
 
-    public async Task<User?> GetByEmailAsync(string email) =>
-        await context.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email.Trim().ToLowerInvariant());
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        var normalized = User.NormalizeEmail(email);
+        return await context.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == normalized);
+    }
 
     public async Task<User> AddAsync(User user)
     {
@@ -40,6 +43,9 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
         }
     }
 
-    public async Task<bool> ExistsAsync(string email) =>
-        await context.Users.AnyAsync(u => u.Email == email.Trim().ToLowerInvariant());
+    public async Task<bool> ExistsAsync(string email)
+    {
+        var normalized = User.NormalizeEmail(email);
+        return await context.Users.AnyAsync(u => u.Email == normalized);
+    }
 }

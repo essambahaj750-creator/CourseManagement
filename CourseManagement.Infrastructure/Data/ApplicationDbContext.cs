@@ -18,7 +18,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            // NOCASE makes both the unique index and every equality comparison
+            // case-insensitive. SQLite TEXT columns default to BINARY collation, which
+            // let "A@x.com" and "a@x.com" coexist and made mixed-case logins fail.
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(256).UseCollation("NOCASE");
             // يولّد User.SecurityStamp قيمته في طبقة Domain، لذلك لا نعتمد على دالة SQL Server.
             entity.Property(e => e.SecurityStamp)
                 .IsRequired();

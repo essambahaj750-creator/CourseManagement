@@ -17,7 +17,7 @@ public static class DbSeeder
         if (await db.Users.AnyAsync(u => u.Role == Role.Admin))
             return;
 
-        var email = section["Email"]?.Trim();
+        var email = User.NormalizeEmail(section["Email"]);
         var password = section["Password"];
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException(

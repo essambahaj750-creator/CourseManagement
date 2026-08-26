@@ -15,7 +15,7 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
 {
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        var email = dto.Email.Trim();
+        var email = User.NormalizeEmail(dto.Email);
 
         if (await userRepository.ExistsAsync(email))
             throw new InvalidOperationException("User with this email already exists.");
@@ -36,7 +36,7 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        var user = await userRepository.GetByEmailAsync(dto.Email.Trim());
+        var user = await userRepository.GetByEmailAsync(User.NormalizeEmail(dto.Email));
 
         if (user == null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password.");
