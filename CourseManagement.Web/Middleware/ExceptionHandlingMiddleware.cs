@@ -14,6 +14,15 @@ public sealed class ExceptionHandlingMiddleware(
         {
             await next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // Client disconnected mid-request, commonly during a long upload.
+            logger.LogInformation("Request aborted by the client on {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+
+            if (!context.Response.HasStarted)
+                context.Response.StatusCode = 499;
+        }
         catch (Exception exception)
         {
             if (context.Response.HasStarted)
@@ -69,13 +78,22 @@ public sealed class ExceptionHandlingMiddleware(
         }
     }
 
+    /// <summary>
+    /// Kept in step with CourseManagement.API. Only the two application exception
+    /// types have their messages returned; framework exception types are described
+    /// generically because their text can carry internal detail.
+    /// </summary>
     private static (int Status, string Title, string Detail) MapException(Exception exception) =>
         exception switch
         {
-            KeyNotFoundException => (
-                StatusCodes.Status404NotFound,
-                "Resource not found",
-                "The requested resource could not be found."),
+            InvalidRequestException invalidRequest => (
+                StatusCodes.Status400BadRequest,
+                "Invalid request",
+                invalidRequest.Message),
+            ConflictException conflict => (
+                StatusCodes.Status409Conflict,
+                "Conflict",
+                conflict.Message),
             ForbiddenAccessException => (
                 StatusCodes.Status403Forbidden,
                 "Forbidden",
@@ -84,6 +102,10 @@ public sealed class ExceptionHandlingMiddleware(
                 StatusCodes.Status401Unauthorized,
                 "Unauthorized",
                 "Authentication failed or the session is no longer valid."),
+            KeyNotFoundException => (
+                StatusCodes.Status404NotFound,
+                "Resource not found",
+                "The requested resource could not be found."),
             ArgumentException => (
                 StatusCodes.Status400BadRequest,
                 "Invalid request",
@@ -92,10 +114,6 @@ public sealed class ExceptionHandlingMiddleware(
                 StatusCodes.Status409Conflict,
                 "Data conflict",
                 "The operation could not be completed because it conflicts with existing data."),
-            InvalidOperationException invalidOperation => (
-                StatusCodes.Status409Conflict,
-                "Conflict",
-                invalidOperation.Message),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 "Internal server error",

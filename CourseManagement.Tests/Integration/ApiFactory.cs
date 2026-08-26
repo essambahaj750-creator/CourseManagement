@@ -1,11 +1,9 @@
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using CourseManagement.API;
-using CourseManagement.Infrastructure.Data;
+using CourseManagement.Application.DTOs;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace CourseManagement.Tests.Integration;
@@ -19,10 +17,10 @@ namespace CourseManagement.Tests.Integration;
 ///  - FileUploads:RootPath points at a unique temporary directory, never the
 ///    shared CourseManagement.Uploads folder;
 ///  - the JWT signing key is generated per run, so no secret lives in source;
-///  - admin seeding is disabled.
+///  - the seeded administrator's password is generated per instance.
 ///
-/// The schema is built by running the real migration chain, so these tests also
-/// prove the database can be created from a clean checkout.
+/// The schema is built by running the real migration chain at host startup, so these
+/// tests also prove the database can be created from a clean checkout.
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<ApiAssemblyMarker>
 {
@@ -35,6 +33,13 @@ public sealed class ApiFactory : WebApplicationFactory<ApiAssemblyMarker>
     /// as the rate limit are read once when the host is built.
     /// </summary>
     public Dictionary<string, string?> ConfigurationOverrides { get; } = [];
+
+    /// <summary>Seeded administrator, for tests that need Instructor/Admin rights.</summary>
+    public string AdminEmail => "seeded.admin@example.test";
+
+    /// <summary>Generated per instance, so no credential is written into source.</summary>
+    public string AdminPassword { get; } =
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18)) + "aA1!";
 
     public ApiFactory()
     {
@@ -73,9 +78,15 @@ public sealed class ApiFactory : WebApplicationFactory<ApiAssemblyMarker>
             ["JwtSettings:Audience"] = "CourseManagementClient",
             ["JwtSettings:ExpiryHours"] = "2",
 
-            // The factory applies migrations itself, once, in CreateHost.
-            ["Database:ApplyMigrations"] = "false",
-            ["SeedAdmin:Enabled"] = "false",
+            // The host's own startup runs the migration and the seeder, so the test
+            // exercises the real sequence rather than a reimplementation of it.
+            // Note these must stay consistent: seeding without migrating would run
+            // the seeder against an empty database.
+            ["Database:ApplyMigrations"] = "true",
+            ["SeedAdmin:Enabled"] = "true",
+            ["SeedAdmin:FullName"] = "Seeded Administrator",
+            ["SeedAdmin:Email"] = AdminEmail,
+            ["SeedAdmin:Password"] = AdminPassword,
             ["Swagger:Enabled"] = "false",
 
             ["FileUploads:RootPath"] = uploadsRoot,
@@ -94,14 +105,18 @@ public sealed class ApiFactory : WebApplicationFactory<ApiAssemblyMarker>
         return settings;
     }
 
-    protected override IHost CreateHost(IHostBuilder builder)
+    protected override IHost CreateHost(IHostBuilder builder) => base.CreateHost(builder);
+
+    /// <summary>Returns a client authenticated as the seeded administrator.</summary>
+    public async Task<HttpClient> CreateAdminClientAsync()
     {
-        var host = base.CreateHost(builder);
+        var client = CreateClient();
+        var response = await client.PostLoginAsync(AdminEmail, AdminPassword);
+        response.EnsureSuccessStatusCode();
 
-        using var scope = host.Services.CreateScope();
-        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
-
-        return host;
+        var session = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        client.UseBearer(session!.Token);
+        return client;
     }
 
     /// <summary>Registers a student and returns a client carrying its bearer token.</summary>

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CourseManagement.Web.Extensions;
 using CourseManagement.Web.Security;
 using CourseManagement.Web.ViewModels;
 using CourseManagement.Application.DTOs;
@@ -50,7 +51,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             TempData["Success"] = "تم إنشاء التسجيل.";
             return RedirectToAction(nameof(Enrollments));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             model = new EnrollmentCreateViewModel
@@ -108,7 +109,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             TempData["Success"] = "تم تحديث التسجيل.";
             return RedirectToAction(nameof(EnrollmentDetails), new { id });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(EnrollmentDetails), new { id });
@@ -126,7 +127,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             await enrollmentService.UnenrollUserAsync(enrollment.UserId, enrollment.CourseId);
             TempData["Success"] = "تم حذف التسجيل.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
         }
@@ -147,7 +148,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             TempData["Success"] = "تم إنشاء المستخدم.";
             return RedirectToAction(nameof(Users));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
@@ -188,7 +189,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             TempData["Success"] = "تم تحديث بيانات المستخدم.";
             return RedirectToAction(nameof(UserDetails), new { id });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             ViewData["UserId"] = id;
             ModelState.AddModelError(string.Empty, ex.Message);
@@ -211,7 +212,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             await userService.ChangeRoleAsync(model.UserId, model.Role, GetUserId());
             TempData["Success"] = "تم تحديث دور المستخدم.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
         }
@@ -228,7 +229,7 @@ public sealed class AdminController(IUserService userService, IEnrollmentService
             await userService.DeleteUserAsync(id, GetUserId());
             TempData["Success"] = "تم حذف المستخدم.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
         }

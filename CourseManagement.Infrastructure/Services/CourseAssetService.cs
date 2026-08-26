@@ -54,24 +54,24 @@ public sealed class CourseAssetService(
 
         var safeOriginalName = Path.GetFileName(originalFileName ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(safeOriginalName) || safeOriginalName.Length > 255 || safeOriginalName.Contains('\0'))
-            throw new ArgumentException("The file name is invalid.");
+            throw new InvalidRequestException("The file name is invalid.");
         if (length <= 0)
-            throw new ArgumentException("The file cannot be empty.");
+            throw new InvalidRequestException("The file cannot be empty.");
 
         var extension = Path.GetExtension(safeOriginalName).ToLowerInvariant();
         var options = uploadOptions.Value;
         if (type == CourseAssetType.CoverImage)
-            throw new ArgumentException("Cover images must be uploaded through the cover endpoint.");
+            throw new InvalidRequestException("Cover images must be uploaded through the cover endpoint.");
         var maxBytes = type == CourseAssetType.Video ? options.MaxVideoBytes : options.MaxAttachmentBytes;
         if (length > maxBytes)
-            throw new ArgumentException($"The file exceeds the {maxBytes / (1024 * 1024)} MB limit.");
+            throw new InvalidRequestException($"The file exceeds the {maxBytes / (1024 * 1024)} MB limit.");
 
         if (type == CourseAssetType.Video && !options.IsVideoExtension(extension))
-            throw new ArgumentException("This video extension is not allowed.");
+            throw new InvalidRequestException("This video extension is not allowed.");
         if (type == CourseAssetType.Attachment && !options.IsAttachmentExtension(extension))
-            throw new ArgumentException("This attachment extension is not allowed.");
+            throw new InvalidRequestException("This attachment extension is not allowed.");
         if (!IsAllowedContentType(contentType, extension, type))
-            throw new ArgumentException("The file content type is not allowed for this extension.");
+            throw new InvalidRequestException("The file content type is not allowed for this extension.");
 
         var stored = await fileStorage.SaveAsync(content, extension, cancellationToken);
         try
@@ -111,18 +111,18 @@ public sealed class CourseAssetService(
 
         var safeOriginalName = Path.GetFileName(originalFileName ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(safeOriginalName) || safeOriginalName.Length > 255 || safeOriginalName.Contains('\0'))
-            throw new ArgumentException("The cover image name is invalid.");
+            throw new InvalidRequestException("The cover image name is invalid.");
         if (length <= 0)
-            throw new ArgumentException("The cover image cannot be empty.");
+            throw new InvalidRequestException("The cover image cannot be empty.");
 
         var extension = Path.GetExtension(safeOriginalName).ToLowerInvariant();
         var options = uploadOptions.Value;
         if (length > options.MaxCoverImageBytes)
-            throw new ArgumentException($"The cover image exceeds the {options.MaxCoverImageBytes / (1024 * 1024)} MB limit.");
+            throw new InvalidRequestException($"The cover image exceeds the {options.MaxCoverImageBytes / (1024 * 1024)} MB limit.");
         if (!options.IsCoverImageExtension(extension))
-            throw new ArgumentException("This cover image extension is not allowed.");
+            throw new InvalidRequestException("This cover image extension is not allowed.");
         if (!IsAllowedCoverContentType(contentType, extension))
-            throw new ArgumentException("The cover image content type is not allowed for this extension.");
+            throw new InvalidRequestException("The cover image content type is not allowed for this extension.");
 
         var stored = await fileStorage.SaveAsync(content, extension, cancellationToken);
         var existing = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))

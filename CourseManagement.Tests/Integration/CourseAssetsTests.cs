@@ -111,7 +111,7 @@ public sealed class CourseAssetsTests
         var files = new FakeFileStorage();
         var service = CreateService(course, new FakeAssetRepository(), files, enrolled: false);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => service.UploadCoverAsync(
+        await Assert.ThrowsAsync<InvalidRequestException>(() => service.UploadCoverAsync(
             course.Id,
             "cover.gif",
             "image/gif",
@@ -132,7 +132,7 @@ public sealed class CourseAssetsTests
         var files = new FakeFileStorage();
         var service = CreateService(course, new FakeAssetRepository(), files, enrolled: false);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => service.UploadAsync(
+        await Assert.ThrowsAsync<InvalidRequestException>(() => service.UploadAsync(
             course.Id,
             fileName,
             contentType,

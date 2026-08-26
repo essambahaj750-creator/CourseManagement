@@ -1,3 +1,4 @@
+using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Domain.Entities;
 using CourseManagement.Domain.Enums;
@@ -133,7 +134,7 @@ public sealed class UserEmailCaseInsensitivityTests : IDisposable
 
         using (var second = NewContext())
         {
-            var conflict = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var conflict = await Assert.ThrowsAsync<ConflictException>(() =>
                 NewAuthService(second).RegisterAsync(new RegisterDto
                 {
                     FullName = "Second",
@@ -213,7 +214,7 @@ public sealed class UserEmailCaseInsensitivityTests : IDisposable
             new UserRepository(updateScope),
             new CourseRepository(updateScope));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<ConflictException>(() =>
             users.UpdateProfileAsync(intruderId, new UpdateUserDto
             {
                 FullName = "Intruder",

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CourseManagement.Web.Extensions;
 using CourseManagement.Web.Security;
 using CourseManagement.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +33,7 @@ public sealed class EnrollmentsController(IEnrollmentService enrollmentService) 
             await enrollmentService.EnrollUserAsync(GetUserId(), courseId);
             TempData["Success"] = "تم تسجيلك في الكورس بنجاح.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
         }
@@ -49,7 +50,7 @@ public sealed class EnrollmentsController(IEnrollmentService enrollmentService) 
             await enrollmentService.UnenrollUserAsync(GetUserId(), courseId);
             TempData["Success"] = "تم إلغاء التسجيل.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
         }

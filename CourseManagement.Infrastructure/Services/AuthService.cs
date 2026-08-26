@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
@@ -18,7 +19,7 @@ public class AuthService(IUserRepository userRepository, IConfiguration configur
         var email = User.NormalizeEmail(dto.Email);
 
         if (await userRepository.ExistsAsync(email))
-            throw new InvalidOperationException("User with this email already exists.");
+            throw new ConflictException("User with this email already exists.");
 
         var user = new User
         {

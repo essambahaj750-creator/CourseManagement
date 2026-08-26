@@ -49,10 +49,10 @@ public class EnrollmentService(
 
         // لا معنى لتسجيل المدرب في كورسه
         if (course.InstructorId == userId)
-            throw new InvalidOperationException("You cannot enroll in your own course.");
+            throw new ConflictException("You cannot enroll in your own course.");
 
         if (await enrollmentRepository.IsUserEnrolledAsync(userId, courseId))
-            throw new InvalidOperationException("User is already enrolled in this course.");
+            throw new ConflictException("User is already enrolled in this course.");
 
         var enrollment = new Enrollment
         {
@@ -76,10 +76,10 @@ public class EnrollmentService(
             ?? throw new KeyNotFoundException("Course not found.");
 
         if (course.InstructorId == enrollment.UserId)
-            throw new InvalidOperationException("You cannot enroll in your own course.");
+            throw new ConflictException("You cannot enroll in your own course.");
 
         if (enrollment.CourseId != newCourseId && await enrollmentRepository.IsUserEnrolledAsync(enrollment.UserId, newCourseId))
-            throw new InvalidOperationException("User is already enrolled in this course.");
+            throw new ConflictException("User is already enrolled in this course.");
 
         enrollment.CourseId = newCourseId;
         await enrollmentRepository.UpdateAsync(enrollment);

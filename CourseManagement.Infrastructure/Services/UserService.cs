@@ -1,3 +1,4 @@
+using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
@@ -32,7 +33,7 @@ public class UserService(
         var emailChanged = !string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase);
 
         if (emailChanged && await userRepository.ExistsAsync(newEmail))
-            throw new InvalidOperationException("Email is already in use by another account.");
+            throw new ConflictException("Email is already in use by another account.");
 
         user.FullName = dto.FullName.Trim();
         user.Email = newEmail;
@@ -47,10 +48,10 @@ public class UserService(
     {
         // منع الـ Admin من تغيير دوره بنفسه (حماية من فقدان آخر Admin في النظام)
         if (userId == requesterId)
-            throw new InvalidOperationException("You cannot change your own role.");
+            throw new ConflictException("You cannot change your own role.");
 
         if (!Enum.TryParse<Role>(role, true, out var newRole))
-            throw new InvalidOperationException(
+            throw new InvalidRequestException(
                 $"Invalid role '{role}'. Valid roles: {string.Join(", ", Enum.GetNames<Role>())}.");
 
         var user = await userRepository.GetByIdAsync(userId)
@@ -61,7 +62,7 @@ public class UserService(
         {
             var courses = await courseRepository.GetByInstructorIdAsync(userId);
             if (courses.Any())
-                throw new InvalidOperationException(
+                throw new ConflictException(
                     "Cannot demote a user who is instructor of existing courses. Reassign or delete their courses first.");
         }
 
@@ -74,7 +75,7 @@ public class UserService(
     public async Task DeleteUserAsync(int userId, int requesterId)
     {
         if (userId == requesterId)
-            throw new InvalidOperationException("You cannot delete your own account.");
+            throw new ConflictException("You cannot delete your own account.");
 
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
@@ -82,7 +83,7 @@ public class UserService(
         // حذف مدرب يملك كورسات سيفشل على قيد FK (Restrict) — نعطي رسالة واضحة بدلاً من خطأ SQL
         var courses = await courseRepository.GetByInstructorIdAsync(userId);
         if (courses.Any())
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Cannot delete a user who is instructor of existing courses. Reassign or delete their courses first.");
 
         await userRepository.DeleteAsync(userId);

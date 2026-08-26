@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CourseManagement.Application.Common;
 using CourseManagement.Web.Extensions;
 using CourseManagement.Web.Security;
 using CourseManagement.Web.ViewModels;
@@ -61,7 +62,7 @@ public sealed class AccountController(IAuthService authService) : Controller
             TempData["Success"] = "تم إنشاء حسابك بنجاح.";
             return RedirectToAction("Index", "Home");
         }
-        catch (InvalidOperationException ex)
+        catch (ConflictException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
@@ -96,7 +97,7 @@ public sealed class AccountController(IAuthService authService) : Controller
             ModelState.AddModelError(nameof(model.CurrentPassword), "كلمة المرور الحالية غير صحيحة.");
             return View(model);
         }
-        catch (InvalidOperationException ex)
+        catch (ConflictException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);

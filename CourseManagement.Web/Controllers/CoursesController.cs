@@ -2,6 +2,7 @@ using System.Security.Claims;
 using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Domain.Enums;
+using CourseManagement.Web.Extensions;
 using CourseManagement.Web.Security;
 using CourseManagement.Web.ViewModels;
 using CourseManagement.Application.Interfaces;
@@ -104,7 +105,7 @@ public sealed class CoursesController(
                 cancellationToken);
             TempData["Success"] = "تم رفع الملف وربطه بالكورس بنجاح.";
         }
-        catch (ArgumentException exception)
+        catch (InvalidRequestException exception)
         {
             TempData["Error"] = exception.Message;
         }
@@ -186,8 +187,11 @@ public sealed class CoursesController(
             TempData["Success"] = "تم إنشاء الكورس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
+            // Compensate for a partially created course on any failure, then only
+            // surface the message when it was authored for the user. Anything else
+            // keeps propagating so the middleware logs it and renders the error page.
             if (course is not null)
             {
                 try
@@ -196,11 +200,14 @@ public sealed class CoursesController(
                 }
                 catch
                 {
-                    // Preserve the original validation/upload error for the user.
+                    // Preserve the original failure rather than masking it with this one.
                 }
             }
 
-            ModelState.AddModelError(string.Empty, ex.Message);
+            if (!exception.IsUserFacing())
+                throw;
+
+            ModelState.AddModelError(string.Empty, exception.Message);
             return View(model);
         }
     }
@@ -251,7 +258,7 @@ public sealed class CoursesController(
             TempData["Success"] = "تم تحديث الكورس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
@@ -279,7 +286,7 @@ public sealed class CoursesController(
             TempData["Success"] = "تم حذف الكورس بنجاح.";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex.IsUserFacing())
         {
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(Details), new { id });
