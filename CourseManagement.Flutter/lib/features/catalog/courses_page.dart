@@ -421,19 +421,35 @@ class _FilterPanel extends StatelessWidget {
                 onChanged: onChanged,
               ),
               const SizedBox(height: 18),
-              ElevatedButton.icon(
-                onPressed: onApply,
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('تطبيق الفلاتر'),
-              ),
-              TextButton.icon(
-                onPressed: filter.hasActiveFilters ? onReset : null,
-                icon: const Icon(Icons.restart_alt_rounded, size: 18),
-                label: const Text('إعادة الضبط'),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(42),
-                  foregroundColor: AppTheme.muted,
-                ),
+              Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onApply,
+                    icon: const Icon(Icons.search_rounded, size: 18),
+                    label: const Text('عرض النتائج'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 42),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 11,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: filter.hasActiveFilters ? onReset : null,
+                    icon: const Icon(Icons.restart_alt_rounded, size: 17),
+                    label: const Text('مسح'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 42),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      foregroundColor: AppTheme.muted,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
