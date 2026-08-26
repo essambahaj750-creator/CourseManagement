@@ -526,7 +526,7 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
 
   Future<void> _pickAndUpload() async {
     if (_busy) return;
-    final picked = await FilePicker.pickFile(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: [
         'mp4',
@@ -543,12 +543,14 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
         'zip',
         'txt',
       ],
+      withData: true,
     );
+    final picked = result?.files.single;
     if (picked == null || !mounted) return;
 
-    final bytes = await picked.readAsBytes();
+    final bytes = picked.bytes;
     if (!mounted) return;
-    if (bytes.isEmpty) {
+    if (bytes == null || bytes.isEmpty) {
       _showMessage('تعذر قراءة الملف من الجهاز. حاول اختيار الملف مرة أخرى.');
       return;
     }
@@ -582,7 +584,7 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
         courseId: widget.course.id,
         assetId: asset.id,
       );
-      final savedPath = await FilePicker.saveFile(
+      final savedPath = await FilePicker.platform.saveFile(
         dialogTitle: 'حفظ ${asset.originalFileName}',
         fileName: asset.originalFileName,
         bytes: bytes,
@@ -873,15 +875,17 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
   }
 
   Future<void> _pickCover() async {
-    final picked = await FilePicker.pickFile(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
     );
+    final picked = result?.files.single;
     if (picked == null || !mounted) return;
 
-    final bytes = await picked.readAsBytes();
+    final bytes = picked.bytes;
     if (!mounted) return;
-    if (bytes.isEmpty) {
+    if (bytes == null || bytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر قراءة صورة الغلاف من الجهاز.')),
       );

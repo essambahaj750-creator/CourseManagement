@@ -337,7 +337,7 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
         courseId: widget.data.course.id,
         assetId: asset.id,
       );
-      final path = await FilePicker.saveFile(
+      final path = await FilePicker.platform.saveFile(
         dialogTitle: 'حفظ ${asset.originalFileName}',
         fileName: asset.originalFileName,
         bytes: bytes,
