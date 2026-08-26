@@ -122,46 +122,121 @@ class _CoursesPageState extends State<CoursesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Expanded(
-                child: Column(
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [AppTheme.navy, AppTheme.navySoft, AppTheme.blue],
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x2608192F),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 560;
+                final copy = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'مكتبة التعلم',
-                      style: TextStyle(
-                        color: AppTheme.cyan,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cyan.withValues(alpha: .18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'مكتبة التعلم',
+                        style: TextStyle(
+                          color: Color(0xFFB9FFF2),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
-                    SizedBox(height: 7),
-                    Text(
+                    const SizedBox(height: 11),
+                    const Text(
                       'استكشف الكورسات',
                       style: TextStyle(
-                        color: AppTheme.ink,
+                        color: Colors.white,
                         fontSize: 28,
+                        height: 1.25,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 6),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       'ابحث، قارن، واختر المسار الذي يطابق هدفك القادم.',
-                      style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                      style: TextStyle(
+                        color: Color(0xFFD9E6FF),
+                        fontSize: 12,
+                        height: 1.7,
+                      ),
                     ),
                   ],
-                ),
+                );
+                final filterButton = FilledButton.icon(
+                  onPressed: _openMobileFilters,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.blue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
+                  ),
+                  icon: const Icon(Icons.tune_rounded),
+                  label: const Text('تصفية النتائج'),
+                );
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [copy, const SizedBox(height: 18), filterButton],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: copy),
+                    filterButton,
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: const [
+              _CatalogHighlight(
+                icon: Icons.search_rounded,
+                title: 'ابحث بسهولة',
+                subtitle: 'استخدم العنوان أو الوصف أو المدرّس',
               ),
-              FilledButton.icon(
-                onPressed: _openMobileFilters,
-                icon: const Icon(Icons.tune_rounded),
-                label: const Text('الفلاتر'),
+              _CatalogHighlight(
+                icon: Icons.tune_rounded,
+                title: 'فلاتر دقيقة',
+                subtitle: 'السعر والترتيب والمجال في مكان واحد',
+              ),
+              _CatalogHighlight(
+                icon: Icons.auto_awesome_rounded,
+                title: 'مسارات عملية',
+                subtitle: 'اختر ما يناسب هدفك الحالي',
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {
               final results = _ResultsPane(
@@ -197,6 +272,76 @@ class _CoursesPageState extends State<CoursesPage> {
       ),
     );
   }
+}
+
+class _CatalogHighlight extends StatelessWidget {
+  const _CatalogHighlight({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 250,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE3E9F4)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x080B1220),
+          blurRadius: 16,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppTheme.blue.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppTheme.blue, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _FilterPanel extends StatelessWidget {

@@ -85,6 +85,8 @@ public sealed class CourseFormViewModel
     [Display(Name = "صورة غلاف الكورس")]
     public IFormFile? CoverImage { get; set; }
 
+    public string? CurrentCoverUrl { get; set; }
+
     public CourseDto ToDto() => new() { Title = Title, Description = Description, Price = Price };
 }
 

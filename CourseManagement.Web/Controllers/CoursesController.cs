@@ -218,7 +218,8 @@ public sealed class CoursesController(
             Id = course.Id,
             Title = course.Title,
             Description = course.Description,
-            Price = course.Price
+            Price = course.Price,
+            CurrentCoverUrl = course.ImageUrl
         });
     }
 

@@ -4,7 +4,7 @@
 
 تم تدقيق نسخة `professional-refactor` كمنظومة Full‑Stack تشمل ASP.NET Core REST API، واجهة ASP.NET Core MVC، SQLite، JWT، Cookie Authentication، Postman، وتطبيق Flutter مستقل. نُفذت الاختبارات على خوادم معزولة وقواعد SQLite مؤقتة حتى لا تختلط بيانات الاختبار ببيئة المستخدم.
 
-النتيجة الحالية: **نجحت اختبارات ميزة رفع صورة الغلاف المحلية، وأصول الكورس، والاختبارات السابقة بعد إصلاح binding نموذج MVC وتعارض EF tracking وترتيب Collection؛ لا يوجد فشل في آخر تشغيل نهائي.**
+النتيجة الحالية: **نجحت اختبارات رفع صورة الغلاف المحلية، والمعاينة الحية قبل النشر، وإعادة تصميم Flutter، وأصول الكورس والاختبارات السابقة بعد إصلاح binding نموذج MVC وتعارض EF tracking وترتيب Collection؛ لا يوجد فشل في آخر تشغيل نهائي.**
 
 ## نتائج الاختبارات الجزئية
 
@@ -14,14 +14,15 @@
 | .NET | اختبارات xUnit بعد إضافة اختبارات الغلاف | 16/16 ناجحة |
 | Flutter | `flutter analyze` بعد file_picker/video_player | ناجح، No issues found |
 | Flutter | Unit tests | 4/4 ناجحة |
-| Flutter | Web Release build | ناجح |
+| Flutter | Web Release build بعد إعادة تصميم الكتالوج والإدارة ومعاينة الكورس | ناجح |
 | API | Cover + Asset multipart E2E على SQLite معزولة | ناجح: cover upload/public download/validation/permissions ثم video/attachment/list/download/enrollment/delete/cleanup |
 | API | Smoke test السابق الشامل | 38/38 ناجحة |
 | API | Validation/Security negative test السابق | 21/21 ناجحة |
 | API | CORS origin مسموح/غير مصرح | قُبل المسموح ورُفض غير المصرح |
 | MVC | صفحات عامة ومحمية وجلسة Cookie | 11/11 ناجحة |
-| MVC | Cover + Asset E2E | ناجح: إنشاء الكورس مع صورة محلية، عرض الغلاف، رفع/download/Anti-Forgery delete/course cleanup |
+| MVC | Cover + Asset + Preview E2E | ناجح: معاينة Create/Edit، إنشاء الكورس مع صورة محلية، عرض الغلاف، رفع/download/Anti-Forgery delete/course cleanup |
 | Postman | Collection عبر Newman بعد إضافة cover وassets | 46 طلبًا، 75 assertion، 0 فشل |
+| Flutter | وجود مكوّن معاينة الطالب وبطاقات Hero الجديدة | تحقق static + Web build ناجح |
 | GitHub Actions | `build-and-test` و`flutter-build-and-test` | ناجح على commit `5b5f11b` |
 
 ## الاختبار الكلي End‑to‑End
@@ -41,10 +42,11 @@
 11. إنشاء الكورس مع رفع صورة غلاف محلية عبر multipart، قراءة الغلاف من endpoint داخلي، رفض GIF، ومنع الطالب من استبدال الغلاف.
 12. رفع فيديو ومرفق حقيقيين عبر multipart، التحقق من metadata وContent-Disposition، ومنع الطالب قبل enrollment ثم السماح بعده.
 13. حذف الأصل مع منع الطالب، ثم حذف الكورس والتحقق من اختفاء الغلاف والملفات الفيزيائية من مجلد uploads.
+14. فحص Create/Edit في MVC وDialog إدارة الكورس في Flutter للتأكد من ظهور المعاينة الحية وتحديثها مع البيانات المختارة.
 
 ## اختبار MVC التكاملي
 
-تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور. كما نجح اختبار Cover + Asset E2E: إنشاء كورس من نموذج MVC مع صورة محلية، ظهور الغلاف من `/Courses/Details/{id}/Cover`، رفع فيديو ومرفق، تنزيل bytes بالاسم الصحيح، حذف الأصل عبر Anti-Forgery، ثم حذف الكورس وتنظيف uploads.
+تم تشغيل `CourseManagement.Web` على منفذ مستقل بعد فصل المنافذ عن API. نجحت صفحات تسجيل الدخول والتسجيل والكتالوج، وإعادة توجيه المستخدم غير المسجل، وتسجيل Admin عبر Cookie، واللوحة الرئيسية، والتسجيلات، وصفحات إدارة المستخدمين والتسجيلات، وصفحة تغيير كلمة المرور. كما نجح اختبار Cover + Asset + Preview E2E: وجود بطاقة المعاينة وFileReader في Create/Edit، إنشاء كورس من نموذج MVC مع صورة محلية، ظهور الغلاف من `/Courses/Details/{id}/Cover`، رفع فيديو ومرفق، تنزيل bytes بالاسم الصحيح، حذف الأصل عبر Anti-Forgery، ثم حذف الكورس وتنظيف uploads.
 
 ## العيوب التي كُشفت وأُصلحت
 
@@ -83,9 +85,9 @@ API HTTP:  http://localhost:5205
 
 ## القيود
 
-اختبار Flutter Web البصري التفاعلي الكامل يحتاج متصفحًا متاحًا؛ أداة المتصفح المدمجة لم تكن متاحة في جلسة التدقيق الحالية. تم بدلًا من ذلك التحقق من `flutter analyze` وunit tests وWeb Release assets وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
+اختبار Flutter Web البصري التفاعلي الكامل داخل متصفح مضمّن لم يكن متاحًا في جلسة التدقيق الحالية؛ تم بدلًا من ذلك التحقق من مكوّنات المعاينة والتصميم static، و`flutter analyze` وunit tests وWeb Release build وCORS وتكامل API، مع نجاح البناء. اختبار Android APK يحتاج Android SDK على جهاز التطوير، ولم يُنفذ داخل بيئة التدقيق هذه.
 
-**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع أصول الكورسات مكتملة ومتحقق منها على REST وMVC وFlutter Web build محليًا، ونجحت Collection Postman بعد إضافة اختبارات cover. اكتمل CI بنجاح على commit `5b5f11b`، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
+**حالة التسليم:** ميزة رفع صورة الغلاف من جهاز المستخدم مع معاينة قبل النشر وأصول الكورسات وإعادة تصميم Flutter مكتملة محليًا ومتحقق منها على REST وMVC وFlutter Web build، ونجحت Collection Postman. يلزم دفع commit الواجهة الجديد وتشغيل CI الخاص به قبل إعلان النسخة البعيدة النهائية، مع تطبيق تعليمات User Secrets والمنافذ المذكورة أعلاه.
  اختبار Android APK البصري/التشغيلي ما زال يتطلب Android SDK وجهازًا أو محاكيًا على جهاز Windows.
 
 **المؤلف:** Manus AI

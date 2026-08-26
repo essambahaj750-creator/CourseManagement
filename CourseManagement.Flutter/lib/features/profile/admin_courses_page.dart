@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -140,48 +141,138 @@ class _CourseManagementPageState extends State<CourseManagementPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'مساحة الإدارة',
-          style: TextStyle(
-            color: AppTheme.cyan,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [AppTheme.navy, AppTheme.navySoft, AppTheme.blue],
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2608192F),
+                blurRadius: 24,
+                offset: Offset(0, 12),
+              ),
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 540;
+              final actions = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: _refresh,
+                    tooltip: 'تحديث القائمة',
+                    style: IconButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: .12),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: () => _openForm(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.blue,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 13,
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('كورس جديد'),
+                  ),
+                ],
+              );
+              final copy = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cyan.withValues(alpha: .18),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'مساحة الإدارة',
+                      style: TextStyle(
+                        color: Color(0xFFB9FFF2),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 11),
+                  const Text(
+                    'إدارة الكورسات',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      height: 1.25,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _instructorId == null
+                        ? 'أنشئ وعدّل وانشر محتوى تعليميًا متكاملًا من مكان واحد.'
+                        : 'هذه مساحتك لإدارة الكورسات التي أنشأتها ورفع محتواها.',
+                    style: const TextStyle(
+                      color: Color(0xFFD9E6FF),
+                      fontSize: 12,
+                      height: 1.7,
+                    ),
+                  ),
+                ],
+              );
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [copy, const SizedBox(height: 18), actions],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: copy),
+                  actions,
+                ],
+              );
+            },
           ),
         ),
-        const SizedBox(height: 7),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'إدارة الكورسات',
-                style: TextStyle(
-                  color: AppTheme.ink,
-                  fontSize: 27,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: const [
+            _ManagementHighlight(
+              icon: Icons.visibility_rounded,
+              title: 'معاينة فورية',
+              subtitle: 'راجع شكل الكورس قبل الحفظ',
             ),
-            IconButton(
-              onPressed: _refresh,
-              tooltip: 'تحديث',
-              icon: const Icon(Icons.refresh_rounded, color: AppTheme.blue),
+            _ManagementHighlight(
+              icon: Icons.cloud_upload_rounded,
+              title: 'رفع من الجهاز',
+              subtitle: 'غلاف وفيديوهات ومرفقات حقيقية',
             ),
-            const SizedBox(width: 4),
-            FilledButton.icon(
-              onPressed: () => _openForm(),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('كورس جديد'),
+            _ManagementHighlight(
+              icon: Icons.verified_user_rounded,
+              title: 'وصول آمن',
+              subtitle: 'الصلاحيات يفرضها الخادم',
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          _instructorId == null
-              ? 'أنشئ وعدّل وتابع جميع الكورسات من مكان واحد.'
-              : 'هذه المساحة تعرض الكورسات التي أنشأتها ويمكنك إدارتها.',
-          style: const TextStyle(color: AppTheme.muted, height: 1.7),
-        ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
         FutureBuilder<CourseCatalog>(
           future: _future,
           builder: (context, snapshot) {
@@ -234,6 +325,76 @@ class _CourseManagementPageState extends State<CourseManagementPage> {
               },
             );
           },
+        ),
+      ],
+    ),
+  );
+}
+
+class _ManagementHighlight extends StatelessWidget {
+  const _ManagementHighlight({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 250,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE3E9F4)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x080B1220),
+          blurRadius: 16,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppTheme.blue.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppTheme.blue, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     ),
@@ -756,7 +917,7 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
   @override
   Widget build(BuildContext context) => Dialog(
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 560),
+      constraints: const BoxConstraints(maxWidth: 760),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -846,16 +1007,24 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
                 const SizedBox(height: 6),
                 Text(
                   'الصورة المختارة: $_coverFileName',
-                  style: const TextStyle(
-                    color: AppTheme.muted,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 12),
                 ),
               ],
               const SizedBox(height: 4),
               const Text(
                 'JPG أو PNG أو WebP — الحد الأقصى 5MB. اتركه فارغًا للحفاظ على الغلاف الحالي.',
                 style: TextStyle(color: AppTheme.muted, fontSize: 11),
+              ),
+              const SizedBox(height: 22),
+              AnimatedBuilder(
+                animation: Listenable.merge([_title, _description, _price]),
+                builder: (context, _) => _DraftCoursePreview(
+                  title: _title.text,
+                  description: _description.text,
+                  price: double.tryParse(_price.text.trim()) ?? 0,
+                  coverBytes: _coverBytes,
+                  currentCoverUrl: widget.course?.imageUrl,
+                ),
               ),
               const SizedBox(height: 22),
               Row(
@@ -882,4 +1051,251 @@ class _CourseFormDialogState extends State<_CourseFormDialog> {
       ),
     ),
   );
+}
+
+class _DraftCoursePreview extends StatelessWidget {
+  const _DraftCoursePreview({
+    required this.title,
+    required this.description,
+    required this.price,
+    required this.coverBytes,
+    required this.currentCoverUrl,
+  });
+
+  final String title;
+  final String description;
+  final double price;
+  final Uint8List? coverBytes;
+  final String? currentCoverUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayTitle = title.trim().isEmpty ? 'عنوان الكورس' : title.trim();
+    final displayDescription = description.trim().isEmpty
+        ? 'سيظهر وصف الكورس هنا أثناء الكتابة، ليعرف الطالب قيمة المحتوى قبل التسجيل.'
+        : description.trim();
+    final displayPrice = price > 0
+        ? '${price.toStringAsFixed(2)} ر.س'
+        : 'مجاني';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3E9F4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120B1220),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.visibility_rounded,
+                  color: AppTheme.cyan,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'معاينة الطالب قبل النشر',
+                    style: TextStyle(
+                      color: AppTheme.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cyan.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'مسودة',
+                    style: TextStyle(
+                      color: AppTheme.cyan,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 185,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _cover(),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppTheme.navy.withValues(alpha: .86),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 14,
+                  left: 16,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            height: 1.35,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        displayPrice,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  displayDescription,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    height: 1.65,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.menu_book_rounded,
+                      color: AppTheme.blue,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'مسار تعليمي عملي',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      displayPrice,
+                      style: const TextStyle(
+                        color: AppTheme.blue,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cover() {
+    if (coverBytes != null) {
+      return Image.memory(coverBytes!, fit: BoxFit.cover);
+    }
+    if (currentCoverUrl != null && currentCoverUrl!.trim().isNotEmpty) {
+      return Image.network(
+        _resolveCoverUrl(currentCoverUrl!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, error, stackTrace) => _placeholder(),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() => DecoratedBox(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: [AppTheme.navy, AppTheme.blue, AppTheme.cyan],
+      ),
+    ),
+    child: Center(
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .14),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: .25)),
+        ),
+        child: const Icon(
+          Icons.auto_stories_rounded,
+          color: Colors.white,
+          size: 32,
+        ),
+      ),
+    ),
+  );
+
+  String _resolveCoverUrl(String value) {
+    final parsed = Uri.tryParse(value);
+    if (parsed?.hasScheme == true) return value;
+    final base = ApiClient.defaultBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    return '$base${value.startsWith('/') ? value : '/$value'}';
+  }
 }
