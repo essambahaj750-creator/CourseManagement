@@ -10,9 +10,10 @@ void main() {
   for (final size in <Size>[
     const Size(320, 640),
     const Size(600, 800),
+    const Size(760, 800),
     const Size(900, 800),
     const Size(1024, 768),
-    const Size(1200, 900),
+    const Size(1200, 800),
   ]) {
     testWidgets('AuthShell has no layout overflow at ${size.width.toInt()}px', (
       tester,
