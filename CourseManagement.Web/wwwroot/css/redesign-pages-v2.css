@@ -1,0 +1,160 @@
+/* Page-level UX polish shared by Dashboard, Courses, Admin and Enrollments. */
+main h1, main .h1 {
+  color: var(--ux-ink);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  line-height: 1.25;
+}
+main h2, main .h2, main h3, main .h3 {
+  color: var(--ux-ink);
+  font-weight: 800;
+  letter-spacing: -.015em;
+}
+main p.text-muted, main .text-muted { color: var(--ux-muted) !important; }
+
+/* Make common page toolbars behave well without requiring page-specific markup. */
+main .d-flex.justify-content-between,
+main .d-flex.justify-content-between.align-items-center {
+  row-gap: .75rem;
+}
+
+/* Course/dashboard cards */
+main .card {
+  overflow: hidden;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+@media (hover:hover) and (pointer:fine) {
+  main .card:hover {
+    border-color: #d5dfed !important;
+    box-shadow: 0 14px 34px rgba(8,25,47,.07);
+  }
+}
+main .card-img-top,
+main .course-cover,
+main img.rounded,
+main img.rounded-3,
+main img.rounded-4 {
+  object-fit: cover;
+  background: linear-gradient(135deg, var(--ux-navy), var(--ux-blue));
+}
+main .card-title { color: var(--ux-ink); font-weight: 800; line-height: 1.5; }
+main .card-text { line-height: 1.7; }
+main .card-footer { background: #fff; border-top-color: #edf1f6; }
+
+/* Forms and edit/create screens */
+main form .row { row-gap: .25rem; }
+main textarea.form-control { min-height: 124px; resize: vertical; }
+main input[type="file"].form-control { padding-top: .68rem; padding-bottom: .68rem; }
+main .input-group > .form-control,
+main .input-group > .form-select,
+main .input-group > .btn { min-height: 50px; }
+.field-validation-error,
+.validation-summary-errors { color: var(--ux-danger); font-size: .82rem; font-weight: 600; }
+.validation-summary-errors ul { margin-bottom: 0; }
+.form-control.input-validation-error,
+.form-select.input-validation-error { border-color: rgba(217,74,104,.7); }
+
+/* Admin tables / DataTables */
+div.dt-container { color: var(--ux-ink); }
+div.dt-container .dt-layout-row { margin: 0 0 .8rem; gap: .65rem; align-items: center; }
+div.dt-container .dt-search input,
+div.dt-container .dt-length select {
+  min-height: 42px;
+  border: 1px solid var(--ux-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  padding: .45rem .7rem !important;
+}
+div.dt-container .dt-search input:focus,
+div.dt-container .dt-length select:focus {
+  border-color: rgba(40,100,233,.55) !important;
+  outline: 0;
+  box-shadow: 0 0 0 .2rem rgba(40,100,233,.08);
+}
+div.dt-container .dt-info { color: var(--ux-muted); font-size: .82rem; }
+div.dt-container .dt-paging .dt-paging-button {
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  color: var(--ux-ink) !important;
+}
+div.dt-container .dt-paging .dt-paging-button.current {
+  color: var(--ux-blue) !important;
+  background: rgba(40,100,233,.09) !important;
+  border-color: rgba(40,100,233,.14) !important;
+}
+div.dt-container .dt-paging .dt-paging-button:hover {
+  color: var(--ux-blue) !important;
+  background: rgba(40,100,233,.06) !important;
+  border-color: transparent !important;
+}
+
+/* Native pagination */
+.pagination { gap: 5px; flex-wrap: wrap; }
+.page-link {
+  min-width: 42px;
+  min-height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 11px !important;
+  color: var(--ux-ink);
+  border-color: var(--ux-border);
+}
+.page-item.active .page-link { background: var(--ux-blue); border-color: var(--ux-blue); }
+.page-item.disabled .page-link { color: #a7b1c0; background: #f8fafd; }
+
+/* Action groups stay readable and accessible. */
+main .btn-group { gap: 4px; flex-wrap: wrap; }
+main .btn-group > .btn { border-radius: 11px !important; }
+main td .btn, main .table .btn { min-height: 38px; }
+main .btn-danger, main .btn-outline-danger { --bs-btn-border-radius: 12px; }
+
+/* Details screens and metadata blocks. */
+main dl.row { margin-bottom: 0; }
+main dl.row dt { color: var(--ux-muted); font-size: .82rem; font-weight: 700; }
+main dl.row dd { color: var(--ux-ink); font-weight: 600; }
+main .list-group { border-radius: 18px; overflow: hidden; }
+main .list-group-item { padding: .9rem 1rem; border-color: #edf1f6; }
+main .list-group-item-action:hover { background: rgba(40,100,233,.035); }
+
+/* Empty states: Bootstrap cards/alerts become calmer when no data is available. */
+main .alert-info {
+  color: #245790;
+  background: #eef5ff;
+  border: 1px solid #dbe9fc;
+}
+
+/* Improve destructive confirmation affordances. */
+.modal .btn-danger,
+main form[action*="Delete"] .btn-danger,
+main form[action*="delete"] .btn-danger { box-shadow: none; }
+
+/* Keep content readable on ultrawide screens. */
+main .container, main .container-lg, main .container-xl, main .container-xxl { max-width: 1320px; }
+
+@media (max-width: 767.98px) {
+  main h1, main .h1 { font-size: clamp(1.55rem, 7vw, 2rem); }
+  main h2, main .h2 { font-size: 1.35rem; }
+  main .d-flex.justify-content-between,
+  main .d-flex.justify-content-between.align-items-center {
+    flex-wrap: wrap;
+    align-items: stretch !important;
+  }
+  main .d-flex.justify-content-between > .btn,
+  main .d-flex.justify-content-between.align-items-center > .btn { width: 100%; }
+  main .card-body { padding: 1rem; }
+  main .card-header, main .card-footer { padding-inline: 1rem; }
+  main .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  main .table { min-width: 680px; }
+  main .table td, main .table th { white-space: nowrap; }
+  div.dt-container .dt-layout-row { align-items: stretch; flex-direction: column; }
+  div.dt-container .dt-search, div.dt-container .dt-search input { width: 100%; margin: 0 !important; }
+  div.dt-container .dt-length { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  main .btn-group { width: 100%; }
+  main .btn-group > .btn { flex: 1 1 auto; }
+}
+
+@media (max-width: 420px) {
+  main .card-body { padding: .9rem; }
+  .btn { padding-inline: .8rem; }
+  main .list-group-item { padding-inline: .85rem; }
+}
