@@ -1,5 +1,33 @@
 import 'package:flutter/material.dart';
 
+abstract final class AppBreakpoints {
+  static const double mobile = 600;
+  static const double desktop = 1024;
+
+  static bool isMobile(double width) => width < mobile;
+  static bool isTablet(double width) => width >= mobile && width < desktop;
+  static bool isDesktop(double width) => width >= desktop;
+}
+
+abstract final class AppSpacing {
+  static const double xs = 6;
+  static const double sm = 10;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 32;
+  static const double xxl = 48;
+
+  static EdgeInsets page(double width) {
+    if (AppBreakpoints.isMobile(width)) {
+      return const EdgeInsets.fromLTRB(16, 18, 16, 96);
+    }
+    if (AppBreakpoints.isTablet(width)) {
+      return const EdgeInsets.fromLTRB(24, 24, 24, 32);
+    }
+    return const EdgeInsets.fromLTRB(32, 28, 32, 40);
+  }
+}
+
 class AppTheme {
   static const navy = Color(0xFF08192F);
   static const navySoft = Color(0xFF102D51);
@@ -8,6 +36,8 @@ class AppTheme {
   static const cyan = Color(0xFF16B8A1);
   static const violet = Color(0xFF7659E8);
   static const danger = Color(0xFFD94A68);
+  static const success = Color(0xFF159A74);
+  static const warning = Color(0xFFE49B2D);
   static const ink = Color(0xFF13233F);
   static const muted = Color(0xFF718099);
   static const surface = Color(0xFFFFFFFF);
@@ -32,6 +62,14 @@ class AppTheme {
       color: Color(0x1208192F),
       blurRadius: 28,
       offset: Offset(0, 12),
+    ),
+  ];
+
+  static List<BoxShadow> get elevatedShadow => const [
+    BoxShadow(
+      color: Color(0x1608192F),
+      blurRadius: 36,
+      offset: Offset(0, 16),
     ),
   ];
 
@@ -85,7 +123,7 @@ class AppTheme {
         bodySmall: const TextStyle(fontSize: 11, height: 1.6, color: muted),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xF7FFFFFF),
+        backgroundColor: Color(0xFAFFFFFF),
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -119,11 +157,12 @@ class AppTheme {
           borderSide: const BorderSide(color: danger, width: 1.6),
         ),
         labelStyle: const TextStyle(color: muted, fontSize: 13),
+        floatingLabelStyle: const TextStyle(color: blue, fontWeight: FontWeight.w700),
         prefixIconColor: muted,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 50),
+          minimumSize: const Size(0, 52),
           backgroundColor: blue,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -134,7 +173,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(0, 50),
+          minimumSize: const Size(0, 52),
           backgroundColor: Colors.white,
           foregroundColor: blue,
           shadowColor: const Color(0x2208192F),
@@ -146,7 +185,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 50),
+          minimumSize: const Size(0, 52),
           foregroundColor: blue,
           side: const BorderSide(color: Color(0xFFD6E0EF)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -171,7 +210,7 @@ class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 72,
+        height: 74,
         elevation: 0,
         backgroundColor: Colors.white,
         indicatorColor: blue.withValues(alpha: .11),
@@ -190,6 +229,10 @@ class AppTheme {
             size: 22,
           ),
         ),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
