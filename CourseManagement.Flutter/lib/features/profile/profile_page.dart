@@ -152,7 +152,7 @@ class ProfilePage extends StatelessWidget {
                     );
                   }
                   return Row(
-                    children: [const Expanded(child: copy), const SizedBox(width: 18), button],
+                    children: [Expanded(child: copy), const SizedBox(width: 18), button],
                   );
                 },
               ),
