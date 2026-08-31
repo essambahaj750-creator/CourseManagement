@@ -61,7 +61,9 @@ class _CoursesPageState extends State<CoursesPage> {
     try {
       final result = await _api.getInstructors();
       if (mounted) setState(() => _instructors = result);
-    } catch (_) {}
+    } catch (_) {
+      // Instructor filter is optional; the catalog remains usable.
+    }
   }
 
   void _refresh([CourseFilter? filter]) {
@@ -71,7 +73,9 @@ class _CoursesPageState extends State<CoursesPage> {
   void _applyFilters() {
     _refresh(
       CourseFilter(
-        query: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+        query: _searchController.text.trim().isEmpty
+            ? null
+            : _searchController.text.trim(),
         instructorId: _filter.instructorId,
         minPrice: double.tryParse(_minController.text.trim()),
         maxPrice: double.tryParse(_maxController.text.trim()),
@@ -94,7 +98,8 @@ class _CoursesPageState extends State<CoursesPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _FilterSheet(filter: _filter, instructors: _instructors),
+      builder: (context) =>
+          _FilterSheet(filter: _filter, instructors: _instructors),
     );
     if (result == null) return;
     _searchController.text = result.query ?? '';
@@ -128,7 +133,11 @@ class _CoursesPageState extends State<CoursesPage> {
                 colors: [AppTheme.navy, AppTheme.navySoft, AppTheme.blue],
               ),
               boxShadow: const [
-                BoxShadow(color: Color(0x2608192F), blurRadius: 24, offset: Offset(0, 12)),
+                BoxShadow(
+                  color: Color(0x2608192F),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
               ],
             ),
             child: LayoutBuilder(
@@ -138,29 +147,70 @@ class _CoursesPageState extends State<CoursesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.cyan.withValues(alpha: .18),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: const Text('مكتبة التعلم', style: TextStyle(color: Color(0xFFB9FFF2), fontSize: 11, fontWeight: FontWeight.w900)),
+                      child: const Text(
+                        'مكتبة التعلم',
+                        style: TextStyle(
+                          color: Color(0xFFB9FFF2),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 11),
-                    const Text('استكشف الكورسات', style: TextStyle(color: Colors.white, fontSize: 28, height: 1.25, fontWeight: FontWeight.w900)),
+                    const Text(
+                      'استكشف الكورسات',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        height: 1.25,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    const Text('ابحث، قارن، واختر المسار الذي يطابق هدفك القادم.', style: TextStyle(color: Color(0xFFD9E6FF), fontSize: 12, height: 1.7)),
+                    const Text(
+                      'ابحث، قارن، واختر المسار الذي يطابق هدفك القادم.',
+                      style: TextStyle(
+                        color: Color(0xFFD9E6FF),
+                        fontSize: 12,
+                        height: 1.7,
+                      ),
+                    ),
                   ],
                 );
                 final filterButton = FilledButton.icon(
                   onPressed: _openMobileFilters,
-                  style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.blue, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.blue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
+                  ),
                   icon: const Icon(Icons.tune_rounded),
                   label: const Text('تصفية النتائج'),
                 );
                 if (compact) {
-                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [copy, const SizedBox(height: 18), filterButton]);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [copy, const SizedBox(height: 18), filterButton],
+                  );
                 }
-                return Row(crossAxisAlignment: CrossAxisAlignment.end, children: [Expanded(child: copy), filterButton]);
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: copy),
+                    filterButton,
+                  ],
+                );
               },
             ),
           ),
@@ -168,79 +218,52 @@ class _CoursesPageState extends State<CoursesPage> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: [
-              _CatalogModeButton(
-                icon: Icons.grid_view_rounded,
-                label: 'شبكة',
-                selected: !_listView,
-                onTap: () => setState(() => _listView = false),
+            children: const [
+              _CatalogHighlight(
+                icon: Icons.search_rounded,
+                title: 'ابحث بسهولة',
+                subtitle: 'استخدم العنوان أو الوصف أو المدرّس',
               ),
-              _CatalogModeButton(
-                icon: Icons.view_list_rounded,
-                label: 'قائمة',
-                selected: _listView,
-                onTap: () => setState(() => _listView = true),
+              _CatalogHighlight(
+                icon: Icons.tune_rounded,
+                title: 'فلاتر دقيقة',
+                subtitle: 'السعر والترتيب والمجال في مكان واحد',
               ),
-              if (_filter.hasAnyFilter)
-                OutlinedButton.icon(
-                  onPressed: _resetFilters,
-                  icon: const Icon(Icons.restart_alt_rounded),
-                  label: const Text('مسح الفلاتر'),
-                ),
+              _CatalogHighlight(
+                icon: Icons.auto_awesome_rounded,
+                title: 'مسارات عملية',
+                subtitle: 'اختر ما يناسب هدفك الحالي',
+              ),
             ],
           ),
-          const SizedBox(height: 18),
-          FutureBuilder<CourseCatalog>(
-            future: _catalogFuture,
-            builder: (context, snapshot) {
-              if (_loading && snapshot.connectionState == ConnectionState.waiting) {
-                return const LoadingState(label: 'جاري البحث في مكتبة الكورسات...');
-              }
-              if (_error != null || snapshot.hasError) {
-                return ErrorState(message: _error ?? snapshot.error.toString(), onRetry: () => _refresh());
-              }
-              final catalog = snapshot.data;
-              final items = catalog?.items ?? const <Course>[];
-              if (items.isEmpty) {
-                return const EmptyState(
-                  title: 'لا توجد نتائج مطابقة',
-                  message: 'جرّب تغيير كلمات البحث أو إزالة بعض الفلاتر للوصول إلى كورسات أكثر.',
-                  icon: Icons.search_off_rounded,
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          const SizedBox(height: 24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final results = _ResultsPane(
+                future: _catalogFuture,
+                loading: _loading,
+                error: _error,
+                listView: _listView,
+                onRetry: _refresh,
+                onToggleView: () => setState(() => _listView = !_listView),
+                onPage: (page) => _refresh(_filter.copyWith(page: page)),
+              );
+              if (constraints.maxWidth < 900) return results;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SectionTitle(
-                    title: '${catalog!.totalCount} كورس',
-                    subtitle: 'اختر الكورس المناسب وافتح التفاصيل لمعرفة المحتوى والمدرّس.',
-                    action: Text('${catalog.page} / ${catalog.totalPages == 0 ? 1 : catalog.totalPages}', style: const TextStyle(color: AppTheme.muted, fontSize: 11, fontWeight: FontWeight.w800)),
+                  _FilterPanel(
+                    filter: _filter,
+                    instructors: _instructors,
+                    search: _searchController,
+                    minPrice: _minController,
+                    maxPrice: _maxController,
+                    onApply: _applyFilters,
+                    onReset: _resetFilters,
+                    onChanged: (value) => setState(() => _filter = value),
                   ),
-                  const SizedBox(height: 14),
-                  if (_listView)
-                    for (final course in items)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _CourseListCard(course: course),
-                      )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns = constraints.maxWidth >= 1024 ? 3 : constraints.maxWidth >= 620 ? 2 : 1;
-                        const gap = 16.0;
-                        final width = (constraints.maxWidth - ((columns - 1) * gap)) / columns;
-                        return Wrap(
-                          spacing: gap,
-                          runSpacing: gap,
-                          children: [for (final course in items) SizedBox(width: width, child: _CourseGridCard(course: course))],
-                        );
-                      },
-                    ),
-                  const SizedBox(height: 18),
-                  _CatalogPager(
-                    catalog: catalog,
-                    onPage: (page) => _refresh(_filter.copyWith(page: page)),
-                  ),
+                  const SizedBox(width: 20),
+                  Expanded(child: results),
                 ],
               );
             },
@@ -251,151 +274,194 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 }
 
-class _CatalogModeButton extends StatelessWidget {
-  const _CatalogModeButton({required this.icon, required this.label, required this.selected, required this.onTap});
+class _CatalogHighlight extends StatelessWidget {
+  const _CatalogHighlight({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
   final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final String title;
+  final String subtitle;
 
   @override
-  Widget build(BuildContext context) => selected
-      ? FilledButton.tonalIcon(onPressed: onTap, icon: Icon(icon), label: Text(label))
-      : OutlinedButton.icon(onPressed: onTap, icon: Icon(icon), label: Text(label));
-}
-
-class _CourseGridCard extends StatelessWidget {
-  const _CourseGridCard({required this.course});
-  final Course course;
-
-  @override
-  Widget build(BuildContext context) => Card(
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: () => context.go('/courses/${course.id}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CourseCover(course: course),
-          Padding(
-            padding: const EdgeInsets.all(17),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(course.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900, fontSize: 14, height: 1.45)),
-                const SizedBox(height: 7),
-                Text(course.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6)),
-                const SizedBox(height: 13),
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline_rounded, color: AppTheme.muted, size: 15),
-                    const SizedBox(width: 5),
-                    Expanded(child: Text(course.instructorName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.muted, fontSize: 10))),
-                    const Icon(Icons.arrow_back_rounded, color: AppTheme.blue, size: 18),
-                  ],
-                ),
-              ],
-            ),
+  Widget build(BuildContext context) => Container(
+    width: 250,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFE3E9F4)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x080B1220),
+          blurRadius: 16,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppTheme.blue.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
+          child: Icon(icon, color: AppTheme.blue, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 }
 
-class _CourseListCard extends StatelessWidget {
-  const _CourseListCard({required this.course});
-  final Course course;
+class _FilterPanel extends StatelessWidget {
+  const _FilterPanel({
+    required this.filter,
+    required this.instructors,
+    required this.search,
+    required this.minPrice,
+    required this.maxPrice,
+    required this.onApply,
+    required this.onReset,
+    required this.onChanged,
+  });
+
+  final CourseFilter filter;
+  final List<InstructorOption> instructors;
+  final TextEditingController search;
+  final TextEditingController minPrice;
+  final TextEditingController maxPrice;
+  final VoidCallback onApply;
+  final VoidCallback onReset;
+  final ValueChanged<CourseFilter> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/courses/${course.id}'),
+    return SizedBox(
+      width: 292,
+      child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: compact
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(18), child: CourseCover(course: course, height: 170)),
-                    const SizedBox(height: 14),
-                    _CourseListInfo(course: course),
-                  ],
-                )
-              : Row(
-                  children: [
-                    SizedBox(width: 220, child: ClipRRect(borderRadius: BorderRadius.circular(18), child: CourseCover(course: course, height: 145))),
-                    const SizedBox(width: 18),
-                    Expanded(child: _CourseListInfo(course: course)),
-                  ],
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'تصفية النتائج',
+                      style: TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.blue.withValues(alpha: .10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.tune_rounded,
+                      color: AppTheme.blue,
+                      size: 19,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'استخدم أكثر من فلتر للوصول إلى النتيجة الأنسب.',
+                style: TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 11,
+                  height: 1.7,
                 ),
+              ),
+              const SizedBox(height: 18),
+              _FilterFields(
+                filter: filter,
+                instructors: instructors,
+                search: search,
+                minPrice: minPrice,
+                maxPrice: maxPrice,
+                onChanged: onChanged,
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onApply,
+                    icon: const Icon(Icons.search_rounded, size: 18),
+                    label: const Text('عرض النتائج'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 42),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 11,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: filter.hasActiveFilters ? onReset : null,
+                    icon: const Icon(Icons.restart_alt_rounded, size: 17),
+                    label: const Text('مسح'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 42),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      foregroundColor: AppTheme.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _CourseListInfo extends StatelessWidget {
-  const _CourseListInfo({required this.course});
-  final Course course;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(course.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.ink, fontSize: 16, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 7),
-      Text(course.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6)),
-      const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          _SmallChip(icon: Icons.person_outline_rounded, label: course.instructorName),
-          _SmallChip(icon: Icons.payments_outlined, label: course.price == 0 ? 'مجاني' : '${course.price.toStringAsFixed(2)} ر.س'),
-        ],
-      ),
-    ],
-  );
-}
-
-class _SmallChip extends StatelessWidget {
-  const _SmallChip({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(color: AppTheme.surfaceMuted, borderRadius: BorderRadius.circular(999), border: Border.all(color: AppTheme.border)),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14, color: AppTheme.blue), const SizedBox(width: 5), Text(label, style: const TextStyle(color: AppTheme.ink, fontSize: 10, fontWeight: FontWeight.w700))]),
-  );
-}
-
-class _CatalogPager extends StatelessWidget {
-  const _CatalogPager({required this.catalog, required this.onPage});
-  final CourseCatalog catalog;
-  final ValueChanged<int> onPage;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-    alignment: WrapAlignment.center,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    spacing: 10,
-    runSpacing: 8,
-    children: [
-      IconButton.outlined(onPressed: catalog.page > 1 ? () => onPage(catalog.page - 1) : null, icon: const Icon(Icons.chevron_right_rounded), tooltip: 'الصفحة السابقة'),
-      Text('صفحة ${catalog.page} من ${catalog.totalPages == 0 ? 1 : catalog.totalPages}', style: const TextStyle(color: AppTheme.muted, fontSize: 11, fontWeight: FontWeight.w800)),
-      IconButton.outlined(onPressed: catalog.page < catalog.totalPages ? () => onPage(catalog.page + 1) : null, icon: const Icon(Icons.chevron_left_rounded), tooltip: 'الصفحة التالية'),
-    ],
-  );
-}
-
 class _FilterSheet extends StatefulWidget {
   const _FilterSheet({required this.filter, required this.instructors});
+
   final CourseFilter filter;
   final List<InstructorOption> instructors;
 
@@ -404,97 +470,508 @@ class _FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
-  late final TextEditingController _query;
-  late final TextEditingController _min;
-  late final TextEditingController _max;
-  int? _instructorId;
-  String? _sort;
-
-  @override
-  void initState() {
-    super.initState();
-    _query = TextEditingController(text: widget.filter.query ?? '');
-    _min = TextEditingController(text: widget.filter.minPrice?.toString() ?? '');
-    _max = TextEditingController(text: widget.filter.maxPrice?.toString() ?? '');
-    _instructorId = widget.filter.instructorId;
-    _sort = widget.filter.sort;
-  }
+  late final TextEditingController _search = TextEditingController(
+    text: widget.filter.query ?? '',
+  );
+  late final TextEditingController _min = TextEditingController(
+    text: widget.filter.minPrice?.toString() ?? '',
+  );
+  late final TextEditingController _max = TextEditingController(
+    text: widget.filter.maxPrice?.toString() ?? '',
+  );
+  late CourseFilter _filter = widget.filter;
 
   @override
   void dispose() {
-    _query.dispose();
+    _search.dispose();
     _min.dispose();
     _max.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-    padding: EdgeInsets.fromLTRB(20, 18, 20, MediaQuery.viewInsetsOf(context).bottom + 24),
-    child: SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(child: Container(width: 48, height: 5, decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(999)))),
-            const SizedBox(height: 20),
-            const Text('تصفية الكورسات', style: TextStyle(color: AppTheme.ink, fontSize: 20, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 18),
-            TextField(controller: _query, decoration: const InputDecoration(labelText: 'بحث', prefixIcon: Icon(Icons.search_rounded))),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<int?>(
-              initialValue: _instructorId,
-              decoration: const InputDecoration(labelText: 'المدرّس'),
-              items: [
-                const DropdownMenuItem<int?>(value: null, child: Text('كل المدرسين')),
-                ...widget.instructors.map((item) => DropdownMenuItem<int?>(value: item.id, child: Text(item.name))),
-              ],
-              onChanged: (value) => setState(() => _instructorId = value),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _min, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'أقل سعر'))),
-                const SizedBox(width: 10),
-                Expanded(child: TextField(controller: _max, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'أعلى سعر'))),
-              ],
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
-              initialValue: _sort,
-              decoration: const InputDecoration(labelText: 'الترتيب'),
-              items: const [
-                DropdownMenuItem<String?>(value: null, child: Text('الافتراضي')),
-                DropdownMenuItem(value: 'newest', child: Text('الأحدث')),
-                DropdownMenuItem(value: 'price_asc', child: Text('السعر: من الأقل')),
-                DropdownMenuItem(value: 'price_desc', child: Text('السعر: من الأعلى')),
-              ],
-              onChanged: (value) => setState(() => _sort = value),
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 18,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'الفلاتر',
+                      style: TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _FilterFields(
+                filter: _filter,
+                instructors: widget.instructors,
+                search: _search,
+                minPrice: _min,
+                maxPrice: _max,
+                onChanged: (value) => setState(() => _filter = value),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(
                   context,
-                  CourseFilter(
-                    query: _query.text.trim().isEmpty ? null : _query.text.trim(),
-                    instructorId: _instructorId,
+                  _filter.copyWith(
+                    query: _search.text.trim().isEmpty
+                        ? null
+                        : _search.text.trim(),
                     minPrice: double.tryParse(_min.text.trim()),
                     maxPrice: double.tryParse(_max.text.trim()),
-                    sort: _sort,
-                    page: 1,
-                    pageSize: widget.filter.pageSize,
                   ),
-                );
-              },
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('تطبيق الفلاتر'),
+                ),
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text('عرض النتائج'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterFields extends StatelessWidget {
+  const _FilterFields({
+    required this.filter,
+    required this.instructors,
+    required this.search,
+    required this.minPrice,
+    required this.maxPrice,
+    required this.onChanged,
+  });
+
+  final CourseFilter filter;
+  final List<InstructorOption> instructors;
+  final TextEditingController search;
+  final TextEditingController minPrice;
+  final TextEditingController maxPrice;
+  final ValueChanged<CourseFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          controller: search,
+          decoration: const InputDecoration(
+            labelText: 'كلمة البحث',
+            prefixIcon: Icon(Icons.search_rounded),
+            hintText: 'عنوان، وصف، مدرس...',
+          ),
+          onSubmitted: (_) =>
+              onChanged(filter.copyWith(query: search.text.trim())),
+        ),
+        const SizedBox(height: 14),
+        DropdownButtonFormField<int>(
+          initialValue: filter.instructorId ?? 0,
+          decoration: const InputDecoration(
+            labelText: 'المدرّس',
+            prefixIcon: Icon(Icons.person_outline_rounded),
+          ),
+          items: [
+            const DropdownMenuItem(value: 0, child: Text('كل المدرّسين')),
+            ...instructors.map(
+              (item) =>
+                  DropdownMenuItem(value: item.id, child: Text(item.name)),
+            ),
+          ],
+          onChanged: (value) => onChanged(
+            filter.copyWith(
+              instructorId: value == 0 ? null : value,
+              clearInstructor: value == 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: minPrice,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'من',
+                  suffixText: 'ر.س',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: maxPrice,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'إلى',
+                  suffixText: 'ر.س',
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        DropdownButtonFormField<String>(
+          initialValue: filter.sort,
+          decoration: const InputDecoration(
+            labelText: 'الترتيب',
+            prefixIcon: Icon(Icons.sort_rounded),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'featured', child: Text('اختيارات مميزة')),
+            DropdownMenuItem(value: 'newest', child: Text('الأحدث أولًا')),
+            DropdownMenuItem(
+              value: 'price-low',
+              child: Text('السعر: الأقل أولًا'),
+            ),
+            DropdownMenuItem(
+              value: 'price-high',
+              child: Text('السعر: الأعلى أولًا'),
+            ),
+            DropdownMenuItem(value: 'title', child: Text('الترتيب الأبجدي')),
+          ],
+          onChanged: (value) =>
+              onChanged(filter.copyWith(sort: value ?? 'featured')),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResultsPane extends StatelessWidget {
+  const _ResultsPane({
+    required this.future,
+    required this.loading,
+    required this.error,
+    required this.listView,
+    required this.onRetry,
+    required this.onToggleView,
+    required this.onPage,
+  });
+
+  final Future<CourseCatalog> future;
+  final bool loading;
+  final String? error;
+  final bool listView;
+  final VoidCallback onRetry;
+  final VoidCallback onToggleView;
+  final ValueChanged<int> onPage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && error == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(70),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (error != null) return ErrorState(message: error!, onRetry: onRetry);
+    return FutureBuilder<CourseCatalog>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(70),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return ErrorState(
+            message: snapshot.error.toString(),
+            onRetry: onRetry,
+          );
+        }
+        final catalog = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ResultsHeader(
+              catalog: catalog,
+              listView: listView,
+              onToggleView: onToggleView,
+            ),
+            const SizedBox(height: 14),
+            if (catalog.items.isEmpty)
+              const EmptyState(
+                title: 'لم نجد نتائج مطابقة',
+                message: 'وسّع نطاق البحث أو أزل أحد الفلاتر للوصول إلى كامل المكتبة.',
+                icon: Icons.search_off_rounded,
+              )
+            else
+              _CourseGrid(catalog: catalog, listView: listView),
+            if (catalog.totalPages > 1) ...[
+              const SizedBox(height: 20),
+              _Pagination(catalog: catalog, onPage: onPage),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ResultsHeader extends StatelessWidget {
+  const _ResultsHeader({
+    required this.catalog,
+    required this.listView,
+    required this.onToggleView,
+  });
+
+  final CourseCatalog catalog;
+  final bool listView;
+  final VoidCallback onToggleView;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'النتائج المتاحة',
+              style: TextStyle(
+                color: AppTheme.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${catalog.totalCount} كورسات ضمن مكتبة منصة المعرفة',
+              style: const TextStyle(color: AppTheme.muted, fontSize: 12),
             ),
           ],
         ),
       ),
-    ),
+      IconButton(
+        tooltip: listView ? 'عرض الشبكة' : 'عرض القائمة',
+        onPressed: onToggleView,
+        icon: Icon(
+          listView ? Icons.grid_view_rounded : Icons.view_list_rounded,
+          color: AppTheme.blue,
+        ),
+      ),
+    ],
   );
+}
+
+class _CourseGrid extends StatelessWidget {
+  const _CourseGrid({required this.catalog, required this.listView});
+
+  final CourseCatalog catalog;
+  final bool listView;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = listView ? 1 : (constraints.maxWidth > 760 ? 2 : 1);
+        final width = (constraints.maxWidth - (columns - 1) * 14) / columns;
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: [
+            for (final course in catalog.items)
+              SizedBox(
+                width: width,
+                child: _CourseTile(course: course, listView: listView),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CourseTile extends StatelessWidget {
+  const _CourseTile({required this.course, required this.listView});
+
+  final Course course;
+  final bool listView;
+
+  @override
+  Widget build(BuildContext context) {
+    final information = _CourseInfo(course: course);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/courses/${course.id}'),
+        child: listView
+            ? Row(
+                children: [
+                  SizedBox(
+                    width: 150,
+                    child: CourseCover(course: course, height: 150),
+                  ),
+                  Expanded(child: information),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CourseCover(course: course),
+                  information,
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _CourseInfo extends StatelessWidget {
+  const _CourseInfo({required this.course});
+
+  final Course course;
+
+  @override
+  Widget build(BuildContext context) {
+    final description = course.description.isEmpty
+        ? 'مسار عملي لتطوير مهاراتك.'
+        : course.description;
+    final initial = course.instructorName.isEmpty
+        ? 'م'
+        : course.instructorName.substring(0, 1);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            course.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.ink,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.muted,
+              fontSize: 11,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 13,
+                backgroundColor: AppTheme.blue.withValues(alpha: .12),
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    color: AppTheme.blue,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  course.instructorName,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                ),
+              ),
+              Text(
+                course.price == 0
+                    ? 'مجاني'
+                    : '${course.price.toStringAsFixed(2)} ر.س',
+                style: const TextStyle(
+                  color: AppTheme.blue,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Pagination extends StatelessWidget {
+  const _Pagination({required this.catalog, required this.onPage});
+
+  final CourseCatalog catalog;
+  final ValueChanged<int> onPage;
+
+  @override
+  Widget build(BuildContext context) {
+    final end = catalog.totalPages < 5 ? catalog.totalPages : 5;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed: catalog.page > 1 ? () => onPage(catalog.page - 1) : null,
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
+        for (var page = 1; page <= end; page++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: page == catalog.page
+                ? CircleAvatar(
+                    radius: 17,
+                    backgroundColor: AppTheme.blue,
+                    child: Text(
+                      '$page',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: () => onPage(page),
+                    child: Text('$page'),
+                  ),
+          ),
+        IconButton(
+          onPressed: catalog.page < catalog.totalPages
+              ? () => onPage(catalog.page + 1)
+              : null,
+          icon: const Icon(Icons.chevron_left_rounded),
+        ),
+      ],
+    );
+  }
 }
