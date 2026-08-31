@@ -13,17 +13,150 @@ class PageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final horizontal = width < 560 ? 14.0 : width < 900 ? 20.0 : 28.0;
+    final horizontal = width < 600 ? 16.0 : width < 1024 ? 24.0 : 32.0;
+    final vertical = width < 600 ? 20.0 : 28.0;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(horizontal, 24, horizontal, 40),
+          padding: EdgeInsets.fromLTRB(horizontal, vertical, horizontal, 48),
           child: child,
         ),
       ),
     );
   }
+}
+
+class AdaptivePageHeader extends StatelessWidget {
+  const AdaptivePageHeader({
+    required this.eyebrow,
+    required this.title,
+    this.subtitle,
+    this.action,
+    this.icon,
+    super.key,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppTheme.cyan.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 16, color: AppTheme.cyan),
+              ),
+              const SizedBox(width: 9),
+            ],
+            Text(
+              eyebrow,
+              style: const TextStyle(
+                color: AppTheme.cyan,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: AppTheme.ink,
+            fontSize: compact ? 25 : 30,
+            height: 1.25,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.35,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 7),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Text(
+              subtitle!,
+              style: const TextStyle(
+                color: AppTheme.muted,
+                fontSize: 12,
+                height: 1.7,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (action == null) return text;
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          text,
+          const SizedBox(height: 14),
+          Align(alignment: Alignment.centerRight, child: action!),
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(child: text),
+        const SizedBox(width: 20),
+        action!,
+      ],
+    );
+  }
+}
+
+class LoadingState extends StatelessWidget {
+  const LoadingState({this.label = 'جاري تحميل البيانات...', super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 54),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: AppTheme.border),
+    ),
+    child: Column(
+      children: [
+        const SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 3),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class SectionTitle extends StatelessWidget {
@@ -39,48 +172,68 @@ class SectionTitle extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.end,
-    children: [
-      Container(
-        width: 5,
-        height: 38,
-        margin: const EdgeInsets.only(left: 11),
-        decoration: BoxDecoration(
-          gradient: AppTheme.accentGradient,
-          borderRadius: BorderRadius.circular(999),
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+    final heading = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 5,
+          height: 38,
+          margin: const EdgeInsets.only(left: 11),
+          decoration: BoxDecoration(
+            gradient: AppTheme.accentGradient,
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
-      ),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.ink,
-                letterSpacing: -.2,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                subtitle!,
+                title,
                 style: const TextStyle(
-                  color: AppTheme.muted,
-                  fontSize: 12,
-                  height: 1.6,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.ink,
+                  letterSpacing: -.2,
                 ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    color: AppTheme.muted,
+                    fontSize: 12,
+                    height: 1.6,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-      if (action != null) action!,
-    ],
-  );
+      ],
+    );
+    if (action == null) return heading;
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          heading,
+          const SizedBox(height: 10),
+          Align(alignment: Alignment.centerRight, child: action!),
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(child: heading),
+        action!,
+      ],
+    );
+  }
 }
 
 class CourseCover extends StatelessWidget {
