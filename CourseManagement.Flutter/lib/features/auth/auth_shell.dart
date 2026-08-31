@@ -56,24 +56,26 @@ class AuthShell extends StatelessWidget {
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: wide
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const Expanded(flex: 10, child: _VisualPanel()),
-                                Expanded(
-                                  flex: 9,
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(38, 42, 38, 42),
-                                    child: Align(
-                                      alignment: Alignment.center,
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 390),
-                                        child: content,
+                          ? IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Expanded(flex: 10, child: _VisualPanel()),
+                                  Expanded(
+                                    flex: 9,
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(38, 42, 38, 42),
+                                      child: Align(
+                                        alignment: Alignment.center,
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 390),
+                                          child: content,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             )
                           : Padding(
                               padding: EdgeInsets.fromLTRB(
@@ -146,18 +148,24 @@ class _CompactBrand extends StatelessWidget {
         child: const Icon(Icons.school_rounded, color: Colors.white, size: 23),
       ),
       const SizedBox(width: 11),
-      const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'منصة المعرفة',
-            style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900, fontSize: 15),
-          ),
-          Text(
-            'تعلّم. طبّق. تقدّم.',
-            style: TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w700, fontSize: 9),
-          ),
-        ],
+      const Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'منصة المعرفة',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900, fontSize: 15),
+            ),
+            Text(
+              'تعلّم. طبّق. تقدّم.',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w700, fontSize: 9),
+            ),
+          ],
+        ),
       ),
     ],
   );
@@ -200,6 +208,7 @@ class _VisualPanel extends StatelessWidget {
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
@@ -224,7 +233,7 @@ class _VisualPanel extends StatelessWidget {
                   ),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: 112),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
@@ -276,7 +285,6 @@ class _VisualPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-              const Spacer(),
             ],
           ),
         ],
