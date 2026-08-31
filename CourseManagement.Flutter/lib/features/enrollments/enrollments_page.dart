@@ -30,16 +30,19 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.remove_circle_outline_rounded, color: AppTheme.danger),
         title: const Text('إلغاء التسجيل؟'),
-        content: Text('هل تريد إزالة تسجيلك من «${item.courseTitle}»؟'),
+        content: Text('ستتم إزالة «${item.courseTitle}» من مسارك التعليمي. يمكنك التسجيل فيه مجددًا لاحقًا.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('تراجع'),
           ),
-          FilledButton(
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('إلغاء التسجيل'),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('إلغاء التسجيل'),
           ),
         ],
       ),
@@ -49,14 +52,15 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
     try {
       await context.read<ApiClient>().unenroll(item.courseId);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تم إلغاء التسجيل بنجاح.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم إلغاء التسجيل بنجاح.')),
+      );
       _refresh();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
       }
     }
   }
@@ -67,56 +71,26 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'مساري التعليمي',
-            style: TextStyle(
-              color: AppTheme.cyan,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+          AdaptivePageHeader(
+            eyebrow: 'مساري التعليمي',
+            title: 'تسجيلاتي',
+            subtitle: 'كل الكورسات التي اخترتها محفوظة هنا لتعود إليها وتكمل تعلّمك في أي وقت.',
+            icon: Icons.fact_check_rounded,
+            action: OutlinedButton.icon(
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('تحديث'),
             ),
           ),
-          const SizedBox(height: 7),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'تسجيلاتي',
-                  style: TextStyle(
-                    color: AppTheme.ink,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _refresh,
-                tooltip: 'تحديث',
-                icon: const Icon(Icons.refresh_rounded, color: AppTheme.blue),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'كل الكورسات التي اخترتها محفوظة هنا لتعود إليها في أي وقت.',
-            style: TextStyle(color: AppTheme.muted, fontSize: 13),
-          ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 24),
           FutureBuilder<List<Enrollment>>(
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(70),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+                return const LoadingState(label: 'جاري تجهيز مسارك التعليمي...');
               }
               if (snapshot.hasError) {
-                return ErrorState(
-                  message: snapshot.error.toString(),
-                  onRetry: _refresh,
-                );
+                return ErrorState(message: snapshot.error.toString(), onRetry: _refresh);
               }
               final items = snapshot.data ?? const <Enrollment>[];
               if (items.isEmpty) {
@@ -126,37 +100,55 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
                   icon: Icons.fact_check_rounded,
                 );
               }
+
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SummaryCard(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 620;
+                      final cards = [
+                        _SummaryCard(
                           icon: Icons.auto_stories_rounded,
                           value: '${items.length}',
                           label: 'كورسات مسجلة',
                           color: AppTheme.blue,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: _SummaryCard(
+                        const _SummaryCard(
                           icon: Icons.bolt_rounded,
                           value: 'نشط',
                           label: 'حالة المسار',
                           color: AppTheme.cyan,
                         ),
-                      ),
-                    ],
+                      ];
+                      if (compact) {
+                        return Column(
+                          children: [
+                            cards[0],
+                            const SizedBox(height: 10),
+                            cards[1],
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: cards[0]),
+                          const SizedBox(width: 12),
+                          Expanded(child: cards[1]),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 22),
+                  const SectionTitle(
+                    title: 'كورساتك الحالية',
+                    subtitle: 'تابع ما بدأت، أو ألغِ التسجيل من قائمة الخيارات عند الحاجة.',
+                  ),
+                  const SizedBox(height: 14),
                   for (final item in items)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _EnrollmentCard(
-                        item: item,
-                        onRemove: () => _remove(item),
-                      ),
+                      child: _EnrollmentCard(item: item, onRemove: () => _remove(item)),
                     ),
                 ],
               );
@@ -169,12 +161,7 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
+  const _SummaryCard({required this.icon, required this.value, required this.label, required this.color});
 
   final IconData icon;
   final String value;
@@ -185,35 +172,28 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: .11),
-                borderRadius: BorderRadius.circular(14),
+                color: color.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(icon, color: color),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 11),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: AppTheme.ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(color: AppTheme.muted, fontSize: 11),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value, style: const TextStyle(color: AppTheme.ink, fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 2),
+                  Text(label, style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
+                ],
+              ),
             ),
           ],
         ),
@@ -230,60 +210,85 @@ class _EnrollmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.courseTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900, fontSize: 14),
+        ),
+        const SizedBox(height: 6),
+        Row(
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.blue, AppTheme.cyan],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 13),
+            const Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.muted),
+            const SizedBox(width: 6),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.courseTitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppTheme.ink,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'تاريخ التسجيل: ${item.enrolledDate.day}/${item.enrolledDate.month}/${item.enrolledDate.year}',
-                    style: const TextStyle(color: AppTheme.muted, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: onRemove,
-              tooltip: 'إلغاء التسجيل',
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFFC73A48),
+              child: Text(
+                'سجّلت في ${item.enrolledDate.day}/${item.enrolledDate.month}/${item.enrolledDate.year}',
+                style: const TextStyle(color: AppTheme.muted, fontSize: 11),
               ),
             ),
           ],
         ),
+      ],
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const _CourseIcon(),
+                      const SizedBox(width: 12),
+                      Expanded(child: details),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(foregroundColor: AppTheme.danger),
+                    onPressed: onRemove,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('إلغاء التسجيل'),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  const _CourseIcon(),
+                  const SizedBox(width: 14),
+                  Expanded(child: details),
+                  const SizedBox(width: 12),
+                  IconButton.outlined(
+                    onPressed: onRemove,
+                    tooltip: 'إلغاء التسجيل',
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.danger),
+                  ),
+                ],
+              ),
       ),
     );
   }
+}
+
+class _CourseIcon extends StatelessWidget {
+  const _CourseIcon();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 52,
+    height: 52,
+    decoration: BoxDecoration(
+      gradient: AppTheme.accentGradient,
+      borderRadius: BorderRadius.circular(17),
+      boxShadow: AppTheme.softShadow,
+    ),
+    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+  );
 }
