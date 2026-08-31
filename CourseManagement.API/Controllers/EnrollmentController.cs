@@ -13,10 +13,12 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
 {
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll() =>
-        Ok(await enrollmentService.GetAllEnrollmentsAsync());
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default) =>
+        Ok(await enrollmentService.GetEnrollmentsPageAsync(page, pageSize, cancellationToken));
 
-    // كان أي مستخدم مسجّل يستطيع قراءة تسجيل أي شخص آخر (IDOR) — الآن: صاحبه أو Admin فقط
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -30,7 +32,6 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
         return Ok(enrollment);
     }
 
-    // كان أي مستخدم يستطيع عرض تسجيلات أي مستخدم آخر (IDOR) — الآن: نفسه أو Admin فقط
     [HttpGet("user/{userId:int}")]
     public async Task<IActionResult> GetByUser(int userId)
     {
@@ -40,12 +41,10 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
         return Ok(await enrollmentService.GetEnrollmentsByUserAsync(userId));
     }
 
-    /// <summary>تسجيلاتي أنا — اختصار مريح</summary>
     [HttpGet("my")]
     public async Task<IActionResult> GetMy() =>
         Ok(await enrollmentService.GetEnrollmentsByUserAsync(User.GetUserId()));
 
-    // قائمة المسجّلين في كورس بيانات خاصة — مدرب الكورس أو Admin فقط (الملكية تُفحص في الخدمة)
     [HttpGet("course/{courseId:int}")]
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> GetByCourse(int courseId) =>
@@ -55,12 +54,9 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
     public async Task<IActionResult> Enroll([FromBody] EnrollDto dto)
     {
         var enrollment = await enrollmentService.EnrollUserAsync(User.GetUserId(), dto.CourseId);
-        // إنشاء مورد جديد يعيد 201 مع رابط المورد، وليس 200
         return CreatedAtAction(nameof(GetById), new { id = enrollment.Id }, enrollment);
     }
 
-    // كان المسار DELETE api/enrollment/{courseId} يتصادم دلالياً مع GET api/enrollment/{id}
-    // (نفس الشكل لكن الرقم يعني شيئاً مختلفاً!) — الآن المسار صريح
     [HttpDelete("course/{courseId:int}")]
     public async Task<IActionResult> Unenroll(int courseId)
     {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -33,10 +34,10 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
     refreshListenable: widget.auth,
     redirect: (context, state) {
       final path = state.uri.path;
-      const publicPaths = {'/splash', '/login', '/register'};
+      const guestPaths = {'/login', '/register'};
 
       if (widget.auth.isRestoring) return path == '/splash' ? null : '/splash';
-      if (!widget.auth.isAuthenticated && !publicPaths.contains(path)) {
+      if (!widget.auth.isAuthenticated && !guestPaths.contains(path)) {
         return '/login';
       }
       if (widget.auth.isAuthenticated &&
@@ -106,6 +107,11 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
         theme: AppTheme.light(),
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         builder: (context, child) => Directionality(
           textDirection: TextDirection.rtl,
           child: child ?? const SizedBox.shrink(),

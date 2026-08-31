@@ -134,12 +134,16 @@ class _VisualPanel extends StatelessWidget {
                 child: const Icon(Icons.school_rounded, color: Colors.white),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'منصة المعرفة',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+              const Expanded(
+                child: Text(
+                  'منصة المعرفة',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -171,19 +175,25 @@ class _VisualPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: Color(0xFF62E1C8),
-                    size: 18,
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF62E1C8),
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .82),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .82),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],

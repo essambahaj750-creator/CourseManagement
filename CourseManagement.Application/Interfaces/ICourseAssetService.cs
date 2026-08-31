@@ -47,6 +47,12 @@ public interface ICourseAssetService
         bool isAdmin,
         CancellationToken cancellationToken = default);
 
+    Task DeleteCoverAsync(
+        int courseId,
+        int requesterId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
+
     Task<CourseAssetDownload?> OpenCoverAsync(
         int courseId,
         CancellationToken cancellationToken = default);

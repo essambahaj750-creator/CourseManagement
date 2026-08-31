@@ -8,7 +8,21 @@ namespace CourseManagement.Infrastructure.Repositories;
 public class UserRepository(ApplicationDbContext context) : IUserRepository
 {
     public async Task<IEnumerable<User>> GetAllAsync() =>
-        await context.Users.AsNoTracking().ToListAsync();
+        await context.Users.AsNoTracking().OrderBy(u => u.Id).ToListAsync();
+
+    public async Task<(IReadOnlyList<User> Items, int TotalCount)> GetPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = context.Users.AsNoTracking().OrderBy(u => u.Id);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+        return (items, totalCount);
+    }
 
     public async Task<User?> GetByIdAsync(int id) =>
         await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);

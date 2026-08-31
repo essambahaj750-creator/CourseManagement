@@ -57,20 +57,42 @@ public sealed class CourseAssetsTests
         var assets = new FakeAssetRepository();
         var files = new FakeFileStorage();
         var service = CreateService(course, assets, files, enrolled: false);
+        var bytes = ValidMp4();
 
         var result = await service.UploadAsync(
             course.Id,
             "../lesson.mp4",
-            4,
+            bytes.Length,
             CourseAssetType.Video,
-            new MemoryStream(new byte[] { 1, 2, 3, 4 }),
+            new MemoryStream(bytes),
             requesterId: course.InstructorId,
             isAdmin: false);
 
         Assert.Equal("lesson.mp4", result.OriginalFileName);
         Assert.Equal(CourseAssetType.Video, result.Type);
+        Assert.Equal("video/mp4", result.ContentType);
         Assert.Single(assets.Items);
         Assert.Single(files.SavedNames);
+    }
+
+    [Fact]
+    public async Task Upload_RejectsBytesThatDoNotMatchExtension()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
+        var files = new FakeFileStorage();
+        var service = CreateService(course, new FakeAssetRepository(), files, enrolled: false);
+
+        var error = await Assert.ThrowsAsync<InvalidRequestException>(() => service.UploadAsync(
+            course.Id,
+            "lesson.mp4",
+            16,
+            CourseAssetType.Video,
+            new MemoryStream(new byte[16]),
+            requesterId: course.InstructorId,
+            isAdmin: false));
+
+        Assert.Contains("contents", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(files.SavedNames);
     }
 
     [Fact]
@@ -80,12 +102,13 @@ public sealed class CourseAssetsTests
         var assets = new FakeAssetRepository();
         var files = new FakeFileStorage();
         var service = CreateService(course, assets, files, enrolled: false);
+        var bytes = ValidPng();
 
         await service.UploadCoverAsync(
             course.Id,
             "../cover.png",
-            4,
-            new MemoryStream(new byte[] { 1, 2, 3, 4 }),
+            bytes.Length,
+            new MemoryStream(bytes),
             requesterId: course.InstructorId,
             isAdmin: false);
 
@@ -100,6 +123,33 @@ public sealed class CourseAssetsTests
         Assert.NotNull(opened);
         Assert.Equal("cover.png", opened.DownloadName);
         await opened.Content.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteCover_RemovesMetadataClearsCoursePathAndDeletesFile()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing", ImageUrl = "/api/course/7/cover" };
+        var assets = new FakeAssetRepository();
+        assets.Items.Add(new CourseAsset
+        {
+            Id = 1,
+            CourseId = course.Id,
+            Course = course,
+            OriginalFileName = "cover.png",
+            StoredFileName = "stored.png",
+            ContentType = "image/png",
+            SizeBytes = 16,
+            Type = CourseAssetType.CoverImage,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        var files = new FakeFileStorage();
+        var service = CreateService(course, assets, files, enrolled: false);
+
+        await service.DeleteCoverAsync(course.Id, course.InstructorId, isAdmin: false);
+
+        Assert.Null(course.ImageUrl);
+        Assert.Empty(assets.Items);
+        Assert.Contains("stored.png", files.DeletedNames);
     }
 
     [Fact]
@@ -245,9 +295,16 @@ public sealed class CourseAssetsTests
             new FakeCourseRepository(course),
             new FakeEnrollmentRepository(enrolled),
             files,
+            new FakeUnitOfWork(),
             Options.Create(new FileUploadOptions()),
             NullLogger<CourseAssetService>.Instance);
     }
+
+    private static byte[] ValidMp4() =>
+        [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D, 0x00, 0x00, 0x00, 0x00];
+
+    private static byte[] ValidPng() =>
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52];
 
     private static string CreateTempDirectory()
     {
@@ -288,6 +345,11 @@ public sealed class CourseAssetsTests
     private sealed class FakeEnrollmentRepository(bool enrolled) : IEnrollmentRepository
     {
         public Task<IEnumerable<Enrollment>> GetAllAsync() => Task.FromResult<IEnumerable<Enrollment>>([]);
+        public Task<(IReadOnlyList<Enrollment> Items, int TotalCount)> GetPageAsync(
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<Enrollment>, int)>(([], 0));
         public Task<Enrollment?> GetByIdAsync(int id) => Task.FromResult<Enrollment?>(null);
         public Task<IEnumerable<Enrollment>> GetByUserIdAsync(int userId) =>
             Task.FromResult<IEnumerable<Enrollment>>([]);
@@ -338,6 +400,18 @@ public sealed class CourseAssetsTests
         {
             DeletedNames.Add(storedFileName);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeUnitOfWork : IUnitOfWork
+    {
+        public Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IUnitOfWorkTransaction>(new FakeTransaction());
+
+        private sealed class FakeTransaction : IUnitOfWorkTransaction
+        {
+            public Task CommitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
         }
     }
 }

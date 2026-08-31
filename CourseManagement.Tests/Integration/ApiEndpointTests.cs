@@ -81,8 +81,6 @@ public sealed class ApiEndpointTests(ApiFactory factory) : IClassFixture<ApiFact
     [Fact]
     public async Task Login_AcceptsAnyCasingOfTheRegisteredEmail()
     {
-        // End-to-end guard over HTTP for the mixed-case lockout defect: registering
-        // with capitals used to make the account permanently unreachable.
         var client = factory.CreateClient();
         await client.RegisterAsync("Mixed.Case@Example.COM", "Mixed Case");
 
@@ -175,8 +173,6 @@ public sealed class ApiEndpointTests(ApiFactory factory) : IClassFixture<ApiFact
     [Fact]
     public async Task UnknownResource_RespondsWithProblemDetailsCarryingATraceId()
     {
-        // Asserts the envelope only, not the wording: the messages themselves are
-        // due to change when the error contract is tightened.
         var client = await factory.CreateStudentClientAsync("problem.shape@example.com");
 
         var response = await client.GetAsync("/api/course/999999/assets");
@@ -210,10 +206,6 @@ public sealed class ApiEndpointTests(ApiFactory factory) : IClassFixture<ApiFact
     }
 }
 
-/// <summary>
-/// Throttling needs its own host because the limit is a startup-time configuration
-/// value, and a low ceiling would break every other test sharing the fixture.
-/// </summary>
 public sealed class AuthRateLimitTests
 {
     [Fact]
@@ -225,19 +217,29 @@ public sealed class AuthRateLimitTests
         factory.ConfigurationOverrides["RateLimiting:Auth:WindowSeconds"] = "60";
 
         var client = factory.CreateClient();
-        var statuses = new List<HttpStatusCode>();
+        var responses = new List<HttpResponseMessage>();
         for (var attempt = 0; attempt < permitLimit + 2; attempt++)
+            responses.Add(await client.PostLoginAsync("throttled@example.com"));
+
+        Assert.All(responses.Take(permitLimit), response =>
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode));
+
+        foreach (var response in responses.Skip(permitLimit))
         {
-            var response = await client.PostLoginAsync("throttled@example.com");
-            statuses.Add(response.StatusCode);
+            Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+            Assert.True(response.Headers.TryGetValues("Retry-After", out var values));
+            Assert.True(int.TryParse(values.Single(), out var retryAfterSeconds));
+            Assert.True(retryAfterSeconds >= 1);
+
+            var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(429, problem.GetProperty("status").GetInt32());
+            Assert.True(problem.TryGetProperty("traceId", out var traceId));
+            Assert.False(string.IsNullOrWhiteSpace(traceId.GetString()));
         }
 
-        // The first `permitLimit` requests reach the handler and fail
-        // authentication; everything after is rejected by the limiter.
-        Assert.All(statuses.Take(permitLimit), status =>
-            Assert.Equal(HttpStatusCode.Unauthorized, status));
-        Assert.All(statuses.Skip(permitLimit), status =>
-            Assert.Equal(HttpStatusCode.TooManyRequests, status));
+        foreach (var response in responses)
+            response.Dispose();
     }
 
     [Fact]

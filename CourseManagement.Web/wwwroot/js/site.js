@@ -11,16 +11,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (table.dataset.enhanced === 'true') return;
             table.dataset.enhanced = 'true';
             new DataTable(table, {
-                searchable: true,
-                sortable: true,
-                perPage: 8,
-                perPageSelect: [8, 15, 25, 50],
-                labels: {
-                    placeholder: 'بحث في السجلات...',
-                    perPage: '{select} عنصر لكل صفحة',
-                    noRows: 'لا توجد بيانات مطابقة',
-                    noResults: 'لا توجد نتائج لهذا البحث',
-                    info: 'عرض {start} إلى {end} من {rows} عنصر'
+                searching: true,
+                ordering: true,
+                pageLength: 8,
+                lengthMenu: [8, 15, 25, 50],
+                language: {
+                    search: 'بحث:',
+                    searchPlaceholder: 'بحث في السجلات...',
+                    lengthMenu: 'عرض _MENU_ عنصر لكل صفحة',
+                    zeroRecords: 'لا توجد بيانات مطابقة',
+                    emptyTable: 'لا توجد بيانات متاحة',
+                    info: 'عرض _START_ إلى _END_ من أصل _TOTAL_ عنصر',
+                    infoEmpty: 'لا توجد عناصر للعرض',
+                    infoFiltered: '(مفلترة من أصل _MAX_ عنصر)',
+                    paginate: {
+                        first: 'الأول',
+                        last: 'الأخير',
+                        next: 'التالي',
+                        previous: 'السابق'
+                    }
                 }
             });
         });

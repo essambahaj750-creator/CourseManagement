@@ -4,7 +4,9 @@ import '../../core/network/api_client.dart';
 import '../../models/models.dart';
 
 class AuthController extends ChangeNotifier {
-  AuthController(this._api);
+  AuthController(this._api) {
+    _api.onUnauthorized = _handleUnauthorized;
+  }
 
   final ApiClient _api;
   AuthSession? session;
@@ -47,6 +49,12 @@ class AuthController extends ChangeNotifier {
     await _api.sessionStore.clear();
     session = null;
     errorMessage = null;
+    notifyListeners();
+  }
+
+  void _handleUnauthorized() {
+    session = null;
+    errorMessage = 'انتهت الجلسة، يرجى تسجيل الدخول من جديد.';
     notifyListeners();
   }
 

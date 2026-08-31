@@ -15,6 +15,7 @@ public sealed class CourseAssetService(
     ICourseRepository courseRepository,
     IEnrollmentRepository enrollmentRepository,
     IFileStorage fileStorage,
+    IUnitOfWork unitOfWork,
     IOptions<FileUploadOptions> uploadOptions,
     ILogger<CourseAssetService> logger) : ICourseAssetService
 {
@@ -69,8 +70,8 @@ public sealed class CourseAssetService(
             throw new InvalidRequestException("This video extension is not allowed.");
         if (type == CourseAssetType.Attachment && !options.IsAttachmentExtension(extension))
             throw new InvalidRequestException("This attachment extension is not allowed.");
-        var contentType = DeriveContentType(extension, type);
 
+        var contentType = await InspectUploadAsync(content, extension, cancellationToken);
         var stored = await fileStorage.SaveAsync(content, extension, maxBytes, cancellationToken);
         try
         {
@@ -79,7 +80,7 @@ public sealed class CourseAssetService(
                 CourseId = courseId,
                 OriginalFileName = safeOriginalName,
                 StoredFileName = stored.StoredFileName,
-                ContentType = contentType.Trim().ToLowerInvariant(),
+                ContentType = contentType,
                 SizeBytes = length,
                 Type = type,
                 CreatedAtUtc = DateTime.UtcNow
@@ -118,8 +119,8 @@ public sealed class CourseAssetService(
             throw new InvalidRequestException($"The cover image exceeds the {options.MaxCoverImageBytes / (1024 * 1024)} MB limit.");
         if (!options.IsCoverImageExtension(extension))
             throw new InvalidRequestException("This cover image extension is not allowed.");
-        var contentType = DeriveCoverContentType(extension);
 
+        var contentType = await InspectUploadAsync(content, extension, cancellationToken);
         var stored = await fileStorage.SaveAsync(content, extension, options.MaxCoverImageBytes, cancellationToken);
         var existing = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
             .Where(asset => asset.Type == CourseAssetType.CoverImage)
@@ -128,12 +129,14 @@ public sealed class CourseAssetService(
 
         try
         {
+            await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
             await assetRepository.AddAsync(new CourseAsset
             {
                 CourseId = courseId,
                 OriginalFileName = safeOriginalName,
                 StoredFileName = stored.StoredFileName,
-                ContentType = contentType.Trim().ToLowerInvariant(),
+                ContentType = contentType,
                 SizeBytes = length,
                 Type = CourseAssetType.CoverImage,
                 CreatedAtUtc = DateTime.UtcNow
@@ -147,28 +150,50 @@ public sealed class CourseAssetService(
 
             course.ImageUrl = $"/api/course/{courseId}/cover";
             await courseRepository.UpdateAsync(course);
+            await transaction.CommitAsync(cancellationToken);
 
             if (existing is not null)
-            {
-                try
-                {
-                    await fileStorage.DeleteAsync(existing.StoredFileName, cancellationToken);
-                }
-                catch (Exception exception)
-                {
-                    logger.LogWarning(
-                        exception,
-                        "Could not delete replaced cover {StoredFileName} for course {CourseId}.",
-                        existing.StoredFileName,
-                        courseId);
-                }
-            }
+                await TryDeletePhysicalFileAsync(existing.StoredFileName, courseId, "replaced cover", cancellationToken);
         }
         catch
         {
             await fileStorage.DeleteAsync(stored.StoredFileName, cancellationToken);
             throw;
         }
+    }
+
+    public async Task DeleteCoverAsync(
+        int courseId,
+        int requesterId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
+    {
+        var course = await courseRepository.GetByIdAsync(courseId)
+            ?? throw new KeyNotFoundException("Course not found.");
+        EnsureCanManage(course, requesterId, isAdmin);
+
+        var covers = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
+            .Where(asset => asset.Type == CourseAssetType.CoverImage)
+            .ToArray();
+
+        if (covers.Length == 0 && string.IsNullOrWhiteSpace(course.ImageUrl))
+            return;
+
+        await using (var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken))
+        {
+            foreach (var cover in covers)
+                await assetRepository.DeleteAsync(cover, cancellationToken);
+
+            if (covers.Length > 0)
+                await assetRepository.SaveChangesAsync(cancellationToken);
+
+            course.ImageUrl = null;
+            await courseRepository.UpdateAsync(course);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        foreach (var cover in covers)
+            await TryDeletePhysicalFileAsync(cover.StoredFileName, courseId, "deleted cover", cancellationToken);
     }
 
     public async Task<CourseAssetDownload?> OpenCoverAsync(
@@ -230,6 +255,12 @@ public sealed class CourseAssetService(
             throw new KeyNotFoundException("Asset not found.");
         EnsureCanManage(asset.Course, requesterId, isAdmin);
 
+        if (asset.Type == CourseAssetType.CoverImage)
+        {
+            await DeleteCoverAsync(courseId, requesterId, isAdmin, cancellationToken);
+            return;
+        }
+
         await assetRepository.DeleteAsync(asset, cancellationToken);
         await assetRepository.SaveChangesAsync(cancellationToken);
         await fileStorage.DeleteAsync(asset.StoredFileName, cancellationToken);
@@ -264,39 +295,50 @@ public sealed class CourseAssetService(
         CreatedAtUtc = asset.CreatedAtUtc
     };
 
-    private static string DeriveContentType(string extension, CourseAssetType type)
+    private static async Task<string> InspectUploadAsync(
+        Stream content,
+        string extension,
+        CancellationToken cancellationToken)
     {
-        if (type == CourseAssetType.Video)
-            return extension switch
-            {
-                ".mp4" => "video/mp4",
-                ".webm" => "video/webm",
-                ".mov" => "video/quicktime",
-                ".m4v" => "video/x-m4v",
-                _ => "application/octet-stream"
-            };
+        if (!content.CanSeek)
+            throw new InvalidOperationException("Uploaded file streams must be seekable for signature validation.");
 
-        return extension switch
+        content.Position = 0;
+        var header = new byte[UploadContentInspector.HeaderLength];
+        var totalRead = 0;
+        while (totalRead < header.Length)
         {
-            ".pdf" => "application/pdf",
-            ".doc" => "application/msword",
-            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ".ppt" => "application/vnd.ms-powerpoint",
-            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ".xls" => "application/vnd.ms-excel",
-            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            ".zip" => "application/zip",
-            ".txt" => "text/plain",
-            _ => "application/octet-stream"
-        };
+            var read = await content.ReadAsync(header.AsMemory(totalRead, header.Length - totalRead), cancellationToken);
+            if (read == 0)
+                break;
+            totalRead += read;
+        }
+        content.Position = 0;
+
+        if (!UploadContentInspector.MatchesSignature(extension, header.AsSpan(0, totalRead)))
+            throw new InvalidRequestException("The file contents do not match the selected file extension.");
+
+        return UploadContentInspector.ResolveContentType(extension);
     }
 
-    private static string DeriveCoverContentType(string extension) =>
-        extension switch
+    private async Task TryDeletePhysicalFileAsync(
+        string storedFileName,
+        int courseId,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            _ => "application/octet-stream"
-        };
+            await fileStorage.DeleteAsync(storedFileName, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "Could not delete {Operation} {StoredFileName} for course {CourseId}.",
+                operation,
+                storedFileName,
+                courseId);
+        }
+    }
 }

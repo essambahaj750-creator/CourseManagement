@@ -14,16 +14,30 @@ class AdminUsersPage extends StatefulWidget {
 }
 
 class _AdminUsersPageState extends State<AdminUsersPage> {
-  late Future<List<UserSummary>> _future;
+  static const _pageSize = 25;
+  int _page = 1;
+  late Future<PagedList<UserSummary>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = context.read<ApiClient>().getUsers();
+    _future = _load();
   }
 
-  void _refresh() =>
-      setState(() => _future = context.read<ApiClient>().getUsers());
+  Future<PagedList<UserSummary>> _load() => context.read<ApiClient>().getUsers(
+    page: _page,
+    pageSize: _pageSize,
+  );
+
+  void _refresh() => setState(() => _future = _load());
+
+  void _goToPage(int page) {
+    if (page < 1 || page == _page) return;
+    setState(() {
+      _page = page;
+      _future = _load();
+    });
+  }
 
   Future<void> _changeRole(UserSummary user) async {
     var role = user.role;
@@ -109,7 +123,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
           ],
         ),
         const SizedBox(height: 20),
-        FutureBuilder<List<UserSummary>>(
+        FutureBuilder<PagedList<UserSummary>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -126,7 +140,8 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 onRetry: _refresh,
               );
             }
-            final users = snapshot.data ?? const <UserSummary>[];
+            final result = snapshot.data;
+            final users = result?.items ?? const <UserSummary>[];
             if (users.isEmpty) {
               return const EmptyState(
                 title: 'لا يوجد مستخدمون',
@@ -134,18 +149,32 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 icon: Icons.people_alt_rounded,
               );
             }
-            return Card(
-              child: Column(
-                children: [
-                  for (var index = 0; index < users.length; index++) ...[
-                    if (index > 0) const Divider(height: 1),
-                    _UserRow(
-                      user: users[index],
-                      onRole: () => _changeRole(users[index]),
-                    ),
-                  ],
-                ],
-              ),
+            return Column(
+              children: [
+                Card(
+                  child: Column(
+                    children: [
+                      for (var index = 0; index < users.length; index++) ...[
+                        if (index > 0) const Divider(height: 1),
+                        _UserRow(
+                          user: users[index],
+                          onRole: () => _changeRole(users[index]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _Pager(
+                  page: result!.page,
+                  totalPages: result.totalPages,
+                  totalCount: result.totalCount,
+                  hasPrevious: result.hasPrevious,
+                  hasNext: result.hasNext,
+                  onPrevious: () => _goToPage(result.page - 1),
+                  onNext: () => _goToPage(result.page + 1),
+                ),
+              ],
             );
           },
         ),
@@ -196,16 +225,31 @@ class AdminEnrollmentsPage extends StatefulWidget {
 }
 
 class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
-  late Future<List<Enrollment>> _future;
+  static const _pageSize = 25;
+  int _page = 1;
+  late Future<PagedList<Enrollment>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = context.read<ApiClient>().getAllEnrollments();
+    _future = _load();
   }
 
-  void _refresh() =>
-      setState(() => _future = context.read<ApiClient>().getAllEnrollments());
+  Future<PagedList<Enrollment>> _load() =>
+      context.read<ApiClient>().getAllEnrollments(
+        page: _page,
+        pageSize: _pageSize,
+      );
+
+  void _refresh() => setState(() => _future = _load());
+
+  void _goToPage(int page) {
+    if (page < 1 || page == _page) return;
+    setState(() {
+      _page = page;
+      _future = _load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) => PageContainer(
@@ -241,7 +285,7 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
           ],
         ),
         const SizedBox(height: 20),
-        FutureBuilder<List<Enrollment>>(
+        FutureBuilder<PagedList<Enrollment>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -258,7 +302,8 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
                 onRetry: _refresh,
               );
             }
-            final items = snapshot.data ?? const <Enrollment>[];
+            final result = snapshot.data;
+            final items = result?.items ?? const <Enrollment>[];
             if (items.isEmpty) {
               return const EmptyState(
                 title: 'لا توجد تسجيلات',
@@ -266,42 +311,104 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
                 icon: Icons.fact_check_rounded,
               );
             }
-            return Card(
-              child: Column(
-                children: [
-                  for (var index = 0; index < items.length; index++) ...[
-                    if (index > 0) const Divider(height: 1),
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 5,
-                      ),
-                      leading: const Icon(
-                        Icons.assignment_turned_in_rounded,
-                        color: AppTheme.cyan,
-                      ),
-                      title: Text(
-                        items[index].courseTitle,
-                        style: const TextStyle(
-                          color: AppTheme.ink,
-                          fontWeight: FontWeight.w800,
+            return Column(
+              children: [
+                Card(
+                  child: Column(
+                    children: [
+                      for (var index = 0; index < items.length; index++) ...[
+                        if (index > 0) const Divider(height: 1),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 5,
+                          ),
+                          leading: const Icon(
+                            Icons.assignment_turned_in_rounded,
+                            color: AppTheme.cyan,
+                          ),
+                          title: Text(
+                            items[index].courseTitle,
+                            style: const TextStyle(
+                              color: AppTheme.ink,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${items[index].userName} • ${items[index].enrolledDate.day}/${items[index].enrolledDate.month}/${items[index].enrolledDate.year}',
+                            style: const TextStyle(
+                              color: AppTheme.muted,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
-                      ),
-                      subtitle: Text(
-                        '${items[index].userName} • ${items[index].enrolledDate.day}/${items[index].enrolledDate.month}/${items[index].enrolledDate.year}',
-                        style: const TextStyle(
-                          color: AppTheme.muted,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _Pager(
+                  page: result!.page,
+                  totalPages: result.totalPages,
+                  totalCount: result.totalCount,
+                  hasPrevious: result.hasPrevious,
+                  hasNext: result.hasNext,
+                  onPrevious: () => _goToPage(result.page - 1),
+                  onNext: () => _goToPage(result.page + 1),
+                ),
+              ],
             );
           },
         ),
       ],
     ),
+  );
+}
+
+class _Pager extends StatelessWidget {
+  const _Pager({
+    required this.page,
+    required this.totalPages,
+    required this.totalCount,
+    required this.hasPrevious,
+    required this.hasNext,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final int page;
+  final int totalPages;
+  final int totalCount;
+  final bool hasPrevious;
+  final bool hasNext;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.center,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: 12,
+    runSpacing: 8,
+    children: [
+      IconButton.outlined(
+        onPressed: hasPrevious ? onPrevious : null,
+        tooltip: 'الصفحة السابقة',
+        icon: const Icon(Icons.chevron_right_rounded),
+      ),
+      Text(
+        'صفحة $page من ${totalPages == 0 ? 1 : totalPages} • $totalCount سجل',
+        style: const TextStyle(
+          color: AppTheme.muted,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      IconButton.outlined(
+        onPressed: hasNext ? onNext : null,
+        tooltip: 'الصفحة التالية',
+        icon: const Icon(Icons.chevron_left_rounded),
+      ),
+    ],
   );
 }

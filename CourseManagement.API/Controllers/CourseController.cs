@@ -49,7 +49,6 @@ public class CourseController(
     [HttpPost("{id:int}/cover")]
     [Authorize(Roles = "Instructor,Admin")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(10L * 1024 * 1024)]
     public async Task<ActionResult<CourseResponseDto>> UploadCover(
         int id,
         IFormFile? file,
@@ -70,6 +69,18 @@ public class CourseController(
 
         var course = await courseService.GetCourseByIdAsync(id);
         return Ok(course);
+    }
+
+    [HttpDelete("{id:int}/cover")]
+    [Authorize(Roles = "Instructor,Admin")]
+    public async Task<IActionResult> DeleteCover(int id, CancellationToken cancellationToken)
+    {
+        await assetService.DeleteCoverAsync(
+            id,
+            User.GetUserId(),
+            User.IsAdmin(),
+            cancellationToken);
+        return NoContent();
     }
 
     // كانت مقيدة بـ Instructor,Admin رغم أن قائمة الكورسات كلها عامة أصلاً — تناقض منطقي

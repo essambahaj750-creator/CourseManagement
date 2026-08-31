@@ -17,6 +17,22 @@ public class UserService(
         return users.Select(MapToDto);
     }
 
+    public async Task<PagedResultDto<UserResponseDto>> GetUsersPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        (page, pageSize) = NormalizePage(page, pageSize);
+        var result = await userRepository.GetPageAsync(page, pageSize, cancellationToken);
+        return new PagedResultDto<UserResponseDto>
+        {
+            Items = result.Items.Select(MapToDto).ToList(),
+            TotalCount = result.TotalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<UserResponseDto> GetUserByIdAsync(int id)
     {
         var user = await userRepository.GetByIdAsync(id)
@@ -46,7 +62,6 @@ public class UserService(
 
     public async Task<UserResponseDto> ChangeRoleAsync(int userId, string role, int requesterId)
     {
-        // منع الـ Admin من تغيير دوره بنفسه (حماية من فقدان آخر Admin في النظام)
         if (userId == requesterId)
             throw new ConflictException("You cannot change your own role.");
 
@@ -57,7 +72,6 @@ public class UserService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
 
-        // لا يمكن تنزيل مدرب إلى Student وهو ما زال يملك كورسات
         if (newRole == Role.Student)
         {
             var courses = await courseRepository.GetByInstructorIdAsync(userId);
@@ -80,7 +94,6 @@ public class UserService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new KeyNotFoundException("User not found.");
 
-        // حذف مدرب يملك كورسات سيفشل على قيد FK (Restrict) — نعطي رسالة واضحة بدلاً من خطأ SQL
         var courses = await courseRepository.GetByInstructorIdAsync(userId);
         if (courses.Any())
             throw new ConflictException(
@@ -88,6 +101,9 @@ public class UserService(
 
         await userRepository.DeleteAsync(userId);
     }
+
+    private static (int Page, int PageSize) NormalizePage(int page, int pageSize) =>
+        (Math.Max(1, page), Math.Clamp(pageSize, 1, 100));
 
     private static UserResponseDto MapToDto(User user) => new()
     {

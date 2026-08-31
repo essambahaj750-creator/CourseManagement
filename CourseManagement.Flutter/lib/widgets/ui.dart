@@ -11,15 +11,19 @@ class PageContainer extends StatelessWidget {
   final double maxWidth;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 22, 20, 34),
-        child: child,
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontal = width < 560 ? 14.0 : width < 900 ? 20.0 : 28.0;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(horizontal, 24, horizontal, 40),
+          child: child,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class SectionTitle extends StatelessWidget {
@@ -38,6 +42,15 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     crossAxisAlignment: CrossAxisAlignment.end,
     children: [
+      Container(
+        width: 5,
+        height: 38,
+        margin: const EdgeInsets.only(left: 11),
+        decoration: BoxDecoration(
+          gradient: AppTheme.accentGradient,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,19 +61,24 @@ class SectionTitle extends StatelessWidget {
                 fontSize: 21,
                 fontWeight: FontWeight.w900,
                 color: AppTheme.ink,
+                letterSpacing: -.2,
               ),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
                 subtitle!,
-                style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 12,
+                  height: 1.6,
+                ),
               ),
             ],
           ],
         ),
       ),
-      if (action != null) SizedBox(child: action),
+      if (action != null) action!,
     ],
   );
 }
@@ -73,78 +91,106 @@ class CourseCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: height,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        gradient: const LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [AppTheme.navy, AppTheme.blue, AppTheme.cyan],
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
+          DecoratedBox(
+            decoration: const BoxDecoration(gradient: AppTheme.brandGradient),
+            child: const Center(
+              child: Icon(
+                Icons.auto_stories_rounded,
+                color: Color(0x55FFFFFF),
+                size: 52,
+              ),
+            ),
+          ),
           if (course.imageUrl != null)
             Image.network(
               _resolveCoverUrl(course.imageUrl!),
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  const SizedBox.shrink(),
+              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
             ),
-          Container(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: .08),
-                  AppTheme.navy.withValues(alpha: .72),
+                  AppTheme.navy.withValues(alpha: .04),
+                  AppTheme.navy.withValues(alpha: .08),
+                  AppTheme.navy.withValues(alpha: .82),
+                ],
+                stops: const [0, .45, 1],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 14,
+            right: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .93),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1808192F),
+                    blurRadius: 14,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified_rounded, color: AppTheme.cyan, size: 13),
+                  SizedBox(width: 5),
+                  Text(
+                    'متاح الآن',
+                    style: TextStyle(
+                      color: AppTheme.ink,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           Positioned(
-            top: 16,
             right: 16,
+            bottom: 15,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              width: 39,
+              height: 39,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .9),
-                borderRadius: BorderRadius.circular(999),
+                color: Colors.white.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(color: Colors.white.withValues(alpha: .18)),
               ),
-              child: const Text(
-                'متاح الآن',
-                style: TextStyle(
-                  color: AppTheme.blue,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-          const Positioned(
-            bottom: 18,
-            right: 18,
-            child: Icon(
-              Icons.auto_stories_rounded,
-              color: Colors.white,
-              size: 40,
+              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
             ),
           ),
           Positioned(
-            bottom: 18,
-            left: 18,
-            child: Text(
-              course.price == 0
-                  ? 'مجاني'
-                  : '${course.price.toStringAsFixed(2)} ر.س',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
+            bottom: 17,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withValues(alpha: .16)),
+              ),
+              child: Text(
+                course.price == 0 ? 'مجاني' : '${course.price.toStringAsFixed(2)} ر.س',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -168,43 +214,15 @@ class ErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xFFE5EAF3)),
-    ),
-    child: Column(
-      children: [
-        const Icon(Icons.cloud_off_rounded, size: 46, color: AppTheme.blue),
-        const SizedBox(height: 14),
-        const Text(
-          'تعذر تحميل البيانات',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: AppTheme.ink,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppTheme.muted,
-            height: 1.7,
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 18),
-        OutlinedButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('حاول مرة أخرى'),
-        ),
-      ],
+  Widget build(BuildContext context) => _StateCard(
+    icon: Icons.cloud_off_rounded,
+    iconColor: AppTheme.danger,
+    title: 'تعذر تحميل البيانات',
+    message: message,
+    action: OutlinedButton.icon(
+      onPressed: onRetry,
+      icon: const Icon(Icons.refresh_rounded),
+      label: const Text('حاول مرة أخرى'),
     ),
   );
 }
@@ -222,28 +240,55 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
 
   @override
+  Widget build(BuildContext context) => _StateCard(
+    icon: icon,
+    iconColor: AppTheme.blue,
+    title: title,
+    message: message,
+  );
+}
+
+class _StateCard extends StatelessWidget {
+  const _StateCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.message,
+    this.action,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String message;
+  final Widget? action;
+
+  @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(34),
+    padding: const EdgeInsets.all(32),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xFFE5EAF3)),
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(color: AppTheme.border),
+      boxShadow: AppTheme.softShadow,
     ),
     child: Column(
       children: [
         Container(
-          width: 68,
-          height: 68,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
-            color: AppTheme.blue.withValues(alpha: .10),
+            color: iconColor.withValues(alpha: .09),
             shape: BoxShape.circle,
+            border: Border.all(color: iconColor.withValues(alpha: .12)),
           ),
-          child: Icon(icon, color: AppTheme.blue, size: 30),
+          child: Icon(icon, color: iconColor, size: 31),
         ),
         const SizedBox(height: 16),
         Text(
           title,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w900,
@@ -251,15 +296,22 @@ class EmptyState extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppTheme.muted,
-            height: 1.7,
-            fontSize: 12,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.muted,
+              height: 1.75,
+              fontSize: 12,
+            ),
           ),
         ),
+        if (action != null) ...[
+          const SizedBox(height: 18),
+          action!,
+        ],
       ],
     ),
   );

@@ -16,6 +16,23 @@ public class EnrollmentService(
         return enrollments.Select(MapToDto);
     }
 
+    public async Task<PagedResultDto<EnrollmentDto>> GetEnrollmentsPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var result = await enrollmentRepository.GetPageAsync(page, pageSize, cancellationToken);
+        return new PagedResultDto<EnrollmentDto>
+        {
+            Items = result.Items.Select(MapToDto).ToList(),
+            TotalCount = result.TotalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id)
     {
         var enrollment = await enrollmentRepository.GetByIdAsync(id);
@@ -33,7 +50,6 @@ public class EnrollmentService(
         var course = await courseRepository.GetByIdAsync(courseId)
             ?? throw new KeyNotFoundException("Course not found.");
 
-        // قائمة المسجّلين بيانات خاصة: مدرب الكورس نفسه أو الـ Admin فقط
         if (!isAdmin && course.InstructorId != requesterId)
             throw new ForbiddenAccessException("Only the course instructor or an admin can view course enrollments.");
 
@@ -43,11 +59,9 @@ public class EnrollmentService(
 
     public async Task<EnrollmentDto> EnrollUserAsync(int userId, int courseId)
     {
-        // كان التسجيل السابق لا يتحقق من وجود الكورس أصلاً → خطأ FK خام من قاعدة البيانات
         var course = await courseRepository.GetByIdAsync(courseId)
             ?? throw new KeyNotFoundException("Course not found.");
 
-        // لا معنى لتسجيل المدرب في كورسه
         if (course.InstructorId == userId)
             throw new ConflictException("You cannot enroll in your own course.");
 
@@ -62,8 +76,6 @@ public class EnrollmentService(
         };
 
         await enrollmentRepository.AddAsync(enrollment);
-
-        // إعادة الجلب حتى تُحمَّل أسماء المستخدم والكورس (كانت تظهر "Unknown" سابقاً)
         var created = await enrollmentRepository.GetByIdAsync(enrollment.Id);
         return MapToDto(created ?? enrollment);
     }

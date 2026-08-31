@@ -28,7 +28,6 @@ public sealed class CourseAssetsController(ICourseAssetService assetService) : C
     [HttpPost]
     [Authorize(Roles = "Instructor,Admin")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(512L * 1024 * 1024)]
     public async Task<ActionResult<CourseAssetDto>> Upload(
         int courseId,
         IFormFile? file,
@@ -39,12 +38,13 @@ public sealed class CourseAssetsController(ICourseAssetService assetService) : C
             return BadRequest(new { message = "A file is required." });
 
         var assetType = type ?? InferType(file);
+        await using var content = file.OpenReadStream();
         var asset = await assetService.UploadAsync(
             courseId,
             file.FileName,
             file.Length,
             assetType,
-            file.OpenReadStream(),
+            content,
             User.GetUserId(),
             User.IsAdmin(),
             cancellationToken);

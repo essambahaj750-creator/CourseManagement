@@ -23,6 +23,9 @@ public sealed class CoursesController(
         var catalog = await courseService.SearchCoursesAsync(filter.ToDto());
         var instructors = await courseService.GetInstructorOptionsAsync();
 
+        foreach (var course in catalog.Items)
+            UseMvcCoverUrl(course);
+
         filter.Page = catalog.Page;
         filter.PageSize = catalog.PageSize;
 
@@ -42,6 +45,7 @@ public sealed class CoursesController(
     {
         var course = await courseService.GetCourseByIdAsync(id);
         if (course is null) return NotFound();
+        UseMvcCoverUrl(course);
 
         var canAccessAssets = false;
         if (User.Identity?.IsAuthenticated == true)
@@ -72,6 +76,20 @@ public sealed class CoursesController(
         return cover is null
             ? NotFound()
             : File(cover.Content, cover.ContentType, enableRangeProcessing: false);
+    }
+
+    [HttpPost("Details/{id:int}/Cover/Delete")]
+    [Authorize(Roles = "Instructor,Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCover(int id, CancellationToken cancellationToken)
+    {
+        await assetService.DeleteCoverAsync(
+            id,
+            GetUserId(),
+            User.IsInRole("Admin"),
+            cancellationToken);
+        TempData["Success"] = "تم حذف غلاف الكورس بنجاح.";
+        return RedirectToAction(nameof(Edit), new { id });
     }
 
     [HttpPost("Details/{id:int}/Assets")]
@@ -187,9 +205,6 @@ public sealed class CoursesController(
         }
         catch (Exception exception)
         {
-            // Compensate for a partially created course on any failure, then only
-            // surface the message when it was authored for the user. Anything else
-            // keeps propagating so the middleware logs it and renders the error page.
             if (course is not null)
             {
                 try
@@ -224,7 +239,9 @@ public sealed class CoursesController(
             Title = course.Title,
             Description = course.Description,
             Price = course.Price,
-            CurrentCoverUrl = course.ImageUrl
+            CurrentCoverUrl = string.IsNullOrWhiteSpace(course.ImageUrl)
+                ? null
+                : Url.Action(nameof(Cover), new { id = course.Id })
         });
     }
 
@@ -288,6 +305,12 @@ public sealed class CoursesController(
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
+    }
+
+    private void UseMvcCoverUrl(CourseResponseDto course)
+    {
+        if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+            course.ImageUrl = Url.Action(nameof(Cover), new { id = course.Id });
     }
 
     private int GetUserId()

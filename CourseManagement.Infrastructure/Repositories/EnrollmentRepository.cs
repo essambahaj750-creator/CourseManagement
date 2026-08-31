@@ -11,7 +11,25 @@ public class EnrollmentRepository(ApplicationDbContext context) : IEnrollmentRep
         await context.Enrollments.AsNoTracking()
             .Include(e => e.User)
             .Include(e => e.Course)
+            .OrderByDescending(e => e.EnrolledDate)
             .ToListAsync();
+
+    public async Task<(IReadOnlyList<Enrollment> Items, int TotalCount)> GetPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = context.Enrollments.AsNoTracking()
+            .Include(e => e.User)
+            .Include(e => e.Course)
+            .OrderByDescending(e => e.EnrolledDate);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+        return (items, totalCount);
+    }
 
     public async Task<Enrollment?> GetByIdAsync(int id) =>
         await context.Enrollments.AsNoTracking()
@@ -19,20 +37,20 @@ public class EnrollmentRepository(ApplicationDbContext context) : IEnrollmentRep
             .Include(e => e.Course)
             .FirstOrDefaultAsync(e => e.Id == id);
 
-    // كانت تنقصها Include(User) فيظهر اسم الطالب فارغاً في النتائج
     public async Task<IEnumerable<Enrollment>> GetByUserIdAsync(int userId) =>
         await context.Enrollments.AsNoTracking()
             .Include(e => e.User)
             .Include(e => e.Course)
             .Where(e => e.UserId == userId)
+            .OrderByDescending(e => e.EnrolledDate)
             .ToListAsync();
 
-    // كانت تنقصها Include(Course) فيظهر عنوان الكورس فارغاً في النتائج
     public async Task<IEnumerable<Enrollment>> GetByCourseIdAsync(int courseId) =>
         await context.Enrollments.AsNoTracking()
             .Include(e => e.User)
             .Include(e => e.Course)
             .Where(e => e.CourseId == courseId)
+            .OrderByDescending(e => e.EnrolledDate)
             .ToListAsync();
 
     public async Task<Enrollment?> GetByUserAndCourseAsync(int userId, int courseId) =>

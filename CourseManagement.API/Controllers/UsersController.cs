@@ -13,15 +13,16 @@ public class UsersController(IUserService userService, IAuthService authService)
 {
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll() =>
-        Ok(await userService.GetAllUsersAsync());
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default) =>
+        Ok(await userService.GetUsersPageAsync(page, pageSize, cancellationToken));
 
-    /// <summary>بياناتي أنا</summary>
     [HttpGet("me")]
     public async Task<IActionResult> GetMe() =>
         Ok(await userService.GetUserByIdAsync(User.GetUserId()));
 
-    /// <summary>تحديث ملفي الشخصي (يستخدم UpdateUserDto الذي كان كوداً ميتاً)</summary>
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateUserDto dto) =>
         Ok(await userService.UpdateProfileAsync(User.GetUserId(), dto));
@@ -42,7 +43,6 @@ public class UsersController(IUserService userService, IAuthService authService)
         return Ok(await userService.GetUserByIdAsync(id));
     }
 
-    /// <summary>ترقية/تغيير دور مستخدم — Admin فقط (الطريقة الوحيدة لإنشاء مدرب)</summary>
     [HttpPut("{id:int}/role")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleDto dto) =>

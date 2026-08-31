@@ -18,6 +18,12 @@ public sealed class HomeController(
     public async Task<IActionResult> Index()
     {
         var courses = (await courseService.GetAllCoursesAsync()).ToList();
+        foreach (var course in courses)
+        {
+            if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+                course.ImageUrl = Url.Action("Cover", "Courses", new { id = course.Id });
+        }
+
         var isAuthenticated = User.Identity?.IsAuthenticated == true;
         var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
         var myEnrollments = new List<CourseManagement.Application.DTOs.EnrollmentDto>();

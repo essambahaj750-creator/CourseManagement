@@ -5,6 +5,10 @@ namespace CourseManagement.Domain.Interfaces;
 public interface IEnrollmentRepository
 {
     Task<IEnumerable<Enrollment>> GetAllAsync();
+    Task<(IReadOnlyList<Enrollment> Items, int TotalCount)> GetPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
     Task<Enrollment?> GetByIdAsync(int id);
     Task<IEnumerable<Enrollment>> GetByUserIdAsync(int userId);
     Task<IEnumerable<Enrollment>> GetByCourseIdAsync(int courseId);

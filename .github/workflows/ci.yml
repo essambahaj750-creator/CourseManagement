@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master, mvc-implementation, professional-refactor ]
+    branches: [ main, mvc-implementation, professional-refactor ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 permissions:
   contents: read

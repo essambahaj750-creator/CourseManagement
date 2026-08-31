@@ -75,10 +75,32 @@ class ApiClient {
 
   final SessionStore sessionStore;
   final http.Client _client;
+  void Function()? onUnauthorized;
 
   Uri _uri(String path, [Map<String, String>? query]) {
     final base = defaultBaseUrl.replaceFirst(RegExp(r'/+$'), '');
     return Uri.parse('$base$path').replace(queryParameters: query);
+  }
+
+  Future<void> _throwIfFailed(
+    http.Response response, {
+    required bool authenticated,
+  }) async {
+    if (response.statusCode == 401 && authenticated) {
+      await sessionStore.clear();
+      onUnauthorized?.call();
+      throw const ApiException(
+        'انتهت الجلسة، يرجى تسجيل الدخول من جديد.',
+        statusCode: 401,
+      );
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _extractError(response),
+        statusCode: response.statusCode,
+      );
+    }
   }
 
   Future<Map<String, dynamic>> _jsonRequest(
@@ -130,12 +152,7 @@ class ApiClient {
       );
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _extractError(response),
-        statusCode: response.statusCode,
-      );
-    }
+    await _throwIfFailed(response, authenticated: authenticated);
 
     if (response.body.trim().isEmpty) return <String, dynamic>{};
     try {
@@ -168,12 +185,7 @@ class ApiClient {
           : await _client
                 .delete(_uri(path, query), headers: headers)
                 .timeout(const Duration(seconds: 20));
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(
-          _extractError(response),
-          statusCode: response.statusCode,
-        );
-      }
+      await _throwIfFailed(response, authenticated: authenticated);
       if (response.body.trim().isEmpty) return const <dynamic>[];
       return (jsonDecode(response.body) as List<dynamic>);
     } on ApiException {
@@ -319,12 +331,7 @@ class ApiClient {
         const Duration(minutes: 2),
       );
       final response = await http.Response.fromStream(streamed);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(
-          _extractError(response),
-          statusCode: response.statusCode,
-        );
-      }
+      await _throwIfFailed(response, authenticated: true);
       return Course.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
@@ -354,7 +361,8 @@ class ApiClient {
   Future<CourseAsset> uploadCourseAsset({
     required int courseId,
     required String fileName,
-    required Uint8List bytes,
+    required int length,
+    required Stream<List<int>> content,
     required CourseAssetType type,
   }) async {
     final session = await sessionStore.read();
@@ -368,7 +376,7 @@ class ApiClient {
           ..headers['Authorization'] = 'Bearer ${session.token}'
           ..fields['type'] = type == CourseAssetType.video ? '1' : '2'
           ..files.add(
-            http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+            http.MultipartFile('file', content, length, filename: fileName),
           );
 
     try {
@@ -376,12 +384,7 @@ class ApiClient {
         const Duration(minutes: 30),
       );
       final response = await http.Response.fromStream(streamed);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(
-          _extractError(response),
-          statusCode: response.statusCode,
-        );
-      }
+      await _throwIfFailed(response, authenticated: true);
       return CourseAsset.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
@@ -416,12 +419,7 @@ class ApiClient {
             },
           )
           .timeout(const Duration(minutes: 10));
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(
-          _extractError(response),
-          statusCode: response.statusCode,
-        );
-      }
+      await _throwIfFailed(response, authenticated: true);
       return response.bodyBytes;
     } on ApiException {
       rethrow;
@@ -471,28 +469,30 @@ class ApiClient {
     );
   }
 
-  Future<List<Enrollment>> getAllEnrollments() async {
-    final list = await _jsonListRequest(
+  Future<PagedList<Enrollment>> getAllEnrollments({
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final json = await _jsonRequest(
       'GET',
       '/api/enrollment',
+      query: {'page': '$page', 'pageSize': '$pageSize'},
       authenticated: true,
     );
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(Enrollment.fromJson)
-        .toList(growable: false);
+    return PagedList<Enrollment>.fromJson(json, Enrollment.fromJson);
   }
 
-  Future<List<UserSummary>> getUsers() async {
-    final list = await _jsonListRequest(
+  Future<PagedList<UserSummary>> getUsers({
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final json = await _jsonRequest(
       'GET',
       '/api/users',
+      query: {'page': '$page', 'pageSize': '$pageSize'},
       authenticated: true,
     );
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(UserSummary.fromJson)
-        .toList(growable: false);
+    return PagedList<UserSummary>.fromJson(json, UserSummary.fromJson);
   }
 
   Future<void> changeUserRole(int userId, String role) async {

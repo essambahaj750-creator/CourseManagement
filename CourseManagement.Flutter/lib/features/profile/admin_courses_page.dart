@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/download/course_asset_download.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/auth/auth_controller.dart';
@@ -543,15 +544,28 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
         'zip',
         'txt',
       ],
-      withData: true,
+      withData: false,
+      withReadStream: true,
     );
     final picked = result?.files.single;
     if (picked == null || !mounted) return;
 
-    final bytes = picked.bytes;
-    if (!mounted) return;
-    if (bytes == null || bytes.isEmpty) {
-      _showMessage('تعذر قراءة الملف من الجهاز. حاول اختيار الملف مرة أخرى.');
+    final maxBytes = _type == CourseAssetType.video
+        ? 512 * 1024 * 1024
+        : 50 * 1024 * 1024;
+    final maxLabel = _type == CourseAssetType.video ? '512MB' : '50MB';
+    if (picked.size <= 0) {
+      _showMessage('لا يمكن رفع ملف فارغ.');
+      return;
+    }
+    if (picked.size > maxBytes) {
+      _showMessage('حجم الملف يتجاوز الحد المسموح ($maxLabel).');
+      return;
+    }
+
+    final stream = picked.readStream;
+    if (stream == null) {
+      _showMessage('تعذر فتح الملف للقراءة. حاول اختيار الملف مرة أخرى.');
       return;
     }
 
@@ -560,7 +574,8 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
       await context.read<ApiClient>().uploadCourseAsset(
         courseId: widget.course.id,
         fileName: picked.name,
-        bytes: bytes,
+        length: picked.size,
+        content: stream,
         type: _type,
       );
       if (!mounted) return;
@@ -580,20 +595,15 @@ class _CourseAssetsDialogState extends State<CourseAssetsDialog> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final bytes = await context.read<ApiClient>().downloadCourseAsset(
+      final saved = await saveCourseAssetDownload(
+        api: context.read<ApiClient>(),
         courseId: widget.course.id,
         assetId: asset.id,
-      );
-      final savedPath = await FilePicker.platform.saveFile(
-        dialogTitle: 'حفظ ${asset.originalFileName}',
         fileName: asset.originalFileName,
-        bytes: bytes,
       );
       if (!mounted) return;
       setState(() => _busy = false);
-      _showMessage(
-        savedPath == null ? 'تم إلغاء الحفظ.' : 'تم حفظ الملف على جهازك.',
-      );
+      _showMessage(saved ? 'تم حفظ الملف على جهازك.' : 'تم إلغاء الحفظ.');
     } catch (error) {
       if (!mounted) return;
       setState(() => _busy = false);
