@@ -62,7 +62,6 @@ public class CourseController(
         await assetService.UploadCoverAsync(
             id,
             file.FileName,
-            file.ContentType,
             file.Length,
             content,
             User.GetUserId(),

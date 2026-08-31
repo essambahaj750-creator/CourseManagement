@@ -1,3 +1,4 @@
+using CourseManagement.Application.Common;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Application.Options;
 using Microsoft.Extensions.Hosting;
@@ -9,13 +10,19 @@ public sealed class LocalFileStorage(
     IHostEnvironment environment,
     IOptions<FileUploadOptions> options) : IFileStorage
 {
+    private const int BufferSize = 1024 * 64;
+
     private readonly string rootPath = ResolveRoot(environment.ContentRootPath, options.Value.RootPath);
 
     public async Task<StoredFile> SaveAsync(
         Stream content,
         string extension,
+        long maxBytes,
         CancellationToken cancellationToken = default)
     {
+        if (maxBytes <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxBytes));
+
         Directory.CreateDirectory(rootPath);
         var storedFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
         var absolutePath = GetSafePath(storedFileName);
@@ -28,10 +35,10 @@ public sealed class LocalFileStorage(
                 FileMode.CreateNew,
                 FileAccess.Write,
                 FileShare.None,
-                bufferSize: 1024 * 64,
+                bufferSize: BufferSize,
                 useAsync: true))
             {
-                await content.CopyToAsync(target, cancellationToken);
+                await CopyBoundedAsync(content, target, maxBytes, cancellationToken);
             }
 
             File.Move(temporaryPath, absolutePath);
@@ -42,6 +49,44 @@ public sealed class LocalFileStorage(
             if (File.Exists(temporaryPath))
                 File.Delete(temporaryPath);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Copies at most <paramref name="maxBytes"/>, then reads one byte further to
+    /// detect an oversized stream. The declared upload length is never trusted here.
+    /// </summary>
+    private static async Task CopyBoundedAsync(
+        Stream source,
+        Stream destination,
+        long maxBytes,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[BufferSize];
+        var written = 0L;
+
+        while (true)
+        {
+            var remaining = maxBytes - written;
+            if (remaining <= 0)
+            {
+                // Anything still readable means the stream is over the limit.
+                if (await source.ReadAsync(buffer.AsMemory(0, 1), cancellationToken) > 0)
+                {
+                    throw new InvalidRequestException(
+                        $"The file exceeds the {maxBytes / (1024 * 1024)} MB limit.");
+                }
+
+                return;
+            }
+
+            var toRead = (int)Math.Min(buffer.Length, remaining);
+            var read = await source.ReadAsync(buffer.AsMemory(0, toRead), cancellationToken);
+            if (read == 0)
+                return;
+
+            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            written += read;
         }
     }
 
@@ -57,7 +102,7 @@ public sealed class LocalFileStorage(
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
-            bufferSize: 1024 * 64,
+            bufferSize: BufferSize,
             useAsync: true);
         return Task.FromResult(stream);
     }

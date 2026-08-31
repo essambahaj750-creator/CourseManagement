@@ -42,7 +42,6 @@ public sealed class CourseAssetsController(ICourseAssetService assetService) : C
         var asset = await assetService.UploadAsync(
             courseId,
             file.FileName,
-            file.ContentType,
             file.Length,
             assetType,
             file.OpenReadStream(),

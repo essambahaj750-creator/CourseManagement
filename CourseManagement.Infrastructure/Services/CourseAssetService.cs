@@ -39,7 +39,6 @@ public sealed class CourseAssetService(
     public async Task<CourseAssetDto> UploadAsync(
         int courseId,
         string originalFileName,
-        string contentType,
         long length,
         CourseAssetType type,
         Stream content,
@@ -70,10 +69,9 @@ public sealed class CourseAssetService(
             throw new InvalidRequestException("This video extension is not allowed.");
         if (type == CourseAssetType.Attachment && !options.IsAttachmentExtension(extension))
             throw new InvalidRequestException("This attachment extension is not allowed.");
-        if (!IsAllowedContentType(contentType, extension, type))
-            throw new InvalidRequestException("The file content type is not allowed for this extension.");
+        var contentType = DeriveContentType(extension, type);
 
-        var stored = await fileStorage.SaveAsync(content, extension, cancellationToken);
+        var stored = await fileStorage.SaveAsync(content, extension, maxBytes, cancellationToken);
         try
         {
             var asset = await assetRepository.AddAsync(new CourseAsset
@@ -98,7 +96,6 @@ public sealed class CourseAssetService(
     public async Task UploadCoverAsync(
         int courseId,
         string originalFileName,
-        string contentType,
         long length,
         Stream content,
         int requesterId,
@@ -121,10 +118,9 @@ public sealed class CourseAssetService(
             throw new InvalidRequestException($"The cover image exceeds the {options.MaxCoverImageBytes / (1024 * 1024)} MB limit.");
         if (!options.IsCoverImageExtension(extension))
             throw new InvalidRequestException("This cover image extension is not allowed.");
-        if (!IsAllowedCoverContentType(contentType, extension))
-            throw new InvalidRequestException("The cover image content type is not allowed for this extension.");
+        var contentType = DeriveCoverContentType(extension);
 
-        var stored = await fileStorage.SaveAsync(content, extension, cancellationToken);
+        var stored = await fileStorage.SaveAsync(content, extension, options.MaxCoverImageBytes, cancellationToken);
         var existing = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
             .Where(asset => asset.Type == CourseAssetType.CoverImage)
             .OrderByDescending(asset => asset.CreatedAtUtc)
@@ -268,41 +264,39 @@ public sealed class CourseAssetService(
         CreatedAtUtc = asset.CreatedAtUtc
     };
 
-    private static bool IsAllowedContentType(string contentType, string extension, CourseAssetType type)
+    private static string DeriveContentType(string extension, CourseAssetType type)
     {
-        var normalized = (contentType ?? string.Empty).Trim().ToLowerInvariant();
-        if (normalized == "application/octet-stream")
-            return true;
         if (type == CourseAssetType.Video)
-            return extension == ".mov" ? normalized == "video/quicktime" : normalized.StartsWith("video/", StringComparison.Ordinal);
+            return extension switch
+            {
+                ".mp4" => "video/mp4",
+                ".webm" => "video/webm",
+                ".mov" => "video/quicktime",
+                ".m4v" => "video/x-m4v",
+                _ => "application/octet-stream"
+            };
 
         return extension switch
         {
-            ".pdf" => normalized == "application/pdf",
-            ".doc" => normalized == "application/msword",
-            ".docx" => normalized == "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ".ppt" => normalized == "application/vnd.ms-powerpoint",
-            ".pptx" => normalized == "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ".xls" => normalized == "application/vnd.ms-excel",
-            ".xlsx" => normalized == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            ".zip" => normalized == "application/zip" || normalized == "application/x-zip-compressed",
-            ".txt" => normalized == "text/plain",
-            _ => false
+            ".pdf" => "application/pdf",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".ppt" => "application/vnd.ms-powerpoint",
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".xls" => "application/vnd.ms-excel",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".zip" => "application/zip",
+            ".txt" => "text/plain",
+            _ => "application/octet-stream"
         };
     }
 
-    private static bool IsAllowedCoverContentType(string contentType, string extension)
-    {
-        var normalized = (contentType ?? string.Empty).Trim().ToLowerInvariant();
-        if (normalized == "application/octet-stream")
-            return true;
-
-        return extension switch
+    private static string DeriveCoverContentType(string extension) =>
+        extension switch
         {
-            ".jpg" or ".jpeg" => normalized == "image/jpeg",
-            ".png" => normalized == "image/png",
-            ".webp" => normalized == "image/webp",
-            _ => false
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream"
         };
-    }
 }

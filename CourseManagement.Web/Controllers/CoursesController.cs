@@ -96,7 +96,6 @@ public sealed class CoursesController(
             await assetService.UploadAsync(
                 id,
                 file.FileName,
-                file.ContentType,
                 file.Length,
                 type,
                 stream,
@@ -176,7 +175,6 @@ public sealed class CoursesController(
                 await assetService.UploadCoverAsync(
                     course.Id,
                     model.CoverImage.FileName,
-                    model.CoverImage.ContentType,
                     model.CoverImage.Length,
                     content,
                     GetUserId(),
@@ -247,7 +245,6 @@ public sealed class CoursesController(
                 await assetService.UploadCoverAsync(
                     id,
                     model.CoverImage.FileName,
-                    model.CoverImage.ContentType,
                     model.CoverImage.Length,
                     content,
                     GetUserId(),

@@ -27,7 +27,7 @@ public sealed class CourseAssetsTests
                 Options.Create(new FileUploadOptions { RootPath = "uploads" }));
             var bytes = new byte[] { 1, 2, 3, 4 };
 
-            var stored = await storage.SaveAsync(new MemoryStream(bytes), ".pdf");
+            var stored = await storage.SaveAsync(new MemoryStream(bytes), ".pdf", long.MaxValue);
 
             Assert.DoesNotContain("/", stored.StoredFileName);
             Assert.DoesNotContain("\\", stored.StoredFileName);
@@ -61,7 +61,6 @@ public sealed class CourseAssetsTests
         var result = await service.UploadAsync(
             course.Id,
             "../lesson.mp4",
-            "video/mp4",
             4,
             CourseAssetType.Video,
             new MemoryStream(new byte[] { 1, 2, 3, 4 }),
@@ -85,7 +84,6 @@ public sealed class CourseAssetsTests
         await service.UploadCoverAsync(
             course.Id,
             "../cover.png",
-            "image/png",
             4,
             new MemoryStream(new byte[] { 1, 2, 3, 4 }),
             requesterId: course.InstructorId,
@@ -114,7 +112,6 @@ public sealed class CourseAssetsTests
         await Assert.ThrowsAsync<InvalidRequestException>(() => service.UploadCoverAsync(
             course.Id,
             "cover.gif",
-            "image/gif",
             8,
             new MemoryStream(new byte[8]),
             requesterId: course.InstructorId,
@@ -123,10 +120,9 @@ public sealed class CourseAssetsTests
     }
 
     [Theory]
-    [InlineData("lesson.exe", "application/octet-stream", 1)]
-    [InlineData("lesson.mp4", "application/pdf", 1)]
-    [InlineData("notes.pdf", "text/plain", 2)]
-    public async Task Upload_RejectsUnsupportedExtensionOrMime(string fileName, string contentType, int typeValue)
+    [InlineData("lesson.exe", 1)]
+    [InlineData("notes.bat", 2)]
+    public async Task Upload_RejectsUnsupportedExtension(string fileName, int typeValue)
     {
         var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
         var files = new FakeFileStorage();
@@ -135,7 +131,6 @@ public sealed class CourseAssetsTests
         await Assert.ThrowsAsync<InvalidRequestException>(() => service.UploadAsync(
             course.Id,
             fileName,
-            contentType,
             8,
             (CourseAssetType)typeValue,
             new MemoryStream(new byte[8]),
@@ -154,7 +149,6 @@ public sealed class CourseAssetsTests
         await Assert.ThrowsAsync<ForbiddenAccessException>(() => service.UploadAsync(
             course.Id,
             "lesson.mp4",
-            "video/mp4",
             8,
             CourseAssetType.Video,
             new MemoryStream(new byte[8]),
@@ -332,7 +326,7 @@ public sealed class CourseAssetsTests
     {
         public List<string> SavedNames { get; } = [];
         public List<string> DeletedNames { get; } = [];
-        public Task<StoredFile> SaveAsync(Stream content, string extension, CancellationToken cancellationToken = default)
+        public Task<StoredFile> SaveAsync(Stream content, string extension, long maxBytes, CancellationToken cancellationToken = default)
         {
             var name = $"stored-{Guid.NewGuid():N}{extension}";
             SavedNames.Add(name);

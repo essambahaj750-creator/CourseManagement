@@ -369,3 +369,4 @@ FodyWeavers.xsd
 
 # CourseManagement local media storage
 CourseManagement.Uploads/
+.aider*
