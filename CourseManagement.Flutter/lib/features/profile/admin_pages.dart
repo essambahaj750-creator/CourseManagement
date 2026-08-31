@@ -24,10 +24,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     _future = _load();
   }
 
-  Future<PagedList<UserSummary>> _load() => context.read<ApiClient>().getUsers(
-    page: _page,
-    pageSize: _pageSize,
-  );
+  Future<PagedList<UserSummary>> _load() => context.read<ApiClient>().getUsers(page: _page, pageSize: _pageSize);
 
   void _refresh() => setState(() => _future = _load());
 
@@ -44,30 +41,36 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        icon: const Icon(Icons.manage_accounts_rounded, color: AppTheme.blue),
         title: const Text('تغيير دور المستخدم'),
-        content: StatefulBuilder(
-          builder: (context, setDialogState) => DropdownButtonFormField<String>(
-            initialValue: role,
-            decoration: const InputDecoration(labelText: 'الدور'),
-            items: const [
-              DropdownMenuItem(value: 'Student', child: Text('Student — طالب')),
-              DropdownMenuItem(
-                value: 'Instructor',
-                child: Text('Instructor — مدرّس'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(user.fullName, style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 3),
+            Text(user.email, style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
+            const SizedBox(height: 18),
+            StatefulBuilder(
+              builder: (context, setDialogState) => DropdownButtonFormField<String>(
+                initialValue: role,
+                decoration: const InputDecoration(labelText: 'الدور الجديد'),
+                items: const [
+                  DropdownMenuItem(value: 'Student', child: Text('Student — طالب')),
+                  DropdownMenuItem(value: 'Instructor', child: Text('Instructor — مدرّس')),
+                  DropdownMenuItem(value: 'Admin', child: Text('Admin — مدير')),
+                ],
+                onChanged: (value) => setDialogState(() => role = value ?? role),
               ),
-              DropdownMenuItem(value: 'Admin', child: Text('Admin — مدير')),
-            ],
-            onChanged: (value) => setDialogState(() => role = value ?? role),
-          ),
+            ),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton.icon(
             onPressed: () => Navigator.pop(context, role),
-            child: const Text('حفظ الدور'),
+            icon: const Icon(Icons.save_outlined),
+            label: const Text('حفظ الدور'),
           ),
         ],
       ),
@@ -77,14 +80,11 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     try {
       await context.read<ApiClient>().changeUserRole(user.id, selected);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تم تحديث دور المستخدم.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث دور المستخدم.')));
       _refresh();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
       }
     }
   }
@@ -94,79 +94,54 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'مساحة الإدارة',
-          style: TextStyle(
-            color: AppTheme.cyan,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
+        AdaptivePageHeader(
+          eyebrow: 'مساحة الإدارة',
+          title: 'إدارة المستخدمين',
+          subtitle: 'راجع الحسابات والأدوار وعدّل صلاحيات المستخدمين من واجهة واضحة ومباشرة.',
+          icon: Icons.manage_accounts_rounded,
+          action: OutlinedButton.icon(
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('تحديث'),
           ),
         ),
-        const SizedBox(height: 7),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'إدارة المستخدمين',
-                style: TextStyle(
-                  color: AppTheme.ink,
-                  fontSize: 27,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: _refresh,
-              tooltip: 'تحديث',
-              icon: const Icon(Icons.refresh_rounded, color: AppTheme.blue),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         FutureBuilder<PagedList<UserSummary>>(
           future: _future,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(70),
-                  child: CircularProgressIndicator(),
-                ),
-              );
+              return const LoadingState(label: 'جاري تحميل المستخدمين...');
             }
-            if (snapshot.hasError) {
-              return ErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _refresh,
-              );
-            }
+            if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: _refresh);
             final result = snapshot.data;
             final users = result?.items ?? const <UserSummary>[];
             if (users.isEmpty) {
-              return const EmptyState(
-                title: 'لا يوجد مستخدمون',
-                message: 'ستظهر الحسابات هنا بعد التسجيل.',
-                icon: Icons.people_alt_rounded,
-              );
+              return const EmptyState(title: 'لا يوجد مستخدمون', message: 'ستظهر الحسابات هنا بعد التسجيل.', icon: Icons.people_alt_rounded);
             }
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _AdminSummary(
+                  icon: Icons.people_alt_rounded,
+                  value: '${result!.totalCount}',
+                  label: 'إجمالي المستخدمين',
+                  helper: 'صفحة ${result.page} من ${result.totalPages == 0 ? 1 : result.totalPages}',
+                ),
+                const SizedBox(height: 16),
                 Card(
+                  clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       for (var index = 0; index < users.length; index++) ...[
                         if (index > 0) const Divider(height: 1),
-                        _UserRow(
-                          user: users[index],
-                          onRole: () => _changeRole(users[index]),
-                        ),
+                        _UserRow(user: users[index], onRole: () => _changeRole(users[index])),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 _Pager(
-                  page: result!.page,
+                  page: result.page,
                   totalPages: result.totalPages,
                   totalCount: result.totalCount,
                   hasPrevious: result.hasPrevious,
@@ -189,32 +164,49 @@ class _UserRow extends StatelessWidget {
   final VoidCallback onRole;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-    leading: CircleAvatar(
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final avatar = CircleAvatar(
       backgroundColor: AppTheme.blue.withValues(alpha: .12),
       child: Text(
         user.fullName.isEmpty ? 'م' : user.fullName.substring(0, 1),
-        style: const TextStyle(
-          color: AppTheme.blue,
-          fontWeight: FontWeight.w900,
-        ),
+        style: const TextStyle(color: AppTheme.blue, fontWeight: FontWeight.w900),
       ),
-    ),
-    title: Text(
-      user.fullName,
-      style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w800),
-    ),
-    subtitle: Text(
-      '${user.email}\nالدور الحالي: ${user.role}',
-      style: const TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6),
-    ),
-    trailing: IconButton(
-      onPressed: onRole,
-      tooltip: 'تغيير الدور',
-      icon: const Icon(Icons.manage_accounts_rounded, color: AppTheme.blue),
-    ),
-  );
+    );
+    final info = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(user.fullName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 3),
+        Text(user.email, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
+        const SizedBox(height: 7),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(color: AppTheme.cyan.withValues(alpha: .09), borderRadius: BorderRadius.circular(999)),
+          child: Text(user.role, style: const TextStyle(color: AppTheme.cyan, fontSize: 9, fontWeight: FontWeight.w900)),
+        ),
+      ],
+    );
+    if (compact) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [avatar, const SizedBox(width: 12), Expanded(child: info)]),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(onPressed: onRole, icon: const Icon(Icons.manage_accounts_rounded), label: const Text('تغيير الدور')),
+          ],
+        ),
+      );
+    }
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+      leading: avatar,
+      title: info,
+      trailing: OutlinedButton.icon(onPressed: onRole, icon: const Icon(Icons.manage_accounts_rounded), label: const Text('تغيير الدور')),
+    );
+  }
 }
 
 class AdminEnrollmentsPage extends StatefulWidget {
@@ -235,11 +227,7 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
     _future = _load();
   }
 
-  Future<PagedList<Enrollment>> _load() =>
-      context.read<ApiClient>().getAllEnrollments(
-        page: _page,
-        pageSize: _pageSize,
-      );
+  Future<PagedList<Enrollment>> _load() => context.read<ApiClient>().getAllEnrollments(page: _page, pageSize: _pageSize);
 
   void _refresh() => setState(() => _future = _load());
 
@@ -256,99 +244,48 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'مساحة الإدارة',
-          style: TextStyle(
-            color: AppTheme.cyan,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
+        AdaptivePageHeader(
+          eyebrow: 'مساحة الإدارة',
+          title: 'كل التسجيلات',
+          subtitle: 'تابع نشاط التسجيل في الكورسات وتحقق من الطلاب والمسارات المسجّلة.',
+          icon: Icons.assignment_turned_in_rounded,
+          action: OutlinedButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh_rounded), label: const Text('تحديث')),
         ),
-        const SizedBox(height: 7),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'كل التسجيلات',
-                style: TextStyle(
-                  color: AppTheme.ink,
-                  fontSize: 27,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: _refresh,
-              tooltip: 'تحديث',
-              icon: const Icon(Icons.refresh_rounded, color: AppTheme.blue),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         FutureBuilder<PagedList<Enrollment>>(
           future: _future,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(70),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            if (snapshot.hasError) {
-              return ErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _refresh,
-              );
-            }
+            if (snapshot.connectionState == ConnectionState.waiting) return const LoadingState(label: 'جاري تحميل التسجيلات...');
+            if (snapshot.hasError) return ErrorState(message: snapshot.error.toString(), onRetry: _refresh);
             final result = snapshot.data;
             final items = result?.items ?? const <Enrollment>[];
             if (items.isEmpty) {
-              return const EmptyState(
-                title: 'لا توجد تسجيلات',
-                message: 'ستظهر تسجيلات الطلاب في هذه المساحة.',
-                icon: Icons.fact_check_rounded,
-              );
+              return const EmptyState(title: 'لا توجد تسجيلات', message: 'ستظهر تسجيلات الطلاب في هذه المساحة.', icon: Icons.fact_check_rounded);
             }
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _AdminSummary(
+                  icon: Icons.fact_check_rounded,
+                  value: '${result!.totalCount}',
+                  label: 'إجمالي التسجيلات',
+                  helper: 'صفحة ${result.page} من ${result.totalPages == 0 ? 1 : result.totalPages}',
+                ),
+                const SizedBox(height: 16),
                 Card(
+                  clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       for (var index = 0; index < items.length; index++) ...[
                         if (index > 0) const Divider(height: 1),
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 5,
-                          ),
-                          leading: const Icon(
-                            Icons.assignment_turned_in_rounded,
-                            color: AppTheme.cyan,
-                          ),
-                          title: Text(
-                            items[index].courseTitle,
-                            style: const TextStyle(
-                              color: AppTheme.ink,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${items[index].userName} • ${items[index].enrolledDate.day}/${items[index].enrolledDate.month}/${items[index].enrolledDate.year}',
-                            style: const TextStyle(
-                              color: AppTheme.muted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
+                        _EnrollmentAdminRow(item: items[index]),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 _Pager(
-                  page: result!.page,
+                  page: result.page,
                   totalPages: result.totalPages,
                   totalCount: result.totalCount,
                   hasPrevious: result.hasPrevious,
@@ -359,6 +296,85 @@ class _AdminEnrollmentsPageState extends State<AdminEnrollmentsPage> {
               ],
             );
           },
+        ),
+      ],
+    ),
+  );
+}
+
+class _EnrollmentAdminRow extends StatelessWidget {
+  const _EnrollmentAdminRow({required this.item});
+
+  final Enrollment item;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(color: AppTheme.cyan.withValues(alpha: .10), borderRadius: BorderRadius.circular(14)),
+            child: const Icon(Icons.assignment_turned_in_rounded, color: AppTheme.cyan, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.courseTitle, maxLines: compact ? 2 : 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 5),
+                Text(item.userName, style: const TextStyle(color: AppTheme.muted, fontSize: 11, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Text('${item.enrolledDate.day}/${item.enrolledDate.month}/${item.enrolledDate.year}', style: const TextStyle(color: AppTheme.muted, fontSize: 10)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminSummary extends StatelessWidget {
+  const _AdminSummary({required this.icon, required this.value, required this.label, required this.helper});
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final String helper;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: [AppTheme.blue.withValues(alpha: .08), AppTheme.cyan.withValues(alpha: .06)]),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: AppTheme.border),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+          child: Icon(icon, color: AppTheme.blue),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: const TextStyle(color: AppTheme.ink, fontSize: 20, fontWeight: FontWeight.w900)),
+              Text(label, style: const TextStyle(color: AppTheme.ink, fontSize: 11, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text(helper, style: const TextStyle(color: AppTheme.muted, fontSize: 10)),
+            ],
+          ),
         ),
       ],
     ),
@@ -385,30 +401,23 @@ class _Pager extends StatelessWidget {
   final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    alignment: WrapAlignment.center,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    spacing: 12,
-    runSpacing: 8,
-    children: [
-      IconButton.outlined(
-        onPressed: hasPrevious ? onPrevious : null,
-        tooltip: 'الصفحة السابقة',
-        icon: const Icon(Icons.chevron_right_rounded),
-      ),
-      Text(
-        'صفحة $page من ${totalPages == 0 ? 1 : totalPages} • $totalCount سجل',
-        style: const TextStyle(
-          color: AppTheme.muted,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppTheme.border)),
+    child: Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        IconButton.outlined(onPressed: hasPrevious ? onPrevious : null, tooltip: 'الصفحة السابقة', icon: const Icon(Icons.chevron_right_rounded)),
+        Text(
+          'صفحة $page من ${totalPages == 0 ? 1 : totalPages} • $totalCount سجل',
+          style: const TextStyle(color: AppTheme.muted, fontSize: 12, fontWeight: FontWeight.w700),
         ),
-      ),
-      IconButton.outlined(
-        onPressed: hasNext ? onNext : null,
-        tooltip: 'الصفحة التالية',
-        icon: const Icon(Icons.chevron_left_rounded),
-      ),
-    ],
+        IconButton.outlined(onPressed: hasNext ? onNext : null, tooltip: 'الصفحة التالية', icon: const Icon(Icons.chevron_left_rounded)),
+      ],
+    ),
   );
 }
