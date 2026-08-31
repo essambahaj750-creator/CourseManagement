@@ -28,23 +28,23 @@ class AppShell extends StatelessWidget {
     final path = GoRouterState.of(context).uri.path;
     final selected = _selectedIndex(path);
     final width = MediaQuery.sizeOf(context).width;
-    final mobile = width < 760;
-    final desktop = width >= 1060;
+    final mobile = AppBreakpoints.isMobile(width);
+    final desktop = AppBreakpoints.isDesktop(width);
+    final drawerNavigation = !desktop;
 
     final content = Scaffold(
       appBar: AppBar(
-        titleSpacing: mobile ? 16 : 22,
+        titleSpacing: mobile ? 14 : 22,
         title: _Brand(compact: mobile),
         actions: [
-          if (!mobile) ...[
+          if (!mobile)
             _ProfilePill(
               name: auth.session?.fullName ?? 'حسابي',
               role: auth.session?.role ?? '',
               onTap: () => context.go('/profile'),
             ),
-            const SizedBox(width: 16),
-          ],
-          if (mobile)
+          if (!mobile) const SizedBox(width: 10),
+          if (drawerNavigation)
             Builder(
               builder: (context) => IconButton.filledTonal(
                 tooltip: 'القائمة',
@@ -52,14 +52,14 @@ class AppShell extends StatelessWidget {
                 icon: const Icon(Icons.menu_rounded),
               ),
             ),
-          if (mobile) const SizedBox(width: 10),
+          if (drawerNavigation) const SizedBox(width: 10),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppTheme.border),
         ),
       ),
-      drawer: mobile
+      drawer: drawerNavigation
           ? Drawer(child: _SideMenu(auth: auth, path: path, selected: selected))
           : null,
       body: SafeArea(child: child),
@@ -102,7 +102,7 @@ class AppShell extends StatelessWidget {
       textDirection: TextDirection.rtl,
       children: [
         SizedBox(
-          width: 270,
+          width: 276,
           child: Material(
             color: Colors.white,
             child: _SideMenu(auth: auth, path: path, selected: selected),
@@ -373,13 +373,16 @@ class _SideMenu extends StatelessWidget {
         const Spacer(),
         Padding(
           padding: const EdgeInsets.all(18),
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              await auth.logout();
-              if (context.mounted) context.go('/login');
-            },
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('تسجيل الخروج'),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await auth.logout();
+                if (context.mounted) context.go('/login');
+              },
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text('تسجيل الخروج'),
+            ),
           ),
         ),
       ],
