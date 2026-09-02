@@ -16,8 +16,8 @@ public sealed class CourseProductFlowTests
     [Fact]
     public async Task AdminCanReassignCourseToRealInstructor()
     {
-        var admin = new User { Id = 1, FullName = "Administrator" };
-        var instructor = new User { Id = 9, FullName = "Real Instructor" };
+        var admin = new User { Id = 1, FullName = "Administrator", Role = Role.Admin };
+        var instructor = new User { Id = 9, FullName = "Real Instructor", Role = Role.Instructor };
         var course = new Course
         {
             Id = 7,
@@ -49,6 +49,29 @@ public sealed class CourseProductFlowTests
         Assert.Equal(instructor.Id, course.InstructorId);
         Assert.Equal("Real Instructor", result.InstructorName);
         Assert.Equal(instructor.Id, result.InstructorId);
+    }
+
+    [Fact]
+    public async Task LegacyAdminOwnedCourseDoesNotPretendAdminIsInstructor()
+    {
+        var admin = new User { Id = 1, FullName = "Administrator", Role = Role.Admin };
+        var course = new Course
+        {
+            Id = 7,
+            Title = "Networks",
+            InstructorId = admin.Id,
+            Instructor = admin
+        };
+        var service = new CourseService(
+            new FakeCourseRepository(course),
+            new FakeAssetRepository(),
+            new FakeFileStorage(),
+            NullLogger<CourseService>.Instance);
+
+        var result = await service.GetCourseByIdAsync(course.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal("لم يُعيّن مدرّس بعد", result.InstructorName);
     }
 
     [Fact]
