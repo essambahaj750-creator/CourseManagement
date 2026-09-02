@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const courseContent = document.querySelector('.course-content-section');
+    if (courseContent && !courseContent.id) courseContent.id = 'course-content';
+
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', () => {
             const submit = form.querySelector('button[type="submit"]');
