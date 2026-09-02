@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Globalization;
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -134,10 +135,26 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowDevelopmentLoopback = builder.Environment.IsDevelopment() && allowedOrigins.Length == 0;
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
+        if (allowDevelopmentLoopback)
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    return false;
+                if (uri.Scheme is not ("http" or "https"))
+                    return false;
+
+                return string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+                       IPAddress.TryParse(uri.Host, out var address) && IPAddress.IsLoopback(address);
+            }).AllowAnyHeader().AllowAnyMethod();
+            return;
+        }
+
         if (allowedOrigins.Length == 0 || allowedOrigins.Any(string.IsNullOrWhiteSpace) || allowedOrigins.Contains("*"))
             policy.SetIsOriginAllowed(_ => false);
         else
