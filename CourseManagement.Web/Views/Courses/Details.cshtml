@@ -4,107 +4,262 @@
 @{
     ViewData["Title"] = Model.Course.Title;
     var course = Model.Course;
-    var isOwner = User.IsInRole("Admin") || (User.IsInRole("Instructor") && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentId) && currentId == course.InstructorId);
+    var isAdmin = User.IsInRole("Admin");
+    var isOwner = isAdmin || (User.IsInRole("Instructor") && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentId) && currentId == course.InstructorId);
     var canSeeAssets = Model.CanAccessAssets;
+    var videos = course.Assets.Where(asset => asset.Type == CourseAssetType.Video).ToList();
+    var attachments = course.Assets.Where(asset => asset.Type == CourseAssetType.Attachment).ToList();
+    var isEnrolledStudent = User.Identity?.IsAuthenticated == true && !isOwner && canSeeAssets;
     string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
 }
 
-<div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i><a asp-action="Index">الكورسات</a><i class="bi bi-chevron-left mx-2"></i>التفاصيل</div>
-<div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
-    <a class="text-decoration-none text-muted" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>
-    @if (isOwner)
-    {
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@course.Id"><i class="bi bi-pencil ms-1"></i>تعديل</a>
-            <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@course.Id"><i class="bi bi-trash ms-1"></i>حذف</a>
-        </div>
-    }
-</div>
+<div class="course-detail-page">
+    <div class="breadcrumbs">
+        <a asp-controller="Home" asp-action="Index">الرئيسية</a>
+        <i class="bi bi-chevron-left mx-2"></i>
+        <a asp-action="Index">الكورسات</a>
+        <i class="bi bi-chevron-left mx-2"></i>
+        @course.Title
+    </div>
 
-<section class="detail-cover mb-4">
-    @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
-    {
-        <img class="detail-cover-image" src="@Url.Action("Cover", "Courses", new { id = course.Id })" alt="غلاف @course.Title" loading="eager" />
-    }
-    <div class="detail-cover-overlay"></div><div class="detail-cover-content"><span class="badge bg-light text-primary mb-3"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span><h1 class="display-6 fw-bold">@course.Title</h1><p class="mb-0 opacity-75"><i class="bi bi-person ms-1"></i>بواسطة @course.InstructorName</p></div>
-</section>
-
-<div class="row g-4 align-items-start">
-    <div class="col-lg-8">
-        <div class="surface-card p-4 p-lg-5">
-            <div class="section-kicker">نظرة عامة</div><h2 class="h3 fw-bold mb-3">عن الكورس</h2><p class="text-muted lh-lg mb-4">@course.Description</p>
-            <div class="row g-3 border-top pt-4"><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-person"></i></span><div><small>المدرب</small><strong>@course.InstructorName</strong></div></div></div><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-hash"></i></span><div><small>المعرّف</small><strong>#@course.Id</strong></div></div></div><div class="col-sm-4"><div class="detail-fact"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div></div></div>
-        </div>
-
-        @if (canSeeAssets)
+    <div class="course-detail-actions mb-3">
+        <a class="text-decoration-none text-muted" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>
+        @if (isOwner)
         {
-            <section class="surface-card p-4 p-lg-5 mt-4">
-                <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap"><div><div class="section-kicker">محتوى الكورس</div><h2 class="h3 fw-bold mb-1">الفيديوهات والمرفقات</h2><p class="text-muted small mb-0">الملفات متاحة للمستخدم المصرح له فقط.</p></div><span class="badge rounded-pill text-bg-light">@course.Assets.Count ملف</span></div>
-                @if (course.Assets.Count == 0)
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@course.Id"><i class="bi bi-pencil ms-1"></i>تعديل الكورس</a>
+                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@course.Id"><i class="bi bi-trash ms-1"></i>حذف</a>
+            </div>
+        }
+    </div>
+
+    <section class="course-hero-v3">
+        <div class="course-hero-media">
+            @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+            {
+                <img src="@Url.Action("Cover", "Courses", new { id = course.Id })" alt="غلاف @course.Title" />
+            }
+            else
+            {
+                <div class="course-hero-placeholder"><i class="bi bi-mortarboard-fill"></i></div>
+            }
+            <div class="course-hero-shade"></div>
+        </div>
+        <div class="course-hero-copy">
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <span class="badge bg-light text-primary"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span>
+                @if (Model.PreviewAsset is not null)
                 {
-                    <div class="empty-state py-4"><i class="bi bi-folder2-open"></i><p class="mb-0">لم تتم إضافة ملفات لهذا الكورس بعد.</p></div>
+                    <span class="badge preview-badge"><i class="bi bi-play-circle ms-1"></i>معاينة متاحة</span>
                 }
-                else
-                {
-                    <div class="list-group list-group-flush">
-                        @foreach (var asset in course.Assets)
-                        {
-                            var assetIcon = asset.Type == CourseAssetType.Video ? "bi-play-btn-fill" : "bi-file-earmark-text-fill";
-                            var assetLabel = asset.Type == CourseAssetType.Video ? "فيديو" : "مرفق";
-                            <div class="list-group-item px-0 py-3 d-flex align-items-center gap-3 flex-wrap">
-                                <div class="asset-icon rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"><i class="bi @assetIcon"></i></div>
-                                <div class="flex-grow-1 min-width-0"><strong class="d-block text-truncate">@asset.OriginalFileName</strong><small class="text-muted">@assetLabel · @FormatSize(asset.SizeBytes)</small></div>
-                                <div class="d-flex gap-2">
+            </div>
+            <h1>@course.Title</h1>
+            <p class="course-hero-description">@course.Description</p>
+            <div class="course-instructor-line">
+                <span class="course-instructor-avatar">@(string.IsNullOrWhiteSpace(course.InstructorName) ? "م" : course.InstructorName[..1])</span>
+                <div><small>يقدمه المدرّس</small><strong>@course.InstructorName</strong></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="course-detail-grid mt-4">
+        <main class="course-learning-column">
+            @if (!canSeeAssets && Model.PreviewAsset is not null)
+            {
+                <section class="surface-card course-preview-section">
+                    <div class="course-section-head">
+                        <div><span class="section-kicker">قبل التسجيل</span><h2>شاهد دقيقة من الكورس</h2><p>معاينة قصيرة تساعدك على معرفة أسلوب الشرح قبل اتخاذ قرار التسجيل.</p></div>
+                        <span class="preview-time-chip"><i class="bi bi-clock"></i> @Model.PreviewSeconds ثانية</span>
+                    </div>
+                    <div class="video-shell preview-video-shell">
+                        <video id="coursePreviewVideo" controls preload="metadata" playsinline data-preview-limit="@Model.PreviewSeconds">
+                            <source src="@Url.Action("Preview", "Courses", new { id = course.Id })" type="@Model.PreviewAsset.ContentType" />
+                            متصفحك لا يدعم تشغيل الفيديو.
+                        </video>
+                        <div class="preview-limit-note"><i class="bi bi-info-circle"></i> تتوقف المعاينة تلقائيًا بعد @Model.PreviewSeconds ثانية. سجل في الكورس لمشاهدة الدروس كاملة.</div>
+                    </div>
+                </section>
+            }
+            else if (!canSeeAssets)
+            {
+                <section class="surface-card course-preview-section preview-empty">
+                    <div class="empty-orb"><i class="bi bi-play-circle"></i></div>
+                    <div><h2>المعاينة قيد التجهيز</h2><p>لم يرفع المدرّس فيديو معاينة بعد. يمكنك قراءة وصف الكورس والتسجيل للوصول إلى المحتوى عند توفره.</p></div>
+                </section>
+            }
+
+            <section class="surface-card course-about-section">
+                <div class="course-section-head compact">
+                    <div><span class="section-kicker">نظرة عامة</span><h2>ماذا ستجد في هذا الكورس؟</h2></div>
+                </div>
+                <p class="course-about-copy">@course.Description</p>
+                <div class="course-facts-grid">
+                    <div class="course-fact-v3"><span><i class="bi bi-person-video3"></i></span><div><small>المدرّس</small><strong>@course.InstructorName</strong></div></div>
+                    <div class="course-fact-v3"><span><i class="bi bi-collection-play"></i></span><div><small>الفيديوهات</small><strong>@(canSeeAssets ? videos.Count : (Model.PreviewAsset is null ? 0 : 1))</strong></div></div>
+                    <div class="course-fact-v3"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div>
+                </div>
+            </section>
+
+            @if (canSeeAssets)
+            {
+                <section class="surface-card course-content-section">
+                    <div class="course-section-head">
+                        <div>
+                            <span class="section-kicker">منطقة التعلّم</span>
+                            <h2>دروس الفيديو</h2>
+                            <p>شاهد الدروس مباشرة من الصفحة، ويُحفظ الوصول للمسجلين والمالك فقط.</p>
+                        </div>
+                        <span class="content-count-chip">@videos.Count فيديو</span>
+                    </div>
+
+                    @if (videos.Count == 0)
+                    {
+                        <div class="inline-empty"><i class="bi bi-camera-video-off"></i><span>لم يضف المدرّس فيديوهات بعد.</span></div>
+                    }
+                    else
+                    {
+                        <div class="lesson-list">
+                            @for (var index = 0; index < videos.Count; index++)
+                            {
+                                var video = videos[index];
+                                <article class="lesson-card">
+                                    <div class="lesson-card-head">
+                                        <div class="lesson-number">@(index + 1)</div>
+                                        <div class="flex-grow-1 min-width-0"><small>الدرس @(index + 1)</small><strong class="d-block text-truncate">@video.OriginalFileName</strong></div>
+                                        <span class="lesson-size">@FormatSize(video.SizeBytes)</span>
+                                    </div>
+                                    <div class="video-shell">
+                                        <video controls preload="metadata" playsinline>
+                                            <source src="@Url.Action("StreamAsset", "Courses", new { id = course.Id, assetId = video.Id })" type="@video.ContentType" />
+                                            متصفحك لا يدعم تشغيل الفيديو.
+                                        </video>
+                                    </div>
+                                    <div class="lesson-card-actions">
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="DownloadAsset" asp-route-id="@course.Id" asp-route-assetId="@video.Id"><i class="bi bi-download ms-1"></i>تنزيل الفيديو</a>
+                                        @if (isOwner)
+                                        {
+                                            <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@video.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('هل تريد حذف هذا الفيديو؟');"><i class="bi bi-trash ms-1"></i>حذف</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+
+                <section class="surface-card course-attachments-section">
+                    <div class="course-section-head compact">
+                        <div><span class="section-kicker">مواد مساعدة</span><h2>المرفقات</h2></div>
+                        <span class="content-count-chip">@attachments.Count ملف</span>
+                    </div>
+                    @if (attachments.Count == 0)
+                    {
+                        <div class="inline-empty"><i class="bi bi-folder2-open"></i><span>لا توجد مرفقات إضافية.</span></div>
+                    }
+                    else
+                    {
+                        <div class="attachment-list">
+                            @foreach (var asset in attachments)
+                            {
+                                <div class="attachment-row">
+                                    <span class="attachment-icon"><i class="bi bi-file-earmark-text"></i></span>
+                                    <div class="flex-grow-1 min-width-0"><strong class="d-block text-truncate">@asset.OriginalFileName</strong><small>@FormatSize(asset.SizeBytes)</small></div>
                                     <a class="btn btn-sm btn-outline-primary" asp-action="DownloadAsset" asp-route-id="@course.Id" asp-route-assetId="@asset.Id"><i class="bi bi-download ms-1"></i>تنزيل</a>
                                     @if (isOwner)
                                     {
-                                        <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@asset.Id" method="post" class="d-inline">
+                                        <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@asset.Id" method="post">
                                             @Html.AntiForgeryToken()
                                             <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('هل تريد حذف هذا الملف؟');"><i class="bi bi-trash"></i></button>
                                         </form>
                                     }
                                 </div>
-                            </div>
-                        }
-                    </div>
-                }
-            </section>
-        }
-        else if (User.Identity?.IsAuthenticated != true)
-        {
-            <div class="alert alert-info mt-4"><i class="bi bi-lock ms-1"></i>سجّل الدخول أو سجّل في الكورس للوصول إلى الفيديوهات والمرفقات.</div>
-        }
+                            }
+                        </div>
+                    }
+                </section>
+            }
 
-        @if (isOwner)
-        {
-            <section class="surface-card p-4 p-lg-5 mt-4">
-                <div class="section-kicker">إدارة المحتوى</div><h2 class="h4 fw-bold mb-2">رفع فيديو أو ملف للكورس</h2><p class="text-muted small">الفيديو حتى 512MB، والمرفقات حتى 50MB. الامتدادات المسموحة محددة لحماية المنصة.</p>
-                <form asp-action="UploadAsset" asp-route-id="@course.Id" method="post" enctype="multipart/form-data" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-md-7"><label for="file" class="form-label">الملف</label><input id="file" name="file" class="form-control" type="file" accept="video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt" /></div>
-                    <div class="col-md-5"><label for="type" class="form-label">نوع الملف</label><select id="type" name="type" class="form-select"><option value="1">فيديو تعليمي</option><option value="2">ملف مرفق</option></select></div>
-                    <div class="col-12"><button class="btn btn-primary" type="submit"><i class="bi bi-cloud-arrow-up ms-2"></i>رفع وربط الملف</button></div>
-                </form>
-            </section>
-        }
-    </div>
-    <div class="col-lg-4">
-        <div class="surface-card p-4 sticky-lg-top" style="top:1.25rem">
-            <div class="text-muted small">استثمر في تعلمك</div><div class="display-6 fw-bold text-primary my-2">@course.Price.ToString("N2") <small class="fs-6">ر.س</small></div><p class="text-muted small">احصل على وصول منظم إلى هذا المسار التعليمي.</p>
-            @if (User.Identity?.IsAuthenticated == true && !isOwner)
+            @if (isOwner)
             {
-                <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@course.Id" method="post"><button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-journal-plus ms-2"></i>التسجيل في الكورس</button></form>
+                <section class="surface-card course-upload-section">
+                    <div class="course-section-head compact">
+                        <div><span class="section-kicker">إدارة المحتوى</span><h2>أضف درسًا أو مرفقًا</h2><p>أول فيديو ترفعه يصبح تلقائيًا فيديو المعاينة للزوار.</p></div>
+                    </div>
+                    <form asp-action="UploadAsset" asp-route-id="@course.Id" method="post" enctype="multipart/form-data" class="row g-3">
+                        @Html.AntiForgeryToken()
+                        <div class="col-md-7"><label for="file" class="form-label">الملف</label><input id="file" name="file" class="form-control" type="file" accept="video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt" /></div>
+                        <div class="col-md-5"><label for="type" class="form-label">نوع الملف</label><select id="type" name="type" class="form-select"><option value="1">فيديو تعليمي</option><option value="2">ملف مرفق</option></select></div>
+                        <div class="col-12"><button class="btn btn-primary" type="submit"><i class="bi bi-cloud-arrow-up ms-2"></i>رفع وربط الملف</button></div>
+                    </form>
+                </section>
             }
-            else if (User.Identity?.IsAuthenticated != true)
-            {
-                <a class="btn btn-primary w-100 mt-3" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"><i class="bi bi-box-arrow-in-left ms-2"></i>سجل الدخول للتسجيل</a>
-            }
-            else
-            {
-                <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle ms-1"></i>أنت مالك هذا الكورس.</div>
-            }
-            <div class="detail-checklist mt-4"><span><i class="bi bi-check-circle-fill"></i>وصف واضح للمحتوى</span><span><i class="bi bi-check-circle-fill"></i>مدرب محدد</span><span><i class="bi bi-check-circle-fill"></i>ملفات محمية</span></div>
-        </div>
+        </main>
+
+        <aside class="course-purchase-column">
+            <div class="surface-card purchase-card-v3">
+                <span class="purchase-label">الاستثمار في الكورس</span>
+                <div class="purchase-price">@(course.Price <= 0 ? "مجاني" : $"{course.Price:N2} ر.س")</div>
+                <p>وصول كامل إلى الدروس والمرفقات بعد التسجيل.</p>
+
+                @if (isEnrolledStudent)
+                {
+                    <div class="enrolled-state"><i class="bi bi-check-circle-fill"></i><div><strong>أنت مسجل في الكورس</strong><span>يمكنك مشاهدة جميع الدروس الآن.</span></div></div>
+                    <a class="btn btn-primary w-100" href="#course-content"><i class="bi bi-play-circle ms-2"></i>ابدأ التعلّم</a>
+                }
+                else if (User.Identity?.IsAuthenticated == true && !isOwner)
+                {
+                    <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@course.Id" method="post">
+                        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-journal-plus ms-2"></i>التسجيل في الكورس</button>
+                    </form>
+                }
+                else if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a class="btn btn-primary w-100" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"><i class="bi bi-box-arrow-in-left ms-2"></i>سجل الدخول للتسجيل</a>
+                }
+                else
+                {
+                    <div class="owner-state"><i class="bi bi-shield-check"></i><div><strong>وضع الإدارة</strong><span>يمكنك إدارة هذا الكورس ومحتواه.</span></div></div>
+                }
+
+                <div class="purchase-benefits">
+                    <span><i class="bi bi-check-circle-fill"></i>مشاهدة الفيديو داخل المنصة</span>
+                    <span><i class="bi bi-check-circle-fill"></i>تنزيل المرفقات</span>
+                    <span><i class="bi bi-check-circle-fill"></i>وصول منظم وآمن</span>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const preview = document.getElementById('coursePreviewVideo');
+            if (!preview) return;
+            const limit = Number(preview.dataset.previewLimit || 60);
+            let finished = false;
+            const enforceLimit = () => {
+                if (preview.currentTime >= limit) {
+                    preview.pause();
+                    preview.currentTime = limit;
+                    if (!finished) {
+                        finished = true;
+                        const note = document.querySelector('.preview-limit-note');
+                        if (note) note.innerHTML = '<i class="bi bi-lock-fill"></i> انتهت المعاينة. سجّل في الكورس لمشاهدة الدروس كاملة.';
+                    }
+                }
+            };
+            preview.addEventListener('timeupdate', enforceLimit);
+            preview.addEventListener('seeking', () => {
+                if (preview.currentTime > limit) preview.currentTime = limit;
+            });
+            preview.addEventListener('play', () => {
+                if (preview.currentTime >= limit) preview.currentTime = 0;
+            });
+        })();
+    </script>
+}
