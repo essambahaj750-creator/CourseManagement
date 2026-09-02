@@ -10,7 +10,8 @@ namespace CourseManagement.API.Controllers;
 [ApiController]
 public class CourseController(
     ICourseService courseService,
-    ICourseAssetService assetService) : ControllerBase
+    ICourseAssetService assetService,
+    IUserService userService) : ControllerBase
 {
     /// <summary>كتالوج الكورسات — عام</summary>
     [HttpGet]
@@ -22,7 +23,7 @@ public class CourseController(
     public async Task<IActionResult> Search([FromQuery] CourseFilterDto filter) =>
         Ok(await courseService.SearchCoursesAsync(filter));
 
-    /// <summary>قائمة المدرّسين المتاحين للفلاتر</summary>
+    /// <summary>قائمة المدرّسين المتاحين للفلاتر والإسناد</summary>
     [HttpGet("instructors")]
     public async Task<IActionResult> GetInstructors() =>
         Ok(await courseService.GetInstructorOptionsAsync());
@@ -44,6 +45,17 @@ public class CourseController(
         return cover is null
             ? NotFound(new { message = "Course cover not found" })
             : File(cover.Content, cover.ContentType, enableRangeProcessing: false);
+    }
+
+    /// <summary>مقطع معاينة عام مستقل عن فيديوهات الدروس المحمية.</summary>
+    [HttpGet("{id:int}/preview")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPreview(int id, CancellationToken cancellationToken)
+    {
+        var preview = await assetService.OpenPreviewAsync(id, cancellationToken);
+        return preview is null
+            ? NotFound(new { message = "Course preview not found" })
+            : File(preview.Content, preview.ContentType, enableRangeProcessing: true);
     }
 
     [HttpPost("{id:int}/cover")]
@@ -83,7 +95,6 @@ public class CourseController(
         return NoContent();
     }
 
-    // كانت مقيدة بـ Instructor,Admin رغم أن قائمة الكورسات كلها عامة أصلاً — تناقض منطقي
     [HttpGet("instructor/{instructorId:int}")]
     public async Task<IActionResult> GetByInstructor(int instructorId) =>
         Ok(await courseService.GetCoursesByInstructorAsync(instructorId));
@@ -92,14 +103,38 @@ public class CourseController(
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> Create([FromBody] CourseDto dto)
     {
-        var course = await courseService.CreateCourseAsync(dto, User.GetUserId());
+        var instructorId = User.GetUserId();
+        if (User.IsAdmin())
+        {
+            var resolved = await ResolveInstructorAsync(dto.InstructorId);
+            if (resolved is null)
+                return BadRequest(new { message = "Admin must assign the course to a valid Instructor account." });
+            instructorId = resolved.Value;
+        }
+
+        var course = await courseService.CreateCourseAsync(dto, instructorId);
         return CreatedAtAction(nameof(GetById), new { id = course.Id }, course);
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Instructor,Admin")]
-    public async Task<IActionResult> Update(int id, [FromBody] CourseDto dto) =>
-        Ok(await courseService.UpdateCourseAsync(id, dto, User.GetUserId(), User.IsAdmin()));
+    public async Task<IActionResult> Update(int id, [FromBody] CourseDto dto)
+    {
+        int? instructorId = null;
+        if (User.IsAdmin() && dto.InstructorId.HasValue)
+        {
+            instructorId = await ResolveInstructorAsync(dto.InstructorId);
+            if (!instructorId.HasValue)
+                return BadRequest(new { message = "The selected course owner must have the Instructor role." });
+        }
+
+        return Ok(await courseService.UpdateCourseAsync(
+            id,
+            dto,
+            User.GetUserId(),
+            User.IsAdmin(),
+            instructorId));
+    }
 
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Instructor,Admin")]
@@ -107,5 +142,23 @@ public class CourseController(
     {
         await courseService.DeleteCourseAsync(id, User.GetUserId(), User.IsAdmin());
         return NoContent();
+    }
+
+    private async Task<int?> ResolveInstructorAsync(int? instructorId)
+    {
+        if (!instructorId.HasValue || instructorId.Value <= 0)
+            return null;
+
+        try
+        {
+            var user = await userService.GetUserByIdAsync(instructorId.Value);
+            return string.Equals(user.Role, "Instructor", StringComparison.OrdinalIgnoreCase)
+                ? user.Id
+                : null;
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
     }
 }
