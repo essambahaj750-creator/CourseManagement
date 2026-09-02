@@ -37,6 +37,48 @@ public sealed class CourseAssetService(
             .ToArray();
     }
 
+    public async Task<CourseAssetDto?> GetPreviewAsync(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await courseRepository.ExistsAsync(courseId))
+            throw new KeyNotFoundException("Course not found.");
+
+        var preview = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
+            .Where(asset => asset.Type == CourseAssetType.Video)
+            .OrderBy(asset => asset.CreatedAtUtc)
+            .ThenBy(asset => asset.Id)
+            .FirstOrDefault();
+
+        return preview is null ? null : Map(preview);
+    }
+
+    public async Task<CourseAssetDownload?> OpenPreviewAsync(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await courseRepository.ExistsAsync(courseId))
+            throw new KeyNotFoundException("Course not found.");
+
+        var preview = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
+            .Where(asset => asset.Type == CourseAssetType.Video)
+            .OrderBy(asset => asset.CreatedAtUtc)
+            .ThenBy(asset => asset.Id)
+            .FirstOrDefault();
+        if (preview is null)
+            return null;
+
+        try
+        {
+            var stream = await fileStorage.OpenReadAsync(preview.StoredFileName, cancellationToken);
+            return new CourseAssetDownload(stream, preview.ContentType, preview.OriginalFileName, preview.SizeBytes);
+        }
+        catch (FileNotFoundException)
+        {
+            throw new KeyNotFoundException("The stored preview video is missing.");
+        }
+    }
+
     public async Task<CourseAssetDto> UploadAsync(
         int courseId,
         string originalFileName,
