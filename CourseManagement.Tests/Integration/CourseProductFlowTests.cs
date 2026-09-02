@@ -52,7 +52,7 @@ public sealed class CourseProductFlowTests
     }
 
     [Fact]
-    public async Task FirstVideoIsAvailableAsPreviewWithoutEnrollment()
+    public async Task DedicatedPreviewClipIsPublicWithoutExposingProtectedLesson()
     {
         var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
         var assets = new FakeAssetRepository();
@@ -61,8 +61,8 @@ public sealed class CourseProductFlowTests
             Id = 2,
             CourseId = course.Id,
             Course = course,
-            OriginalFileName = "second.mp4",
-            StoredFileName = "second.mp4",
+            OriginalFileName = "lesson.mp4",
+            StoredFileName = "lesson.mp4",
             ContentType = "video/mp4",
             SizeBytes = 22,
             Type = CourseAssetType.Video,
@@ -77,23 +77,51 @@ public sealed class CourseProductFlowTests
             StoredFileName = "preview.mp4",
             ContentType = "video/mp4",
             SizeBytes = 11,
-            Type = CourseAssetType.Video,
+            Type = CourseAssetType.PreviewVideo,
             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
+
+        var service = CreateAssetService(course, assets);
+        var metadata = await service.GetPreviewAsync(course.Id);
+        var stream = await service.OpenPreviewAsync(course.Id);
+
+        Assert.NotNull(metadata);
+        Assert.Equal(CourseAssetType.PreviewVideo, metadata.Type);
+        Assert.Equal("preview.mp4", metadata.OriginalFileName);
+        Assert.NotNull(stream);
+        Assert.Equal("preview.mp4", stream.DownloadName);
+        Assert.NotEqual("lesson.mp4", stream.DownloadName);
+        await stream.Content.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ProtectedLessonAloneDoesNotBecomePublicPreview()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
+        var assets = new FakeAssetRepository();
         assets.Items.Add(new CourseAsset
         {
-            Id = 3,
+            Id = 1,
             CourseId = course.Id,
             Course = course,
-            OriginalFileName = "notes.pdf",
-            StoredFileName = "notes.pdf",
-            ContentType = "application/pdf",
-            SizeBytes = 3,
-            Type = CourseAssetType.Attachment,
+            OriginalFileName = "lesson.mp4",
+            StoredFileName = "lesson.mp4",
+            ContentType = "video/mp4",
+            SizeBytes = 22,
+            Type = CourseAssetType.Video,
             CreatedAtUtc = DateTime.UtcNow
         });
 
-        var service = new CourseAssetService(
+        var service = CreateAssetService(course, assets);
+
+        Assert.Null(await service.GetPreviewAsync(course.Id));
+        Assert.Null(await service.OpenPreviewAsync(course.Id));
+        await Assert.ThrowsAsync<CourseManagement.Application.Common.ForbiddenAccessException>(() =>
+            service.GetByCourseIdAsync(course.Id, requesterId: 15, isAdmin: false));
+    }
+
+    private static CourseAssetService CreateAssetService(Course course, FakeAssetRepository assets) =>
+        new(
             assets,
             new FakeCourseRepository(course),
             new FakeEnrollmentRepository(),
@@ -101,18 +129,6 @@ public sealed class CourseProductFlowTests
             new FakeUnitOfWork(),
             Options.Create(new FileUploadOptions()),
             NullLogger<CourseAssetService>.Instance);
-
-        var metadata = await service.GetPreviewAsync(course.Id);
-        var stream = await service.OpenPreviewAsync(course.Id);
-
-        Assert.NotNull(metadata);
-        Assert.Equal(1, metadata.Id);
-        Assert.Equal("preview.mp4", metadata.OriginalFileName);
-        Assert.NotNull(stream);
-        Assert.Equal("video/mp4", stream.ContentType);
-        Assert.Equal("preview.mp4", stream.DownloadName);
-        await stream.Content.DisposeAsync();
-    }
 
     private sealed class FakeCourseRepository(Course course, User? instructor = null) : ICourseRepository
     {
@@ -150,6 +166,7 @@ public sealed class CourseProductFlowTests
             Task.FromResult<IReadOnlyList<CourseAsset>>(Items.Where(item => item.CourseId == courseId).ToList());
         public Task<CourseAsset> AddAsync(CourseAsset asset, CancellationToken cancellationToken = default)
         {
+            if (asset.Id == 0) asset.Id = Items.Count == 0 ? 1 : Items.Max(item => item.Id) + 1;
             Items.Add(asset);
             return Task.FromResult(asset);
         }
