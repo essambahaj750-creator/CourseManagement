@@ -281,7 +281,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        if (instructorId != null) 'instructorId': instructorId,
+        ?'instructorId': instructorId,
       },
     );
     return Course.fromJson(json);
@@ -302,7 +302,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        if (instructorId != null) 'instructorId': instructorId,
+        ?'instructorId': instructorId,
       },
     );
     return Course.fromJson(json);
