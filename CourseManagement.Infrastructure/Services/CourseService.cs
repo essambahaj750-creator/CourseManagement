@@ -2,6 +2,7 @@ using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
+using CourseManagement.Domain.Enums;
 using CourseManagement.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -136,6 +137,8 @@ public class CourseService(
         Price = course.Price,
         ImageUrl = course.ImageUrl,
         InstructorId = course.InstructorId,
-        InstructorName = course.Instructor?.FullName ?? string.Empty
+        InstructorName = course.Instructor?.Role == Role.Instructor
+            ? course.Instructor.FullName
+            : "لم يُعيّن مدرّس بعد"
     };
 }
