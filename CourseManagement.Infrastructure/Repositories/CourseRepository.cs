@@ -1,4 +1,5 @@
 using CourseManagement.Domain.Entities;
+using CourseManagement.Domain.Enums;
 using CourseManagement.Domain.Interfaces;
 using CourseManagement.Domain.Models;
 using CourseManagement.Infrastructure.Data;
@@ -56,16 +57,12 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
 
     public async Task<IReadOnlyList<CourseInstructorOption>> GetInstructorOptionsAsync()
     {
-        var rawOptions = await context.Courses
+        return await context.Users
             .AsNoTracking()
-            .Select(c => new { c.InstructorId, Name = c.Instructor.FullName })
+            .Where(user => user.Role == Role.Instructor && user.IsActive)
+            .OrderBy(user => user.FullName)
+            .Select(user => new CourseInstructorOption(user.Id, user.FullName))
             .ToListAsync();
-
-        return rawOptions
-            .GroupBy(option => option.InstructorId)
-            .Select(group => new CourseInstructorOption(group.Key, group.First().Name))
-            .OrderBy(option => option.Name)
-            .ToList();
     }
 
     public async Task<Course?> GetByIdAsync(int id) =>
@@ -73,7 +70,6 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
             .Include(c => c.Instructor)
             .FirstOrDefaultAsync(c => c.Id == id);
 
-    // كان ينقصها Include(Instructor) فتظهر أسماء المدربين فارغة في النتائج
     public async Task<IEnumerable<Course>> GetByInstructorIdAsync(int instructorId) =>
         await context.Courses.AsNoTracking()
             .Include(c => c.Instructor)
@@ -89,9 +85,6 @@ public class CourseRepository(ApplicationDbContext context) : ICourseRepository
 
     public async Task UpdateAsync(Course course)
     {
-        // Queries return AsNoTracking entities, but Create + cover upload can share
-        // one DbContext and still have the original Course in the local tracker.
-        // Update that tracked instance when present; otherwise attach only Course.
         var tracked = context.Courses.Local.FirstOrDefault(item => item.Id == course.Id);
         if (tracked is not null)
             context.Entry(tracked).CurrentValues.SetValues(course);
