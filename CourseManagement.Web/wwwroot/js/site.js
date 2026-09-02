@@ -83,6 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const courseContent = document.querySelector('.course-content-section');
     if (courseContent && !courseContent.id) courseContent.id = 'course-content';
 
+    const assetType = document.querySelector('#type');
+    if (assetType && assetType.tagName === 'SELECT' && !assetType.querySelector('option[value="4"]')) {
+        const previewOption = document.createElement('option');
+        previewOption.value = '4';
+        previewOption.textContent = 'فيديو معاينة قصير';
+        assetType.append(previewOption);
+    }
+
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', () => {
             const submit = form.querySelector('button[type="submit"]');
