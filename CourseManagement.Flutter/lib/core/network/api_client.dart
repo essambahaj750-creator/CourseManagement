@@ -70,7 +70,7 @@ class ApiClient {
 
   static const defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://localhost:7026',
+    defaultValue: 'http://localhost:5205',
   );
 
   final SessionStore sessionStore;
@@ -147,8 +147,8 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (_) {
-      throw const ApiException(
-        'تعذر الاتصال بالخادم. تحقق من تشغيل API واتصال الشبكة.',
+      throw ApiException(
+        'تعذر الاتصال بالخادم على $defaultBaseUrl. شغّل API ثم حاول مرة أخرى.',
       );
     }
 
@@ -187,12 +187,12 @@ class ApiClient {
                 .timeout(const Duration(seconds: 20));
       await _throwIfFailed(response, authenticated: authenticated);
       if (response.body.trim().isEmpty) return const <dynamic>[];
-      return (jsonDecode(response.body) as List<dynamic>);
+      return jsonDecode(response.body) as List<dynamic>;
     } on ApiException {
       rethrow;
     } catch (_) {
-      throw const ApiException(
-        'تعذر الاتصال بالخادم. تحقق من تشغيل API واتصال الشبكة.',
+      throw ApiException(
+        'تعذر الاتصال بالخادم على $defaultBaseUrl. شغّل API ثم حاول مرة أخرى.',
       );
     }
   }
@@ -281,7 +281,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        ?'instructorId': instructorId,
+        'instructorId': ?instructorId,
       },
     );
     return Course.fromJson(json);
@@ -302,7 +302,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
-        ?'instructorId': instructorId,
+        'instructorId': ?instructorId,
       },
     );
     return Course.fromJson(json);
