@@ -35,9 +35,17 @@ void main() {
         sessionStore: SessionStore(),
         client: MockClient((request) async {
           if (request.url.path.endsWith('/instructors')) {
-            return http.Response(jsonEncode([{'id': 2, 'name': 'أحمد محمد'}]), 200, headers: {'content-type': 'application/json'});
+            return http.Response(
+              jsonEncode([{'id': 2, 'name': 'أحمد محمد'}]),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
           }
-          return http.Response(catalogJson, 200, headers: {'content-type': 'application/json'});
+          return http.Response(
+            catalogJson,
+            200,
+            headers: {'content-type': 'application/json'},
+          );
         }),
       );
 
@@ -49,7 +57,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: Directionality(textDirection: TextDirection.rtl, child: child),
+        home: Scaffold(
+          body: Directionality(textDirection: TextDirection.rtl, child: child),
+        ),
       ),
     );
     await tester.pumpAndSettle();
