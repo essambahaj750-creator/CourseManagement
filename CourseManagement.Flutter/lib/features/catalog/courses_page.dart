@@ -94,9 +94,11 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 
   Future<void> _openMobileFilters() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final result = await showModalBottomSheet<CourseFilter>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) =>
           _FilterSheet(filter: _filter, instructors: _instructors),
@@ -118,15 +120,23 @@ class _CoursesPageState extends State<CoursesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final mobile = AppBreakpoints.isMobile(screenWidth);
+
     return PageContainer(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 22),
+            padding: EdgeInsets.fromLTRB(
+              mobile ? 18 : 24,
+              mobile ? 19 : 24,
+              mobile ? 18 : 24,
+              mobile ? 18 : 22,
+            ),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(mobile ? 22 : 28),
               gradient: const LinearGradient(
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
@@ -165,11 +175,11 @@ class _CoursesPageState extends State<CoursesPage> {
                       ),
                     ),
                     const SizedBox(height: 11),
-                    const Text(
+                    Text(
                       'استكشف الكورسات',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: mobile ? 24 : 28,
                         height: 1.25,
                         fontWeight: FontWeight.w900,
                       ),
@@ -190,18 +200,29 @@ class _CoursesPageState extends State<CoursesPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppTheme.blue,
+                    minimumSize: compact
+                        ? const Size(double.infinity, 48)
+                        : const Size(0, 46),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 13,
                     ),
                   ),
                   icon: const Icon(Icons.tune_rounded),
-                  label: const Text('تصفية النتائج'),
+                  label: Text(
+                    _filter.hasActiveFilters
+                        ? 'تعديل الفلاتر النشطة'
+                        : 'تصفية النتائج',
+                  ),
                 );
                 if (compact) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [copy, const SizedBox(height: 18), filterButton],
+                    children: [
+                      copy,
+                      const SizedBox(height: 16),
+                      SizedBox(width: double.infinity, child: filterButton),
+                    ],
                   );
                 }
                 return Row(
@@ -214,36 +235,37 @@ class _CoursesPageState extends State<CoursesPage> {
               },
             ),
           ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: const [
-              _CatalogHighlight(
-                icon: Icons.search_rounded,
-                title: 'ابحث بسهولة',
-                subtitle: 'استخدم العنوان أو الوصف أو المدرّس',
-              ),
-              _CatalogHighlight(
-                icon: Icons.tune_rounded,
-                title: 'فلاتر دقيقة',
-                subtitle: 'السعر والترتيب والمجال في مكان واحد',
-              ),
-              _CatalogHighlight(
-                icon: Icons.auto_awesome_rounded,
-                title: 'مسارات عملية',
-                subtitle: 'اختر ما يناسب هدفك الحالي',
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+          SizedBox(height: mobile ? 14 : 18),
+          if (!mobile)
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const [
+                _CatalogHighlight(
+                  icon: Icons.search_rounded,
+                  title: 'ابحث بسهولة',
+                  subtitle: 'استخدم العنوان أو الوصف أو المدرّس',
+                ),
+                _CatalogHighlight(
+                  icon: Icons.tune_rounded,
+                  title: 'فلاتر دقيقة',
+                  subtitle: 'السعر والترتيب والمجال في مكان واحد',
+                ),
+                _CatalogHighlight(
+                  icon: Icons.auto_awesome_rounded,
+                  title: 'مسارات عملية',
+                  subtitle: 'اختر ما يناسب هدفك الحالي',
+                ),
+              ],
+            ),
+          if (!mobile) const SizedBox(height: 24),
           LayoutBuilder(
             builder: (context, constraints) {
               final results = _ResultsPane(
                 future: _catalogFuture,
                 loading: _loading,
                 error: _error,
-                listView: _listView,
+                listView: mobile ? false : _listView,
                 onRetry: _refresh,
                 onToggleView: () => setState(() => _listView = !_listView),
                 onPage: (page) => _refresh(_filter.copyWith(page: page)),
@@ -489,44 +511,95 @@ class _FilterSheetState extends State<_FilterSheet> {
     super.dispose();
   }
 
+  CourseFilter _result() => _filter.copyWith(
+    query: _search.text.trim().isEmpty ? null : _search.text.trim(),
+    minPrice: double.tryParse(_min.text.trim()),
+    maxPrice: double.tryParse(_max.text.trim()),
+    clearMinPrice: _min.text.trim().isEmpty,
+    clearMaxPrice: _max.text.trim().isEmpty,
+  );
+
+  void _reset() {
+    setState(() {
+      _search.clear();
+      _min.clear();
+      _max.clear();
+      _filter = CourseFilter(pageSize: widget.filter.pageSize);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 18,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'الفلاتر',
-                      style: TextStyle(
-                        color: AppTheme.ink,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+    final screen = MediaQuery.sizeOf(context);
+    return Container(
+      constraints: BoxConstraints(maxHeight: screen.height * .90),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+            child: Column(
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.border,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.blue.withValues(alpha: .10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.tune_rounded, color: AppTheme.blue),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'تصفية الكورسات',
+                            style: TextStyle(
+                              color: AppTheme.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'اختر ما يناسبك ثم اعرض النتائج',
+                            style: TextStyle(color: AppTheme.muted, fontSize: 11),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _FilterFields(
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'إغلاق',
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 22),
+          Flexible(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: _FilterFields(
                 filter: _filter,
                 instructors: widget.instructors,
                 search: _search,
@@ -534,24 +607,47 @@ class _FilterSheetState extends State<_FilterSheet> {
                 maxPrice: _max,
                 onChanged: (value) => setState(() => _filter = value),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(
-                  context,
-                  _filter.copyWith(
-                    query: _search.text.trim().isEmpty
-                        ? null
-                        : _search.text.trim(),
-                    minPrice: double.tryParse(_min.text.trim()),
-                    maxPrice: double.tryParse(_max.text.trim()),
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              12,
+              18,
+              MediaQuery.viewInsetsOf(context).bottom > 0 ? 12 : 18,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: AppTheme.border)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _reset,
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: const Text('إعادة ضبط'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 50),
+                    ),
                   ),
                 ),
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('عرض النتائج'),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(context, _result()),
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text('عرض النتائج'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -580,6 +676,7 @@ class _FilterFields extends StatelessWidget {
       children: [
         TextField(
           controller: search,
+          textInputAction: TextInputAction.search,
           decoration: const InputDecoration(
             labelText: 'كلمة البحث',
             prefixIcon: Icon(Icons.search_rounded),
@@ -591,6 +688,7 @@ class _FilterFields extends StatelessWidget {
         const SizedBox(height: 14),
         DropdownButtonFormField<int>(
           initialValue: filter.instructorId ?? 0,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'المدرّس',
             prefixIcon: Icon(Icons.person_outline_rounded),
@@ -598,8 +696,10 @@ class _FilterFields extends StatelessWidget {
           items: [
             const DropdownMenuItem(value: 0, child: Text('كل المدرّسين')),
             ...instructors.map(
-              (item) =>
-                  DropdownMenuItem(value: item.id, child: Text(item.name)),
+              (item) => DropdownMenuItem(
+                value: item.id,
+                child: Text(item.name, overflow: TextOverflow.ellipsis),
+              ),
             ),
           ],
           onChanged: (value) => onChanged(
@@ -610,34 +710,43 @@ class _FilterFields extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: minPrice,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'من',
-                  suffixText: 'ر.س',
-                ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stackPrices = constraints.maxWidth < 300;
+            final minField = TextField(
+              controller: minPrice,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'السعر من',
+                suffixText: 'ر.س',
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: maxPrice,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'إلى',
-                  suffixText: 'ر.س',
-                ),
+            );
+            final maxField = TextField(
+              controller: maxPrice,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'السعر إلى',
+                suffixText: 'ر.س',
               ),
-            ),
-          ],
+            );
+            if (stackPrices) {
+              return Column(
+                children: [minField, const SizedBox(height: 12), maxField],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: minField),
+                const SizedBox(width: 10),
+                Expanded(child: maxField),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 14),
         DropdownButtonFormField<String>(
           initialValue: filter.sort,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'الترتيب',
             prefixIcon: Icon(Icons.sort_rounded),
@@ -685,24 +794,14 @@ class _ResultsPane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading && error == null) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(70),
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const LoadingState(label: 'نبحث لك عن أفضل الكورسات...');
     }
     if (error != null) return ErrorState(message: error!, onRetry: onRetry);
     return FutureBuilder<CourseCatalog>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(70),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const LoadingState(label: 'نجهز نتائج الكورسات...');
         }
         if (snapshot.hasError) {
           return ErrorState(
@@ -751,38 +850,42 @@ class _ResultsHeader extends StatelessWidget {
   final VoidCallback onToggleView;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'النتائج المتاحة',
-              style: TextStyle(
-                color: AppTheme.ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final mobile = AppBreakpoints.isMobile(MediaQuery.sizeOf(context).width);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'النتائج المتاحة',
+                style: TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: mobile ? 17 : 20,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${catalog.totalCount} كورسات ضمن مكتبة منصة المعرفة',
-              style: const TextStyle(color: AppTheme.muted, fontSize: 12),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                '${catalog.totalCount} كورسات ضمن مكتبة منصة المعرفة',
+                style: const TextStyle(color: AppTheme.muted, fontSize: 12),
+              ),
+            ],
+          ),
         ),
-      ),
-      IconButton(
-        tooltip: listView ? 'عرض الشبكة' : 'عرض القائمة',
-        onPressed: onToggleView,
-        icon: Icon(
-          listView ? Icons.grid_view_rounded : Icons.view_list_rounded,
-          color: AppTheme.blue,
-        ),
-      ),
-    ],
-  );
+        if (!mobile)
+          IconButton(
+            tooltip: listView ? 'عرض الشبكة' : 'عرض القائمة',
+            onPressed: onToggleView,
+            icon: Icon(
+              listView ? Icons.grid_view_rounded : Icons.view_list_rounded,
+              color: AppTheme.blue,
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _CourseGrid extends StatelessWidget {
@@ -821,12 +924,13 @@ class _CourseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mobile = AppBreakpoints.isMobile(MediaQuery.sizeOf(context).width);
     final information = _CourseInfo(course: course);
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => context.push('/courses/${course.id}'),
-        child: listView
+        child: listView && !mobile
             ? Row(
                 children: [
                   SizedBox(
@@ -839,7 +943,7 @@ class _CourseTile extends StatelessWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CourseCover(course: course),
+                  CourseCover(course: course, height: mobile ? 180 : 200),
                   information,
                 ],
               ),
@@ -855,6 +959,7 @@ class _CourseInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mobile = AppBreakpoints.isMobile(MediaQuery.sizeOf(context).width);
     final description = course.description.isEmpty
         ? 'مسار عملي لتطوير مهاراتك.'
         : course.description;
@@ -862,7 +967,7 @@ class _CourseInfo extends StatelessWidget {
         ? 'م'
         : course.instructorName.substring(0, 1);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(mobile ? 14 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -870,9 +975,9 @@ class _CourseInfo extends StatelessWidget {
             course.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.ink,
-              fontSize: 15,
+              fontSize: mobile ? 14 : 15,
               fontWeight: FontWeight.w900,
               height: 1.5,
             ),
@@ -937,9 +1042,15 @@ class _Pagination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final end = catalog.totalPages < 5 ? catalog.totalPages : 5;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final mobile = AppBreakpoints.isMobile(MediaQuery.sizeOf(context).width);
+    final end = catalog.totalPages < (mobile ? 3 : 5)
+        ? catalog.totalPages
+        : (mobile ? 3 : 5);
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 2,
+      runSpacing: 6,
       children: [
         IconButton(
           onPressed: catalog.page > 1 ? () => onPage(catalog.page - 1) : null,
@@ -947,7 +1058,7 @@ class _Pagination extends StatelessWidget {
         ),
         for (var page = 1; page <= end; page++)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: page == catalog.page
                 ? CircleAvatar(
                     radius: 17,
