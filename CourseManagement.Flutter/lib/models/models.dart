@@ -66,7 +66,7 @@ class Course {
         ? null
         : json['imageUrl'] as String?,
     instructorId: (json['instructorId'] as num?)?.toInt() ?? 0,
-    instructorName: json['instructorName'] as String? ?? 'فريق منصة المعرفة',
+    instructorName: json['instructorName'] as String? ?? 'لم يُعيّن مدرّس بعد',
   );
 }
 
@@ -172,7 +172,7 @@ class Enrollment {
   );
 }
 
-enum CourseAssetType { video, attachment }
+enum CourseAssetType { video, attachment, previewVideo }
 
 class CourseAsset {
   const CourseAsset({
@@ -196,7 +196,12 @@ class CourseAsset {
   final String downloadUrl;
 
   bool get isVideo => type == CourseAssetType.video;
-  String get typeLabel => isVideo ? 'فيديو' : 'مرفق';
+  bool get isPreviewVideo => type == CourseAssetType.previewVideo;
+  String get typeLabel => switch (type) {
+    CourseAssetType.video => 'درس فيديو',
+    CourseAssetType.previewVideo => 'فيديو معاينة',
+    CourseAssetType.attachment => 'مرفق',
+  };
 
   String get sizeLabel {
     if (sizeBytes < 1024 * 1024) {
@@ -207,13 +212,18 @@ class CourseAsset {
 
   factory CourseAsset.fromJson(Map<String, dynamic> json) {
     final typeValue = (json['type'] as num?)?.toInt() ?? 2;
+    final type = switch (typeValue) {
+      1 => CourseAssetType.video,
+      4 => CourseAssetType.previewVideo,
+      _ => CourseAssetType.attachment,
+    };
     return CourseAsset(
       id: (json['id'] as num?)?.toInt() ?? 0,
       courseId: (json['courseId'] as num?)?.toInt() ?? 0,
       originalFileName: json['originalFileName'] as String? ?? 'ملف',
       contentType: json['contentType'] as String? ?? 'application/octet-stream',
       sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
-      type: typeValue == 1 ? CourseAssetType.video : CourseAssetType.attachment,
+      type: type,
       createdAtUtc:
           DateTime.tryParse(json['createdAtUtc'] as String? ?? '')?.toUtc() ??
           DateTime.now().toUtc(),
