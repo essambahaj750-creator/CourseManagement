@@ -9,7 +9,7 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/register_page.dart';
 import 'features/catalog/course_details_page.dart';
-import 'features/catalog/courses_v4_page.dart';
+import 'features/catalog/courses_v5_page.dart';
 import 'features/enrollments/enrollments_page.dart';
 import 'features/home/home_v3_page.dart';
 import 'features/profile/admin_courses_page.dart';
@@ -55,7 +55,7 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomeV3Page()),
-          GoRoute(path: '/courses', builder: (context, state) => const CoursesV4Page()),
+          GoRoute(path: '/courses', builder: (context, state) => const CoursesV5Page()),
           GoRoute(
             path: '/courses/:id',
             builder: (context, state) {
