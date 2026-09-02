@@ -271,6 +271,7 @@ class ApiClient {
     required String title,
     required String description,
     required double price,
+    int? instructorId,
   }) async {
     final json = await _jsonRequest(
       'POST',
@@ -280,6 +281,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
+        if (instructorId != null) 'instructorId': instructorId,
       },
     );
     return Course.fromJson(json);
@@ -290,6 +292,7 @@ class ApiClient {
     required String title,
     required String description,
     required double price,
+    int? instructorId,
   }) async {
     final json = await _jsonRequest(
       'PUT',
@@ -299,6 +302,7 @@ class ApiClient {
         'title': title.trim(),
         'description': description.trim(),
         'price': price,
+        if (instructorId != null) 'instructorId': instructorId,
       },
     );
     return Course.fromJson(json);
@@ -370,11 +374,16 @@ class ApiClient {
       throw const ApiException('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');
     }
 
+    final typeValue = switch (type) {
+      CourseAssetType.video => '1',
+      CourseAssetType.attachment => '2',
+      CourseAssetType.previewVideo => '4',
+    };
     final request =
         http.MultipartRequest('POST', _uri('/api/course/$courseId/assets'))
           ..headers['Accept'] = 'application/json'
           ..headers['Authorization'] = 'Bearer ${session.token}'
-          ..fields['type'] = type == CourseAssetType.video ? '1' : '2'
+          ..fields['type'] = typeValue
           ..files.add(
             http.MultipartFile('file', content, length, filename: fileName),
           );
