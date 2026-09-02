@@ -82,6 +82,11 @@ public sealed class CourseFormViewModel
     [Display(Name = "السعر")]
     public decimal Price { get; set; }
 
+    [Display(Name = "المدرّس المسؤول")]
+    public int? InstructorId { get; set; }
+
+    public IReadOnlyList<UserResponseDto> Instructors { get; set; } = [];
+
     [Display(Name = "صورة غلاف الكورس")]
     public IFormFile? CoverImage { get; set; }
 
@@ -104,6 +109,8 @@ public sealed class CourseDetailsViewModel
     public CourseResponseDto Course { get; init; } = new();
     public CourseAssetUploadViewModel Upload { get; init; } = new();
     public bool CanAccessAssets { get; init; }
+    public CourseAssetDto? PreviewAsset { get; init; }
+    public int PreviewSeconds { get; init; } = 60;
 }
 
 public sealed class CourseFilterViewModel
