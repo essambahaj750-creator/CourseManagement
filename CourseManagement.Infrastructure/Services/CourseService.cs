@@ -70,17 +70,20 @@ public class CourseService(
 
         await courseRepository.AddAsync(course);
 
-        // إعادة الجلب بعد الحفظ حتى تُحمَّل بيانات المدرب (كانت تظهر "Unknown" سابقاً)
         var created = await courseRepository.GetByIdAsync(course.Id);
         return MapToResponseDto(created ?? course);
     }
 
-    public async Task<CourseResponseDto> UpdateCourseAsync(int id, CourseDto dto, int requesterId, bool isAdmin)
+    public async Task<CourseResponseDto> UpdateCourseAsync(
+        int id,
+        CourseDto dto,
+        int requesterId,
+        bool isAdmin,
+        int? instructorId = null)
     {
         var course = await courseRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException("Course not found.");
 
-        // الـ Admin يتجاوز شرط الملكية؛ المدرب يعدل كورساته فقط
         if (!isAdmin && course.InstructorId != requesterId)
             throw new ForbiddenAccessException("You can only modify your own courses.");
 
@@ -88,8 +91,13 @@ public class CourseService(
         course.Description = dto.Description.Trim();
         course.Price = dto.Price;
 
+        if (isAdmin && instructorId.HasValue)
+            course.InstructorId = instructorId.Value;
+
         await courseRepository.UpdateAsync(course);
-        return MapToResponseDto(course);
+
+        var updated = await courseRepository.GetByIdAsync(id);
+        return MapToResponseDto(updated ?? course);
     }
 
     public async Task DeleteCourseAsync(int id, int requesterId, bool isAdmin)
@@ -100,12 +108,9 @@ public class CourseService(
         if (!isAdmin && course.InstructorId != requesterId)
             throw new ForbiddenAccessException("You can only delete your own courses.");
 
-        // Read metadata before the cascade deletes CourseAssets rows.
         var assets = await assetRepository.GetByCourseIdAsync(id);
         await courseRepository.DeleteAsync(id);
 
-        // Database access is already revoked. Clean physical files best-effort and log
-        // failures so an unavailable disk does not make a successful DB delete look failed.
         foreach (var asset in assets)
         {
             try
