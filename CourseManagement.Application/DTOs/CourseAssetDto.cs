@@ -15,6 +15,7 @@ public sealed class CourseAssetDto
         CourseAssetType.Video => "Video",
         CourseAssetType.Attachment => "Attachment",
         CourseAssetType.CoverImage => "CoverImage",
+        CourseAssetType.PreviewVideo => "PreviewVideo",
         _ => "Unknown"
     };
     public DateTime CreatedAtUtc { get; init; }
