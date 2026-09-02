@@ -210,7 +210,11 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Keep loopback HTTP usable during local Flutter Web development. Browsers otherwise
+// follow the HTTPS redirect and can reject the self-signed development certificate.
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseRouting();
 app.UseCors();
 app.UseRateLimiter();
