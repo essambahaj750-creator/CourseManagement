@@ -33,8 +33,13 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final api = context.read<ApiClient>();
     final auth = context.read<AuthController>();
     final course = await api.getCourse(widget.courseId);
+    final session = auth.session;
+    final isAuthenticated = auth.isAuthenticated;
+    final isOwner = session?.role == 'Admin' ||
+        (session?.role == 'Instructor' && session?.userId == course.instructorId);
+
     var enrolled = false;
-    if (auth.isAuthenticated) {
+    if (isAuthenticated && !isOwner) {
       try {
         final enrollments = await api.getMyEnrollments();
         enrolled = enrollments.any((item) => item.courseId == widget.courseId);
@@ -44,10 +49,11 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     }
 
     var assets = const <CourseAsset>[];
-    var assetsForbidden = false;
-    if (auth.isAuthenticated) {
+    var assetsForbidden = !isAuthenticated;
+    if (isAuthenticated) {
       try {
         assets = await api.getCourseAssets(widget.courseId);
+        assetsForbidden = false;
       } on ApiException catch (error) {
         assetsForbidden = error.statusCode == 403;
       }
@@ -58,10 +64,18 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       enrolled: enrolled,
       assets: assets,
       assetsForbidden: assetsForbidden,
+      isAuthenticated: isAuthenticated,
+      isOwner: isOwner,
     );
   }
 
   Future<void> _toggleEnrollment(_CourseDetailsData data) async {
+    if (!data.isAuthenticated) {
+      context.go('/login');
+      return;
+    }
+    if (data.isOwner) return;
+
     setState(() => _actionBusy = true);
     try {
       if (data.enrolled) {
@@ -161,6 +175,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 },
               ),
               const SizedBox(height: 26),
+              if (data.assetsForbidden) ...[
+                _PublicPreviewPlayer(courseId: course.id),
+                const SizedBox(height: 18),
+              ],
               _CourseAssetsSection(data: data),
             ],
           ),
@@ -242,21 +260,25 @@ class _CourseInformation extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'المدرّس',
-                  style: TextStyle(color: AppTheme.muted, fontSize: 10),
-                ),
-                Text(
-                  course.instructorName,
-                  style: const TextStyle(
-                    color: AppTheme.ink,
-                    fontWeight: FontWeight.w800,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'المدرّس',
+                    style: TextStyle(color: AppTheme.muted, fontSize: 10),
                   ),
-                ),
-              ],
+                  Text(
+                    course.instructorName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.ink,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -290,24 +312,38 @@ class _CourseInformation extends StatelessWidget {
                 ),
                 SizedBox(
                   width: wide ? 220 : 160,
-                  child: ElevatedButton.icon(
-                    onPressed: actionBusy ? null : onToggle,
-                    icon: actionBusy
-                        ? const SizedBox(
-                            width: 17,
-                            height: 17,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            data.enrolled
-                                ? Icons.remove_circle_outline_rounded
-                                : Icons.add_task_rounded,
+                  child: data.isOwner
+                      ? FilledButton.tonalIcon(
+                          onPressed: null,
+                          icon: const Icon(Icons.admin_panel_settings_outlined),
+                          label: const Text('إدارة الكورس'),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: actionBusy ? null : onToggle,
+                          icon: actionBusy
+                              ? const SizedBox(
+                                  width: 17,
+                                  height: 17,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  !data.isAuthenticated
+                                      ? Icons.login_rounded
+                                      : data.enrolled
+                                      ? Icons.remove_circle_outline_rounded
+                                      : Icons.add_task_rounded,
+                                ),
+                          label: Text(
+                            !data.isAuthenticated
+                                ? 'سجّل الدخول'
+                                : data.enrolled
+                                ? 'إلغاء التسجيل'
+                                : 'سجّل الآن',
                           ),
-                    label: Text(data.enrolled ? 'إلغاء التسجيل' : 'سجّل الآن'),
-                  ),
+                        ),
                 ),
               ],
             ),
@@ -316,6 +352,130 @@ class _CourseInformation extends StatelessWidget {
       ],
     );
   }
+}
+
+class _PublicPreviewPlayer extends StatefulWidget {
+  const _PublicPreviewPlayer({required this.courseId});
+
+  final int courseId;
+
+  @override
+  State<_PublicPreviewPlayer> createState() => _PublicPreviewPlayerState();
+}
+
+class _PublicPreviewPlayerState extends State<_PublicPreviewPlayer> {
+  VideoPlayerController? _controller;
+  late final Future<void> _initializeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFuture = _initialize();
+  }
+
+  Future<void> _initialize() async {
+    final base = ApiClient.defaultBaseUrl.replaceFirst(RegExp(r'/+$'), '');
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse('$base/api/course/${widget.courseId}/preview'),
+    );
+    _controller = controller;
+    await controller.initialize();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.play_circle_outline_rounded, color: AppTheme.cyan),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'معاينة مجانية',
+                  style: TextStyle(
+                    color: AppTheme.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'شاهد المقطع الذي اختاره المدرّس قبل التسجيل. فيديوهات الدروس الكاملة تبقى محمية.',
+            style: TextStyle(color: AppTheme.muted, fontSize: 12, height: 1.6),
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<void>(
+            future: _initializeFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError || _controller == null) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Text(
+                    'لم يضف المدرّس مقطع معاينة لهذا الكورس بعد.',
+                    style: TextStyle(color: AppTheme.muted),
+                  ),
+                );
+              }
+              final controller = _controller!;
+              return Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: AspectRatio(
+                      aspectRatio: controller.value.aspectRatio == 0
+                          ? 16 / 9
+                          : controller.value.aspectRatio,
+                      child: VideoPlayer(controller),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: IconButton.filledTonal(
+                      onPressed: () {
+                        setState(() {
+                          controller.value.isPlaying
+                              ? controller.pause()
+                              : controller.play();
+                        });
+                      },
+                      icon: ValueListenableBuilder<VideoPlayerValue>(
+                        valueListenable: controller,
+                        builder: (_, value, _) => Icon(
+                          value.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _CourseAssetsSection extends StatefulWidget {
@@ -370,14 +530,15 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
             children: [
               const Icon(Icons.lock_outline_rounded, color: AppTheme.muted),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'الفيديوهات والمرفقات تظهر بعد التسجيل في الكورس.',
-                  style: TextStyle(color: AppTheme.muted, height: 1.6),
+                  data.isAuthenticated
+                      ? 'سجّل في الكورس للوصول إلى الفيديوهات والمرفقات الكاملة.'
+                      : 'سجّل الدخول ثم سجّل في الكورس للوصول إلى الدروس والمرفقات.',
+                  style: const TextStyle(color: AppTheme.muted, height: 1.6),
                 ),
               ),
-              if (!data.enrolled)
-                const Icon(Icons.arrow_back_rounded, color: AppTheme.cyan),
+              const Icon(Icons.arrow_back_rounded, color: AppTheme.cyan),
             ],
           ),
         ),
@@ -413,7 +574,7 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'فيديوهات ومرفقات محفوظة محليًا على الخادم ولا تظهر إلا للمستخدم المصرح له.',
+              'فيديوهات ومرفقات محمية ولا تظهر إلا للمستخدم المصرح له.',
               style: TextStyle(
                 color: AppTheme.muted,
                 fontSize: 12,
@@ -424,7 +585,7 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
               const Padding(
                 padding: EdgeInsets.only(top: 22),
                 child: Text(
-                  'لم تتم إضافة ملفات لهذا الكورس بعد.',
+                  'لم تتم إضافة دروس أو مرفقات لهذا الكورس بعد.',
                   style: TextStyle(color: AppTheme.muted),
                 ),
               )
@@ -535,7 +696,7 @@ class _ProtectedVideoPlayerState extends State<_ProtectedVideoPlayer> {
       }
       if (snapshot.hasError || _controller == null) {
         return Text(
-          'تعذر تشغيل ${widget.asset.originalFileName}. استخدم زر التنزيل من إدارة الملفات.',
+          'تعذر تشغيل ${widget.asset.originalFileName}. يمكنك تنزيل الملف بدلًا من ذلك.',
           style: const TextStyle(color: AppTheme.muted, fontSize: 12),
         );
       }
@@ -595,10 +756,14 @@ class _CourseDetailsData {
     required this.enrolled,
     required this.assets,
     required this.assetsForbidden,
+    required this.isAuthenticated,
+    required this.isOwner,
   });
 
   final Course course;
   final bool enrolled;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
+  final bool isAuthenticated;
+  final bool isOwner;
 }
