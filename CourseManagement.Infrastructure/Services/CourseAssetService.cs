@@ -32,7 +32,7 @@ public sealed class CourseAssetService(
         await EnsureCanReadAsync(course, requesterId, isAdmin, cancellationToken);
         var assets = await assetRepository.GetByCourseIdAsync(courseId, cancellationToken);
         return assets
-            .Where(asset => asset.Type != CourseAssetType.CoverImage)
+            .Where(asset => asset.Type is not CourseAssetType.CoverImage and not CourseAssetType.PreviewVideo)
             .Select(Map)
             .ToArray();
     }
@@ -45,9 +45,9 @@ public sealed class CourseAssetService(
             throw new KeyNotFoundException("Course not found.");
 
         var preview = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
-            .Where(asset => asset.Type == CourseAssetType.Video)
-            .OrderBy(asset => asset.CreatedAtUtc)
-            .ThenBy(asset => asset.Id)
+            .Where(asset => asset.Type == CourseAssetType.PreviewVideo)
+            .OrderByDescending(asset => asset.CreatedAtUtc)
+            .ThenByDescending(asset => asset.Id)
             .FirstOrDefault();
 
         return preview is null ? null : Map(preview);
@@ -61,9 +61,9 @@ public sealed class CourseAssetService(
             throw new KeyNotFoundException("Course not found.");
 
         var preview = (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
-            .Where(asset => asset.Type == CourseAssetType.Video)
-            .OrderBy(asset => asset.CreatedAtUtc)
-            .ThenBy(asset => asset.Id)
+            .Where(asset => asset.Type == CourseAssetType.PreviewVideo)
+            .OrderByDescending(asset => asset.CreatedAtUtc)
+            .ThenByDescending(asset => asset.Id)
             .FirstOrDefault();
         if (preview is null)
             return null;
@@ -104,19 +104,57 @@ public sealed class CourseAssetService(
         var options = uploadOptions.Value;
         if (type == CourseAssetType.CoverImage)
             throw new InvalidRequestException("Cover images must be uploaded through the cover endpoint.");
-        var maxBytes = type == CourseAssetType.Video ? options.MaxVideoBytes : options.MaxAttachmentBytes;
+        if (type is not CourseAssetType.Video and not CourseAssetType.PreviewVideo and not CourseAssetType.Attachment)
+            throw new InvalidRequestException("This asset type is not supported.");
+
+        var isVideo = type is CourseAssetType.Video or CourseAssetType.PreviewVideo;
+        var maxBytes = isVideo ? options.MaxVideoBytes : options.MaxAttachmentBytes;
         if (length > maxBytes)
             throw new InvalidRequestException($"The file exceeds the {maxBytes / (1024 * 1024)} MB limit.");
 
-        if (type == CourseAssetType.Video && !options.IsVideoExtension(extension))
+        if (isVideo && !options.IsVideoExtension(extension))
             throw new InvalidRequestException("This video extension is not allowed.");
         if (type == CourseAssetType.Attachment && !options.IsAttachmentExtension(extension))
             throw new InvalidRequestException("This attachment extension is not allowed.");
 
         var contentType = await InspectUploadAsync(content, extension, cancellationToken);
         var stored = await fileStorage.SaveAsync(content, extension, maxBytes, cancellationToken);
+        var existingPreview = type == CourseAssetType.PreviewVideo
+            ? (await assetRepository.GetByCourseIdAsync(courseId, cancellationToken))
+                .Where(asset => asset.Type == CourseAssetType.PreviewVideo)
+                .OrderByDescending(asset => asset.CreatedAtUtc)
+                .FirstOrDefault()
+            : null;
+
         try
         {
+            if (type == CourseAssetType.PreviewVideo)
+            {
+                await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+                var previewAsset = await assetRepository.AddAsync(new CourseAsset
+                {
+                    CourseId = courseId,
+                    OriginalFileName = safeOriginalName,
+                    StoredFileName = stored.StoredFileName,
+                    ContentType = contentType,
+                    SizeBytes = length,
+                    Type = CourseAssetType.PreviewVideo,
+                    CreatedAtUtc = DateTime.UtcNow
+                }, cancellationToken);
+
+                if (existingPreview is not null)
+                {
+                    await assetRepository.DeleteAsync(existingPreview, cancellationToken);
+                    await assetRepository.SaveChangesAsync(cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+                if (existingPreview is not null)
+                    await TryDeletePhysicalFileAsync(existingPreview.StoredFileName, courseId, "replaced preview", cancellationToken);
+
+                return Map(previewAsset);
+            }
+
             var asset = await assetRepository.AddAsync(new CourseAsset
             {
                 CourseId = courseId,
