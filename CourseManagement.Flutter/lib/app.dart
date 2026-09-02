@@ -34,16 +34,17 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
     refreshListenable: widget.auth,
     redirect: (context, state) {
       final path = state.uri.path;
-      const guestPaths = {'/login', '/register'};
+      const guestOnlyPaths = {'/login', '/register'};
+      final isPublicCatalog = path == '/courses' || path.startsWith('/courses/');
+      final isPublicPath = path == '/' || isPublicCatalog || guestOnlyPaths.contains(path);
 
       if (widget.auth.isRestoring) return path == '/splash' ? null : '/splash';
-      if (!widget.auth.isAuthenticated && !guestPaths.contains(path)) {
-        return '/login';
-      }
+      if (!widget.auth.isAuthenticated && !isPublicPath) return '/login';
       if (widget.auth.isAuthenticated &&
-          (path == '/login' || path == '/register' || path == '/splash')) {
+          (guestOnlyPaths.contains(path) || path == '/splash')) {
         return '/';
       }
+      if (!widget.auth.isAuthenticated && path == '/splash') return '/';
       if (path.startsWith('/admin') && !widget.auth.isAdmin) return '/';
       if (path.startsWith('/manage') && !widget.auth.isInstructor) return '/';
       return null;
