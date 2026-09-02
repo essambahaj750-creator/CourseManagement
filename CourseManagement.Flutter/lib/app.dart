@@ -9,9 +9,9 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/register_page.dart';
 import 'features/catalog/course_details_page.dart';
-import 'features/catalog/courses_page.dart';
+import 'features/catalog/courses_v3_page.dart';
 import 'features/enrollments/enrollments_page.dart';
-import 'features/home/home_page.dart';
+import 'features/home/home_v3_page.dart';
 import 'features/profile/admin_courses_page.dart';
 import 'features/profile/admin_pages.dart';
 import 'features/profile/profile_page.dart';
@@ -35,61 +35,40 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
     redirect: (context, state) {
       final path = state.uri.path;
       const guestOnlyPaths = {'/login', '/register'};
-      final isPublicCatalog = path == '/courses' || path.startsWith('/courses/');
-      final isPublicPath = path == '/' || isPublicCatalog || guestOnlyPaths.contains(path);
+      final publicCatalog = path == '/courses' || path.startsWith('/courses/');
+      final publicPath = path == '/' || publicCatalog || guestOnlyPaths.contains(path);
 
       if (widget.auth.isRestoring) return path == '/splash' ? null : '/splash';
-      if (!widget.auth.isAuthenticated && !isPublicPath) return '/login';
-      if (widget.auth.isAuthenticated &&
-          (guestOnlyPaths.contains(path) || path == '/splash')) {
-        return '/';
-      }
+      if (!widget.auth.isAuthenticated && !publicPath) return '/login';
+      if (widget.auth.isAuthenticated && (guestOnlyPaths.contains(path) || path == '/splash')) return '/';
       if (!widget.auth.isAuthenticated && path == '/splash') return '/';
       if (path.startsWith('/admin') && !widget.auth.isAdmin) return '/';
       if (path.startsWith('/manage') && !widget.auth.isInstructor) return '/';
       return null;
     },
+    errorBuilder: (context, state) => _RouteErrorPage(message: state.error?.toString()),
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const RegisterPage(),
-      ),
+      GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (context, state) => const HomePage()),
-          GoRoute(
-            path: '/courses',
-            builder: (context, state) => const CoursesPage(),
-          ),
+          GoRoute(path: '/', builder: (context, state) => const HomeV3Page()),
+          GoRoute(path: '/courses', builder: (context, state) => const CoursesV3Page()),
           GoRoute(
             path: '/courses/:id',
-            builder: (context, state) => CourseDetailsPage(
-              courseId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
-            ),
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (id == null || id <= 0) return const _RouteErrorPage(message: 'معرّف الكورس غير صالح.');
+              return CourseDetailsPage(courseId: id);
+            },
           ),
-          GoRoute(
-            path: '/enrollments',
-            builder: (context, state) => const EnrollmentsPage(),
-          ),
-          GoRoute(
-            path: '/profile',
-            builder: (context, state) => const ProfilePage(),
-          ),
-          GoRoute(
-            path: '/manage/courses',
-            builder: (context, state) => const CourseManagementPage(),
-          ),
-          GoRoute(
-            path: '/admin/users',
-            builder: (context, state) => const AdminUsersPage(),
-          ),
-          GoRoute(
-            path: '/admin/enrollments',
-            builder: (context, state) => const AdminEnrollmentsPage(),
-          ),
+          GoRoute(path: '/enrollments', builder: (context, state) => const EnrollmentsPage()),
+          GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
+          GoRoute(path: '/manage/courses', builder: (context, state) => const CourseManagementPage()),
+          GoRoute(path: '/admin/users', builder: (context, state) => const AdminUsersPage()),
+          GoRoute(path: '/admin/enrollments', builder: (context, state) => const AdminEnrollmentsPage()),
         ],
       ),
     ],
@@ -121,4 +100,35 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
       ),
     );
   }
+}
+
+class _RouteErrorPage extends StatelessWidget {
+  const _RouteErrorPage({this.message});
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.route_rounded, color: AppTheme.blue, size: 56),
+                    const SizedBox(height: 16),
+                    const Text('الصفحة غير متاحة', style: TextStyle(color: AppTheme.ink, fontSize: 22, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 8),
+                    Text(message ?? 'تعذر فتح هذا الرابط.', textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.muted, height: 1.7)),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(onPressed: () => context.go('/'), icon: const Icon(Icons.home_rounded), label: const Text('العودة للرئيسية')),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }
