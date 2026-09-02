@@ -48,15 +48,11 @@ public sealed class ErrorContractTests
         return (context.Response.StatusCode, body, context.Response.ContentType);
     }
 
-    // ---------- authored messages are returned ----------
-
     [Fact]
     public async Task InvalidRequest_Returns400AndKeepsTheAuthoredMessage()
     {
         const string authored = "The file exceeds the 50 MB limit.";
-
         var (status, body, contentType) = await RunAsync(new InvalidRequestException(authored));
-
         Assert.Equal(400, status);
         Assert.Contains(authored, body);
         Assert.StartsWith("application/problem+json", contentType);
@@ -66,22 +62,16 @@ public sealed class ErrorContractTests
     public async Task Conflict_Returns409AndKeepsTheAuthoredMessage()
     {
         const string authored = "User is already enrolled in this course.";
-
         var (status, body, _) = await RunAsync(new ConflictException(authored));
-
         Assert.Equal(409, status);
         Assert.Contains(authored, body);
     }
 
-    // ---------- framework messages are never returned ----------
-
     [Fact]
     public async Task InvalidOperation_Returns500AndNeverLeaksItsMessage()
     {
-        // The exact leak that prompted this: a configuration failure reaching a caller.
         var (status, body, _) = await RunAsync(
             new InvalidOperationException("JwtSettings:Secret is not configured."));
-
         Assert.Equal(500, status);
         Assert.DoesNotContain("JwtSettings", body);
         Assert.DoesNotContain("Secret", body);
@@ -93,7 +83,6 @@ public sealed class ErrorContractTests
     {
         var (status, body, _) = await RunAsync(
             new ArgumentException("Parameter 'internalOffset' was out of range."));
-
         Assert.Equal(400, status);
         Assert.DoesNotContain("internalOffset", body);
     }
@@ -103,7 +92,6 @@ public sealed class ErrorContractTests
     {
         var (status, body, _) = await RunAsync(
             new NullReferenceException("Object reference not set at StorageInternals.Resolve"));
-
         Assert.Equal(500, status);
         Assert.DoesNotContain("StorageInternals", body);
         Assert.DoesNotContain("Object reference", body);
@@ -114,13 +102,10 @@ public sealed class ErrorContractTests
     {
         var (status, body, _) = await RunAsync(
             new DbUpdateException("SQLite Error 19: 'UNIQUE constraint failed: Users.Email'."));
-
         Assert.Equal(409, status);
         Assert.DoesNotContain("SQLite", body);
         Assert.DoesNotContain("UNIQUE", body);
     }
-
-    // ---------- remaining mappings ----------
 
     [Fact]
     public async Task ForbiddenAccess_Returns403() =>
@@ -138,18 +123,14 @@ public sealed class ErrorContractTests
     public async Task EveryResponse_CarriesATraceId()
     {
         var (_, body, _) = await RunAsync(new ConflictException("anything"));
-
         var problem = JsonSerializer.Deserialize<JsonElement>(body);
         Assert.True(problem.TryGetProperty("traceId", out var traceId));
         Assert.False(string.IsNullOrWhiteSpace(traceId.GetString()));
     }
 
-    // ---------- client disconnect ----------
-
     [Fact]
     public async Task ClientDisconnect_IsNotReportedAsAServerError()
     {
-        // A cancelled 512 MB upload used to surface as a logged 500.
         var context = new DefaultHttpContext
         {
             RequestAborted = new CancellationToken(canceled: true)
@@ -161,7 +142,6 @@ public sealed class ErrorContractTests
             NullLogger<ExceptionHandlingMiddleware>.Instance);
 
         await middleware.InvokeAsync(context);
-
         Assert.Equal(499, context.Response.StatusCode);
     }
 }
@@ -186,7 +166,6 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
         });
 
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
-
         var problem = await second.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(
             "User with this email already exists.",
@@ -196,14 +175,15 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
     [Fact]
     public async Task RejectedUpload_ExplainsWhyInsteadOfAGenericMessage()
     {
-        // This is the behaviour users lost: the reason an upload failed.
         var admin = await factory.CreateAdminClientAsync();
+        var instructorId = await CreateInstructorIdAsync("upload-contract");
 
         var created = await admin.PostAsJsonAsync("/api/course", new
         {
             title = "Error contract course",
             description = "Used to assert upload validation messages survive.",
-            price = 0
+            price = 0,
+            instructorId
         });
         created.EnsureSuccessStatusCode();
         var course = await created.Content.ReadFromJsonAsync<CourseResponseDto>();
@@ -217,10 +197,8 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
         var response = await admin.PostAsync($"/api/course/{course!.Id}/assets", form);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         var detail = problem.GetProperty("detail").GetString();
-
         Assert.Equal("This video extension is not allowed.", detail);
         Assert.NotEqual("One or more request values are invalid.", detail);
     }
@@ -229,12 +207,14 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
     public async Task OversizedCover_ReportsTheActualLimit()
     {
         var admin = await factory.CreateAdminClientAsync();
+        var instructorId = await CreateInstructorIdAsync("cover-contract");
 
         var created = await admin.PostAsJsonAsync("/api/course", new
         {
             title = "Cover limit course",
             description = "Used to assert the size limit reaches the client.",
-            price = 0
+            price = 0,
+            instructorId
         });
         created.EnsureSuccessStatusCode();
         var course = await created.Content.ReadFromJsonAsync<CourseResponseDto>();
@@ -247,7 +227,6 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
         var response = await admin.PostAsync($"/api/course/{course!.Id}/cover", form);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains("5 MB limit", problem.GetProperty("detail").GetString());
     }
@@ -255,9 +234,9 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
     [Fact]
     public async Task SelfEnrollmentInAnOwnedCourse_Returns409WithTheAuthoredReason()
     {
-        var admin = await factory.CreateAdminClientAsync();
+        var instructor = await CreateInstructorClientAsync("self-enrollment");
 
-        var created = await admin.PostAsJsonAsync("/api/course", new
+        var created = await instructor.PostAsJsonAsync("/api/course", new
         {
             title = "Own course enrollment",
             description = "The owner must not be able to enroll.",
@@ -266,13 +245,50 @@ public sealed class ErrorContractOverHttpTests(ApiFactory factory) : IClassFixtu
         created.EnsureSuccessStatusCode();
         var course = await created.Content.ReadFromJsonAsync<CourseResponseDto>();
 
-        var response = await admin.PostAsJsonAsync("/api/enrollment", new { courseId = course!.Id });
+        var response = await instructor.PostAsJsonAsync(
+            "/api/enrollment",
+            new { courseId = course!.Id });
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(
             "You cannot enroll in your own course.",
             problem.GetProperty("detail").GetString());
+    }
+
+    private async Task<int> CreateInstructorIdAsync(string prefix)
+    {
+        var email = $"{prefix}.{Guid.NewGuid():N}@example.com";
+        var registrationClient = factory.CreateClient();
+        var registered = await registrationClient.RegisterAsync(email, "Contract Instructor");
+
+        var admin = await factory.CreateAdminClientAsync();
+        var promote = await admin.PutAsJsonAsync(
+            $"/api/users/{registered.UserId}/role",
+            new { role = "Instructor" });
+        promote.EnsureSuccessStatusCode();
+        return registered.UserId;
+    }
+
+    private async Task<HttpClient> CreateInstructorClientAsync(string prefix)
+    {
+        var email = $"{prefix}.{Guid.NewGuid():N}@example.com";
+        var registrationClient = factory.CreateClient();
+        var registered = await registrationClient.RegisterAsync(email, "Contract Instructor");
+
+        var admin = await factory.CreateAdminClientAsync();
+        var promote = await admin.PutAsJsonAsync(
+            $"/api/users/{registered.UserId}/role",
+            new { role = "Instructor" });
+        promote.EnsureSuccessStatusCode();
+
+        var login = await registrationClient.PostLoginAsync(email);
+        login.EnsureSuccessStatusCode();
+        var session = await login.Content.ReadFromJsonAsync<AuthResponseDto>()
+            ?? throw new InvalidOperationException("Instructor login returned an empty body.");
+
+        var instructorClient = factory.CreateClient();
+        instructorClient.UseBearer(session.Token);
+        return instructorClient;
     }
 }
