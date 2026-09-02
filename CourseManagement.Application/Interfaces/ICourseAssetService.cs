@@ -17,6 +17,14 @@ public interface ICourseAssetService
         bool isAdmin,
         CancellationToken cancellationToken = default);
 
+    Task<CourseAssetDto?> GetPreviewAsync(
+        int courseId,
+        CancellationToken cancellationToken = default);
+
+    Task<CourseAssetDownload?> OpenPreviewAsync(
+        int courseId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Uploads a video or attachment. The client-declared content type is not a
     /// parameter by design: it is attacker-controlled, so the stored type is derived
@@ -34,10 +42,6 @@ public interface ICourseAssetService
         bool isAdmin,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Replaces the course cover atomically: the new row, the removal of the previous
-    /// row and the course's image path all commit together, or none of them do.
-    /// </summary>
     Task UploadCoverAsync(
         int courseId,
         string originalFileName,
