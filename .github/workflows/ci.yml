@@ -44,10 +44,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          # Must match the SDK this project is developed and pinned against.
-          # pubspec.yaml requires Dart >=3.9.2 and several dependencies are held
-          # at exact versions for Flutter 3.35 compatibility, so a newer SDK here
-          # would test a combination nobody runs locally.
           flutter-version: '3.35.7'
           channel: stable
           cache: true
@@ -62,4 +58,23 @@ jobs:
         run: flutter test
 
       - name: Build Web Release
-        run: flutter build web --release --dart-define=API_BASE_URL=https://localhost:7026
+        run: flutter build web --release --dart-define=API_BASE_URL=https://api.example.com
+
+      - name: Build Android verification APK
+        run: flutter build apk --debug --dart-define=API_BASE_URL=https://api.example.com
+
+      - name: Upload Web delivery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: course-management-web
+          path: CourseManagement.Flutter/build/web
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Android verification artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: course-management-android-debug
+          path: CourseManagement.Flutter/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
