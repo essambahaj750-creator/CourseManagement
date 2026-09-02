@@ -63,7 +63,7 @@ public sealed class CoursesController(
             }
             catch (ForbiddenAccessException)
             {
-                // Public details and preview remain available without exposing protected assets.
+                // Public details and the dedicated preview clip remain available.
             }
         }
 
@@ -138,9 +138,14 @@ public sealed class CoursesController(
                 GetUserId(),
                 User.IsInRole("Admin"),
                 cancellationToken);
-            TempData["Success"] = type == CourseAssetType.Video
-                ? "تم رفع الفيديو. أول فيديو في الكورس يُستخدم تلقائيًا كمعاينة لمدة 60 ثانية."
-                : "تم رفع الملف وربطه بالكورس بنجاح.";
+
+            TempData["Success"] = type switch
+            {
+                CourseAssetType.PreviewVideo => "تم حفظ فيديو المعاينة. هذا المقطع فقط متاح للزوار قبل التسجيل.",
+                CourseAssetType.Video => "تم رفع درس الفيديو بنجاح. الدرس الكامل متاح للمسجلين والمالك فقط.",
+                CourseAssetType.Attachment => "تم رفع المرفق وربطه بالكورس بنجاح.",
+                _ => "تم رفع الملف وربطه بالكورس بنجاح."
+            };
         }
         catch (InvalidRequestException exception)
         {
