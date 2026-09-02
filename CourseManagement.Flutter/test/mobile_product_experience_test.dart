@@ -4,7 +4,7 @@ import 'package:course_management_flutter/core/network/api_client.dart';
 import 'package:course_management_flutter/core/storage/session_store.dart';
 import 'package:course_management_flutter/core/theme/app_theme.dart';
 import 'package:course_management_flutter/features/auth/auth_controller.dart';
-import 'package:course_management_flutter/features/catalog/courses_v3_page.dart';
+import 'package:course_management_flutter/features/catalog/courses_v4_page.dart';
 import 'package:course_management_flutter/features/home/home_v3_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,19 +66,20 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
-  for (final width in [320.0, 360.0, 390.0, 600.0]) {
+  for (final width in [320.0, 360.0, 390.0, 600.0, 760.0, 900.0]) {
     testWidgets('course catalog stays usable at ${width.toInt()}px', (tester) async {
       final client = api();
       await pumpAt(
         tester,
-        Provider<ApiClient>.value(value: client, child: const CoursesV3Page()),
+        Provider<ApiClient>.value(value: client, child: const CoursesV4Page()),
         width,
       );
       expect(find.text('استكشف الكورسات'), findsOneWidget);
       expect(find.text('Flutter من الصفر'), findsOneWidget);
-      expect(find.text('الفلاتر'), findsWidgets);
     });
+  }
 
+  for (final width in [320.0, 360.0, 390.0, 600.0]) {
     testWidgets('role-aware home stays usable at ${width.toInt()}px', (tester) async {
       final client = api();
       final auth = AuthController(client)..isRestoring = false;
