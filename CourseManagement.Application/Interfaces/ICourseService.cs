@@ -11,6 +11,11 @@ public interface ICourseService
     Task<CourseResponseDto?> GetCourseByIdAsync(int id);
     Task<IEnumerable<CourseResponseDto>> GetCoursesByInstructorAsync(int instructorId);
     Task<CourseResponseDto> CreateCourseAsync(CourseDto dto, int instructorId);
-    Task<CourseResponseDto> UpdateCourseAsync(int id, CourseDto dto, int requesterId, bool isAdmin);
+    Task<CourseResponseDto> UpdateCourseAsync(
+        int id,
+        CourseDto dto,
+        int requesterId,
+        bool isAdmin,
+        int? instructorId = null);
     Task DeleteCourseAsync(int id, int requesterId, bool isAdmin);
 }
