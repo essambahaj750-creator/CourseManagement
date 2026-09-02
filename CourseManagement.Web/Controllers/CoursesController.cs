@@ -14,7 +14,8 @@ namespace CourseManagement.Web.Controllers;
 [Route("Courses")]
 public sealed class CoursesController(
     ICourseService courseService,
-    ICourseAssetService assetService) : Controller
+    ICourseAssetService assetService,
+    IUserService userService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
@@ -47,6 +48,7 @@ public sealed class CoursesController(
         if (course is null) return NotFound();
         UseMvcCoverUrl(course);
 
+        var preview = await assetService.GetPreviewAsync(id, cancellationToken);
         var canAccessAssets = false;
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -61,11 +63,27 @@ public sealed class CoursesController(
             }
             catch (ForbiddenAccessException)
             {
-                // غير المسجل يرى تفاصيل الكورس، لكن لا يرى الملفات الخاصة به.
+                // Public details and preview remain available without exposing protected assets.
             }
         }
 
-        return View(new CourseDetailsViewModel { Course = course, CanAccessAssets = canAccessAssets });
+        return View(new CourseDetailsViewModel
+        {
+            Course = course,
+            CanAccessAssets = canAccessAssets,
+            PreviewAsset = preview,
+            PreviewSeconds = 60
+        });
+    }
+
+    [HttpGet("Details/{id:int}/Preview")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Preview(int id, CancellationToken cancellationToken)
+    {
+        var preview = await assetService.OpenPreviewAsync(id, cancellationToken);
+        return preview is null
+            ? NotFound()
+            : File(preview.Content, preview.ContentType, enableRangeProcessing: true);
     }
 
     [HttpGet("Details/{id:int}/Cover")]
@@ -120,7 +138,9 @@ public sealed class CoursesController(
                 GetUserId(),
                 User.IsInRole("Admin"),
                 cancellationToken);
-            TempData["Success"] = "تم رفع الملف وربطه بالكورس بنجاح.";
+            TempData["Success"] = type == CourseAssetType.Video
+                ? "تم رفع الفيديو. أول فيديو في الكورس يُستخدم تلقائيًا كمعاينة لمدة 60 ثانية."
+                : "تم رفع الملف وربطه بالكورس بنجاح.";
         }
         catch (InvalidRequestException exception)
         {
@@ -136,6 +156,22 @@ public sealed class CoursesController(
         }
 
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpGet("Details/{id:int}/Assets/{assetId:int}/Stream")]
+    [Authorize(AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
+    public async Task<IActionResult> StreamAsset(
+        int id,
+        int assetId,
+        CancellationToken cancellationToken)
+    {
+        var asset = await assetService.OpenDownloadAsync(
+            id,
+            assetId,
+            GetUserId(),
+            User.IsInRole("Admin"),
+            cancellationToken);
+        return File(asset.Content, asset.ContentType, enableRangeProcessing: true);
     }
 
     [HttpGet("Details/{id:int}/Assets/{assetId:int}/Download")]
@@ -174,19 +210,33 @@ public sealed class CoursesController(
 
     [HttpGet("Create")]
     [Authorize(Roles = "Instructor,Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
-    public IActionResult Create() => View(new CourseFormViewModel());
+    public async Task<IActionResult> Create()
+    {
+        var model = new CourseFormViewModel();
+        if (User.IsInRole("Admin"))
+            model.Instructors = await LoadInstructorChoicesAsync();
+        return View(model);
+    }
 
     [HttpPost("Create")]
     [Authorize(Roles = "Instructor,Admin", AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CourseFormViewModel model, CancellationToken cancellationToken)
     {
+        var instructorId = GetUserId();
+        if (User.IsInRole("Admin"))
+        {
+            model.Instructors = await LoadInstructorChoicesAsync();
+            if (!TryResolveInstructor(model, out instructorId))
+                ModelState.AddModelError(nameof(model.InstructorId), "اختر حسابًا بدور مدرّس ليكون مسؤولًا عن الكورس.");
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         CourseResponseDto? course = null;
         try
         {
-            course = await courseService.CreateCourseAsync(model.ToDto(), GetUserId());
+            course = await courseService.CreateCourseAsync(model.ToDto(), instructorId);
             if (model.CoverImage is not null)
             {
                 await using var content = model.CoverImage.OpenReadStream();
@@ -200,7 +250,7 @@ public sealed class CoursesController(
                     cancellationToken);
             }
 
-            TempData["Success"] = "تم إنشاء الكورس بنجاح.";
+            TempData["Success"] = "تم إنشاء الكورس وإسناده للمدرّس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }
         catch (Exception exception)
@@ -239,6 +289,10 @@ public sealed class CoursesController(
             Title = course.Title,
             Description = course.Description,
             Price = course.Price,
+            InstructorId = course.InstructorId,
+            Instructors = User.IsInRole("Admin")
+                ? await LoadInstructorChoicesAsync(course.InstructorId)
+                : [],
             CurrentCoverUrl = string.IsNullOrWhiteSpace(course.ImageUrl)
                 ? null
                 : Url.Action(nameof(Cover), new { id = course.Id })
@@ -251,11 +305,28 @@ public sealed class CoursesController(
     public async Task<IActionResult> Edit(int id, CourseFormViewModel model, CancellationToken cancellationToken)
     {
         if (id != model.Id) return BadRequest();
+
+        int? targetInstructorId = null;
+        if (User.IsInRole("Admin"))
+        {
+            model.Instructors = await LoadInstructorChoicesAsync(model.InstructorId);
+            if (!TryResolveInstructor(model, out var resolvedInstructorId))
+                ModelState.AddModelError(nameof(model.InstructorId), "يجب إسناد الكورس إلى حساب مدرّس فعّال.");
+            else
+                targetInstructorId = resolvedInstructorId;
+        }
+
         if (!ModelState.IsValid) return View(model);
 
         try
         {
-            var course = await courseService.UpdateCourseAsync(id, model.ToDto(), GetUserId(), User.IsInRole("Admin"));
+            var course = await courseService.UpdateCourseAsync(
+                id,
+                model.ToDto(),
+                GetUserId(),
+                User.IsInRole("Admin"),
+                targetInstructorId);
+
             if (model.CoverImage is not null)
             {
                 await using var content = model.CoverImage.OpenReadStream();
@@ -269,7 +340,7 @@ public sealed class CoursesController(
                     cancellationToken);
             }
 
-            TempData["Success"] = "تم تحديث الكورس بنجاح.";
+            TempData["Success"] = "تم تحديث الكورس وبيانات المدرّس بنجاح.";
             return RedirectToAction(nameof(Details), new { id = course.Id });
         }
         catch (Exception ex) when (ex.IsUserFacing())
@@ -305,6 +376,34 @@ public sealed class CoursesController(
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
+    }
+
+    private async Task<IReadOnlyList<UserResponseDto>> LoadInstructorChoicesAsync(int? includeUserId = null)
+    {
+        var users = await userService.GetAllUsersAsync();
+        return users
+            .Where(user =>
+                string.Equals(user.Role, "Instructor", StringComparison.OrdinalIgnoreCase) ||
+                (includeUserId.HasValue && user.Id == includeUserId.Value))
+            .OrderBy(user => user.FullName)
+            .ToList();
+    }
+
+    private static bool IsInstructor(UserResponseDto user)
+        => string.Equals(user.Role, "Instructor", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryResolveInstructor(CourseFormViewModel model, out int instructorId)
+    {
+        instructorId = 0;
+        if (!model.InstructorId.HasValue)
+            return false;
+
+        var selected = model.Instructors.FirstOrDefault(item => item.Id == model.InstructorId.Value);
+        if (selected is null || !IsInstructor(selected))
+            return false;
+
+        instructorId = selected.Id;
+        return true;
     }
 
     private void UseMvcCoverUrl(CourseResponseDto course)
