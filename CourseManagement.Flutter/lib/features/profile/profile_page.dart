@@ -23,7 +23,7 @@ class ProfilePage extends StatelessWidget {
           const AdaptivePageHeader(
             eyebrow: 'مساحتك الشخصية',
             title: 'حسابي',
-            subtitle: 'راجع بيانات حسابك والجلسة الحالية، وحافظ على وصولك آمنًا من مكان واحد.',
+            subtitle: 'راجع بيانات حسابك وإدارة حسابك من مكان واحد.',
             icon: Icons.person_rounded,
           ),
           const SizedBox(height: 24),
@@ -48,7 +48,11 @@ class ProfilePage extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     session.fullName.isEmpty ? 'م' : session.fullName.substring(0, 1),
-                    style: const TextStyle(color: Colors.white, fontSize: 31, fontWeight: FontWeight.w900),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 31,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 );
                 final info = Column(
@@ -58,12 +62,19 @@ class ProfilePage extends StatelessWidget {
                       session.fullName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       session.email,
-                      style: TextStyle(color: Colors.white.withValues(alpha: .72), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .72),
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Container(
@@ -75,17 +86,23 @@ class ProfilePage extends StatelessWidget {
                       ),
                       child: Text(
                         'الدور: ${session.role}',
-                        style: const TextStyle(color: Color(0xFFB9FFF2), fontSize: 11, fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                          color: Color(0xFFB9FFF2),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ],
                 );
+
                 if (compact) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [avatar, const SizedBox(height: 16), info],
                   );
                 }
+
                 return Row(
                   children: [avatar, const SizedBox(width: 18), Expanded(child: info)],
                 );
@@ -93,33 +110,11 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final oneColumn = constraints.maxWidth < 620;
-              final cards = [
-                _InfoCard(
-                  icon: Icons.badge_outlined,
-                  title: 'معرّف المستخدم',
-                  value: '${session.userId}',
-                  helper: 'رقم حسابك داخل المنصة',
-                ),
-                _InfoCard(
-                  icon: Icons.schedule_rounded,
-                  title: 'صلاحية الجلسة',
-                  value: session.expiresAtUtc.toLocal().toString().split('.').first,
-                  helper: 'موعد انتهاء جلسة تسجيل الدخول الحالية',
-                ),
-              ];
-              if (oneColumn) {
-                return Column(
-                  children: [cards[0], const SizedBox(height: 12), cards[1]],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Expanded(child: cards[0]), const SizedBox(width: 12), Expanded(child: cards[1])],
-              );
-            },
+          _InfoCard(
+            icon: Icons.badge_outlined,
+            title: 'معرّف المستخدم',
+            value: '${session.userId}',
+            helper: 'رقم حسابك داخل المنصة',
           ),
           const SizedBox(height: 24),
           Card(
@@ -131,13 +126,29 @@ class ProfilePage extends StatelessWidget {
                   final copy = const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('إدارة الجلسة', style: TextStyle(color: AppTheme.ink, fontSize: 15, fontWeight: FontWeight.w900)),
+                      Text(
+                        'إدارة الحساب',
+                        style: TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                       SizedBox(height: 4),
-                      Text('اخرج من الحساب عند استخدام جهاز مشترك أو عند انتهاء عملك.', style: TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6)),
+                      Text(
+                        'يمكنك تسجيل الخروج من الحساب من هنا.',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 11,
+                          height: 1.6,
+                        ),
+                      ),
                     ],
                   );
                   final button = OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(foregroundColor: AppTheme.danger),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.danger,
+                    ),
                     onPressed: () async {
                       await auth.logout();
                       if (context.mounted) context.go('/login');
@@ -145,14 +156,20 @@ class ProfilePage extends StatelessWidget {
                     icon: const Icon(Icons.logout_rounded),
                     label: const Text('تسجيل الخروج'),
                   );
+
                   if (compact) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [copy, const SizedBox(height: 14), button],
                     );
                   }
+
                   return Row(
-                    children: [Expanded(child: copy), const SizedBox(width: 18), button],
+                    children: [
+                      Expanded(child: copy),
+                      const SizedBox(width: 18),
+                      button,
+                    ],
                   );
                 },
               ),
@@ -165,7 +182,12 @@ class ProfilePage extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.icon, required this.title, required this.value, required this.helper});
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.helper,
+  });
 
   final IconData icon;
   final String title;
@@ -174,35 +196,56 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppTheme.blue.withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: AppTheme.blue, size: 21),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.blue.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: AppTheme.blue, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      helper,
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 10,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: AppTheme.muted, fontSize: 10, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(color: AppTheme.ink, fontSize: 13, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text(helper, style: const TextStyle(color: AppTheme.muted, fontSize: 10, height: 1.5)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
