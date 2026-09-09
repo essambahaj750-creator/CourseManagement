@@ -41,6 +41,29 @@ public sealed class EnrollmentsController(IEnrollmentService enrollmentService) 
         return RedirectToAction("Details", "Courses", new { id = courseId });
     }
 
+    [HttpPost("Progress/{courseId:int}/{assetId:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateProgress(int courseId, int assetId, bool completed)
+    {
+        try
+        {
+            await enrollmentService.UpdateCourseProgressAsync(
+                GetUserId(),
+                courseId,
+                assetId,
+                completed);
+            TempData["Success"] = completed
+                ? "تم حفظ إكمال الدرس."
+                : "تمت إعادة الدرس إلى غير مكتمل.";
+        }
+        catch (Exception ex) when (ex.IsUserFacing())
+        {
+            TempData["Error"] = ex.Message;
+        }
+
+        return Redirect($"{Url.Action("Details", "Courses", new { id = courseId })}#lesson-{assetId}");
+    }
+
     [HttpPost("Unenroll/{courseId:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Unenroll(int courseId)
