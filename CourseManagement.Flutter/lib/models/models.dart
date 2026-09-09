@@ -319,6 +319,40 @@ class CourseProgress {
   );
 }
 
+class InstructorPublicProfile {
+  const InstructorPublicProfile({
+    required this.instructorId,
+    required this.fullName,
+    required this.courseCount,
+    required this.totalStudents,
+    required this.averageRating,
+    required this.reviewCount,
+    required this.courses,
+  });
+
+  final int instructorId;
+  final String fullName;
+  final int courseCount;
+  final int totalStudents;
+  final double averageRating;
+  final int reviewCount;
+  final List<Course> courses;
+
+  factory InstructorPublicProfile.fromJson(Map<String, dynamic> json) =>
+      InstructorPublicProfile(
+        instructorId: (json['instructorId'] as num?)?.toInt() ?? 0,
+        fullName: json['fullName'] as String? ?? '',
+        courseCount: (json['courseCount'] as num?)?.toInt() ?? 0,
+        totalStudents: (json['totalStudents'] as num?)?.toInt() ?? 0,
+        averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
+        reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+        courses: ((json['courses'] as List<dynamic>?) ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(Course.fromJson)
+            .toList(growable: false),
+      );
+}
+
 class CourseCertificate {
   const CourseCertificate({
     required this.certificateCode,
