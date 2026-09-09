@@ -447,7 +447,7 @@ body {
 .brand:hover .brand-mark::after { right: 46px; }
 
 .main-content { animation: hf-fade-up .42s var(--hf-ease) both; }
-@keyframes hf-fade-up { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hf-fade-up { from { opacity: 0; } to { opacity: 1; } }
 
 .hf-page { max-width: 1500px; margin-inline: auto; }
 .hf-eyebrow {
