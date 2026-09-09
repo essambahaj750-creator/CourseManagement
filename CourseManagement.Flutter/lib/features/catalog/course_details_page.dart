@@ -37,6 +37,12 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final curriculum = await api.getCourseCurriculum(widget.courseId);
     final reviews = await api.getCourseReviews(widget.courseId);
     final related = await api.getRelatedCourses(widget.courseId);
+    InstructorPublicProfile? instructorProfile;
+    try {
+      instructorProfile = await api.getInstructorProfile(course.instructorId);
+    } catch (_) {
+      instructorProfile = null;
+    }
     final session = auth.session;
     final isAuthenticated = auth.isAuthenticated;
     final isOwner = session?.role == 'Admin' ||
@@ -74,6 +80,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       progress: progress,
       reviews: reviews,
       relatedCourses: related,
+      instructorProfile: instructorProfile,
       assets: assets,
       assetsForbidden: assetsForbidden,
       isAuthenticated: isAuthenticated,
@@ -248,6 +255,13 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 const SizedBox(height: 18),
               ],
               _CourseHighlights(data: data),
+              if (data.instructorProfile != null) ...[
+                const SizedBox(height: 18),
+                _InstructorProfileSection(
+                  profile: data.instructorProfile!,
+                  currentCourseId: course.id,
+                ),
+              ],
               const SizedBox(height: 18),
               _CurriculumSection(data: data),
               const SizedBox(height: 18),
@@ -622,6 +636,234 @@ class _CourseBenefit extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _InstructorProfileSection extends StatelessWidget {
+  const _InstructorProfileSection({
+    required this.profile,
+    required this.currentCourseId,
+  });
+
+  final InstructorPublicProfile profile;
+  final int currentCourseId;
+
+  @override
+  Widget build(BuildContext context) {
+    final otherCourses = profile.courses
+        .where((course) => course.id != currentCourseId)
+        .take(3)
+        .toList(growable: false);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.accentGradient,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    boxShadow: AppTheme.softShadow,
+                  ),
+                  child: Text(
+                    profile.fullName.isEmpty
+                        ? 'م'
+                        : profile.fullName.substring(0, 1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'عن المدرّس',
+                        style: TextStyle(
+                          color: AppTheme.blue,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        profile.fullName,
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'مدرّس على منصة المعرفة ويقدّم محتوى تعليميًا مرتبطًا بهذا المسار.',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 10,
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _InstructorMetric(
+                  icon: Icons.menu_book_rounded,
+                  value: '${profile.courseCount}',
+                  label: 'كورس',
+                ),
+                _InstructorMetric(
+                  icon: Icons.people_alt_outlined,
+                  value: '${profile.totalStudents}',
+                  label: 'طالب',
+                ),
+                _InstructorMetric(
+                  icon: Icons.star_rounded,
+                  value: profile.reviewCount == 0
+                      ? '—'
+                      : profile.averageRating.toStringAsFixed(1),
+                  label: '${profile.reviewCount} تقييم',
+                  star: true,
+                ),
+              ],
+            ),
+            if (otherCourses.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 14),
+              const Text(
+                'كورسات أخرى لهذا المدرّس',
+                style: TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 9),
+              ...otherCourses.map(
+                (course) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    onTap: () => context.push('/courses/${course.id}'),
+                    child: Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceMuted,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              course.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppTheme.ink,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            course.price == 0
+                                ? 'مجاني'
+                                : '${course.price.toStringAsFixed(0)} ر.س',
+                            style: const TextStyle(
+                              color: AppTheme.blue,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.arrow_back_rounded,
+                            size: 17,
+                            color: AppTheme.blue,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InstructorMetric extends StatelessWidget {
+  const _InstructorMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+    this.star = false,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final bool star;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceMuted,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: star ? const Color(0xFFE9A51D) : AppTheme.blue,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppTheme.ink,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.muted,
+                fontSize: 9,
               ),
             ),
           ],
@@ -2569,6 +2811,7 @@ class _CourseDetailsData {
     required this.progress,
     required this.reviews,
     required this.relatedCourses,
+    required this.instructorProfile,
     required this.assets,
     required this.assetsForbidden,
     required this.isAuthenticated,
@@ -2581,6 +2824,7 @@ class _CourseDetailsData {
   final CourseProgress? progress;
   final CourseReviewSummary reviews;
   final List<Course> relatedCourses;
+  final InstructorPublicProfile? instructorProfile;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
   final bool isAuthenticated;
