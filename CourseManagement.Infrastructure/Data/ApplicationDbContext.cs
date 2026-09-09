@@ -65,6 +65,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Enrollment>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.CompletedLessonAssetIds)
+                  .IsRequired()
+                  .HasDefaultValue("[]");
 
             entity.HasOne(e => e.User)
                   .WithMany()
