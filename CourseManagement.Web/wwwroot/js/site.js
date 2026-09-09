@@ -91,6 +91,30 @@ document.addEventListener('DOMContentLoaded', () => {
         assetType.append(previewOption);
     }
 
+
+    document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
+        const wrapper = toggle.closest('.hf-password');
+        const input = wrapper?.querySelector('input');
+        const icon = toggle.querySelector('i');
+        if (!input) return;
+
+        toggle.addEventListener('click', () => {
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            toggle.setAttribute('aria-pressed', String(!showing));
+            toggle.setAttribute('aria-label', showing ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
+
+            if (icon) {
+                icon.classList.toggle('bi-eye', showing);
+                icon.classList.toggle('bi-eye-slash', !showing);
+            }
+
+            input.focus({ preventScroll: true });
+            const end = input.value.length;
+            input.setSelectionRange?.(end, end);
+        });
+    });
+
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', () => {
             const submit = form.querySelector('button[type="submit"]');
