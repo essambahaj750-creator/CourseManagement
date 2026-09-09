@@ -1,13 +1,16 @@
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Infrastructure.Data;
+using CourseManagement.Domain.Enums;
+using CourseManagement.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CourseManagement.Infrastructure.Services;
 
 public sealed class CourseDiscoveryService(
     ApplicationDbContext context,
-    ICourseService courseService) : ICourseDiscoveryService
+    ICourseService courseService,
+    IUserRepository userRepository) : ICourseDiscoveryService
 {
     public async Task EnrichSocialProofAsync(
         IEnumerable<CourseResponseDto> courses,
@@ -78,4 +81,38 @@ public sealed class CourseDiscoveryService(
             .Take(limit)
             .ToArray();
     }
+
+
+    public async Task<InstructorPublicProfileDto?> GetInstructorProfileAsync(
+        int instructorId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByIdAsync(instructorId);
+        if (user is null || user.Role != Role.Instructor)
+            return null;
+
+        var courses = (await courseService.GetCoursesByInstructorAsync(instructorId))
+            .ToList();
+        await EnrichSocialProofAsync(courses, cancellationToken);
+
+        var reviewCount = courses.Sum(course => course.ReviewCount);
+        var weightedRating = reviewCount == 0
+            ? 0d
+            : courses.Sum(course => course.AverageRating * course.ReviewCount) / reviewCount;
+
+        return new InstructorPublicProfileDto
+        {
+            InstructorId = user.Id,
+            FullName = user.FullName,
+            CourseCount = courses.Count,
+            TotalStudents = courses.Sum(course => course.EnrolledStudents),
+            AverageRating = Math.Round(weightedRating, 1),
+            ReviewCount = reviewCount,
+            Courses = courses
+                .OrderByDescending(course => course.AverageRating)
+                .ThenByDescending(course => course.EnrolledStudents)
+                .ToArray()
+        };
+    }
+
 }
