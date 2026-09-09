@@ -223,7 +223,14 @@
                                 <div class="course-body">
                                     <h3 class="mb-2">@course.Title</h3>
                                     <p class="course-description mb-3">@excerpt</p>
-                                    <div class="course-footer-meta"><span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span><span class="price-stack"><small>قيمة الكورس</small><span class="price">@course.Price.ToString("N2")</span></span></div>
+                                    <div class="course-social-proof">
+                                        @if (course.ReviewCount > 0)
+                                        {
+                                            <span><i class="bi bi-star-fill"></i><strong>@course.AverageRating.ToString("0.0")</strong><small>(@course.ReviewCount)</small></span>
+                                        }
+                                        <span><i class="bi bi-people"></i><strong>@course.EnrolledStudents</strong><small>طالب</small></span>
+                                    </div>
+                                    <div class="course-footer-meta"><span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span><span class="price-stack"><small>قيمة الكورس</small><span class="price">@(course.Price <= 0 ? "مجاني" : course.Price.ToString("N2"))</span></span></div>
                                     <a class="btn btn-primary w-100 mt-3" asp-action="Details" asp-route-id="@course.Id">استكشف الكورس <i class="bi bi-arrow-left me-1"></i></a>
                                 </div>
                             </article>
