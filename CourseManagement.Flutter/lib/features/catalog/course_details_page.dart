@@ -51,11 +51,15 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     }
 
     var assets = const <CourseAsset>[];
+    CourseProgress? progress;
     var assetsForbidden = !isAuthenticated;
     if (isAuthenticated) {
       try {
         assets = await api.getCourseAssets(widget.courseId);
         assetsForbidden = false;
+        if (enrolled && !isOwner) {
+          progress = await api.getCourseProgress(widget.courseId);
+        }
       } on ApiException catch (error) {
         assetsForbidden = error.statusCode == 403;
       }
@@ -65,6 +69,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       course: course,
       enrolled: enrolled,
       curriculum: curriculum,
+      progress: progress,
       assets: assets,
       assetsForbidden: assetsForbidden,
       isAuthenticated: isAuthenticated,
@@ -245,7 +250,18 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 const SizedBox(height: 18),
                 KeyedSubtree(
                   key: _contentKey,
-                  child: _CourseAssetsSection(data: data),
+                  child: data.isOwner
+                      ? _CourseAssetsSection(data: data)
+                      : Column(
+                          children: [
+                            _LearningWorkspace(data: data),
+                            const SizedBox(height: 18),
+                            _CourseAssetsSection(
+                              data: data,
+                              attachmentsOnly: true,
+                            ),
+                          ],
+                        ),
                 ),
               ],
             ],
@@ -883,10 +899,27 @@ class _PublicPreviewPlayerState extends State<_PublicPreviewPlayer> {
     );
     _controller = controller;
     await controller.initialize();
+    controller.addListener(_handlePlayback);
+  }
+
+  void _handlePlayback() {
+    final controller = _controller;
+    if (controller == null || _reportedEnded || !controller.value.isInitialized) {
+      return;
+    }
+
+    final duration = controller.value.duration;
+    if (duration <= Duration.zero) return;
+
+    if (controller.value.position >= duration - const Duration(milliseconds: 500)) {
+      _reportedEnded = true;
+      widget.onEnded?.call();
+    }
   }
 
   @override
   void dispose() {
+    _controller?.removeListener(_handlePlayback);
     _controller?.dispose();
     super.dispose();
   }
@@ -981,10 +1014,442 @@ class _PublicPreviewPlayerState extends State<_PublicPreviewPlayer> {
   );
 }
 
-class _CourseAssetsSection extends StatefulWidget {
-  const _CourseAssetsSection({required this.data});
+class _LearningWorkspace extends StatefulWidget {
+  const _LearningWorkspace({required this.data});
 
   final _CourseDetailsData data;
+
+  @override
+  State<_LearningWorkspace> createState() => _LearningWorkspaceState();
+}
+
+class _LearningWorkspaceState extends State<_LearningWorkspace> {
+  late CourseProgress _progress;
+  int? _selectedAssetId;
+  bool _syncing = false;
+
+  List<CourseAsset> get _videos {
+    final videos = widget.data.assets.where((asset) => asset.isVideo).toList();
+    final positions = {
+      for (final lesson in widget.data.curriculum) lesson.id: lesson.position,
+    };
+    videos.sort(
+      (a, b) => (positions[a.id] ?? 999999).compareTo(
+        positions[b.id] ?? 999999,
+      ),
+    );
+    return videos;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final videos = _videos;
+    _progress = widget.data.progress ??
+        CourseProgress(
+          courseId: widget.data.course.id,
+          lastLessonAssetId: null,
+          completedLessonAssetIds: const [],
+          completedCount: 0,
+          totalLessons: videos.length,
+          progressPercent: 0,
+          lastAccessedAtUtc: null,
+        );
+
+    final ids = videos.map((item) => item.id).toSet();
+    final last = _progress.lastLessonAssetId;
+    if (last != null && ids.contains(last)) {
+      _selectedAssetId = last;
+    } else {
+      for (final video in videos) {
+        if (!_progress.isCompleted(video.id)) {
+          _selectedAssetId = video.id;
+          break;
+        }
+      }
+      _selectedAssetId ??= videos.isEmpty ? null : videos.first.id;
+    }
+  }
+
+  String _lessonTitle(CourseAsset asset) {
+    for (final item in widget.data.curriculum) {
+      if (item.id == asset.id) return item.title;
+    }
+    return asset.originalFileName;
+  }
+
+  Future<void> _syncLesson(
+    int assetId, {
+    required bool completed,
+    bool moveNext = false,
+  }) async {
+    if (_syncing) return;
+    setState(() => _syncing = true);
+    try {
+      final progress = await context.read<ApiClient>().updateCourseProgress(
+            courseId: widget.data.course.id,
+            assetId: assetId,
+            completed: completed,
+          );
+      if (!mounted) return;
+
+      int? nextId;
+      if (moveNext) {
+        final videos = _videos;
+        final currentIndex = videos.indexWhere((item) => item.id == assetId);
+        if (currentIndex >= 0 && currentIndex + 1 < videos.length) {
+          nextId = videos[currentIndex + 1].id;
+        }
+      }
+
+      setState(() {
+        _progress = progress;
+        _syncing = false;
+        if (nextId != null) _selectedAssetId = nextId;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _syncing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  Future<void> _selectLesson(CourseAsset asset) async {
+    if (_selectedAssetId == asset.id) return;
+    setState(() => _selectedAssetId = asset.id);
+    await _syncLesson(
+      asset.id,
+      completed: _progress.isCompleted(asset.id),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final videos = _videos;
+    if (videos.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(22),
+          child: Text(
+            'لم يضف المدرّس دروس فيديو بعد.',
+            style: TextStyle(color: AppTheme.muted),
+          ),
+        ),
+      );
+    }
+
+    final selected = videos.firstWhere(
+      (item) => item.id == _selectedAssetId,
+      orElse: () => videos.first,
+    );
+    final selectedIndex = videos.indexWhere((item) => item.id == selected.id);
+    final selectedCompleted = _progress.isCompleted(selected.id);
+
+    final player = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'تتابع الآن',
+                    style: TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _lessonTitle(selected),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.ink,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: selectedCompleted
+                    ? AppTheme.success.withValues(alpha: .08)
+                    : AppTheme.blue.withValues(alpha: .07),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: selectedCompleted
+                      ? AppTheme.success.withValues(alpha: .14)
+                      : AppTheme.blue.withValues(alpha: .10),
+                ),
+              ),
+              child: Text(
+                selectedCompleted
+                    ? 'مكتمل'
+                    : 'الدرس ${selectedIndex + 1} من ${videos.length}',
+                style: TextStyle(
+                  color: selectedCompleted ? AppTheme.success : AppTheme.blue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        _ProtectedVideoPlayer(
+          key: ValueKey(selected.id),
+          courseId: widget.data.course.id,
+          asset: selected,
+          onEnded: () => _syncLesson(
+            selected.id,
+            completed: true,
+            moveNext: true,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _syncing
+                    ? null
+                    : () => _syncLesson(
+                          selected.id,
+                          completed: !selectedCompleted,
+                        ),
+                icon: Icon(
+                  selectedCompleted
+                      ? Icons.replay_rounded
+                      : Icons.check_circle_outline_rounded,
+                ),
+                label: Text(
+                  selectedCompleted ? 'إعادة كغير مكتمل' : 'إكمال الدرس',
+                ),
+              ),
+            ),
+            if (selectedIndex + 1 < videos.length) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _syncing
+                      ? null
+                      : () => _selectLesson(videos[selectedIndex + 1]),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('الدرس التالي'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+
+    final lessonList = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'دروس الكورس',
+          style: TextStyle(
+            color: AppTheme.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...videos.asMap().entries.map((entry) {
+          final index = entry.key;
+          final asset = entry.value;
+          final active = asset.id == selected.id;
+          final done = _progress.isCompleted(asset.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              onTap: _syncing ? null : () => _selectLesson(asset),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: active
+                      ? AppTheme.blue.withValues(alpha: .065)
+                      : AppTheme.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(
+                    color: active
+                        ? AppTheme.blue.withValues(alpha: .22)
+                        : AppTheme.border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: done
+                            ? AppTheme.success.withValues(alpha: .09)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                        border: Border.all(
+                          color: done
+                              ? AppTheme.success.withValues(alpha: .15)
+                              : AppTheme.border,
+                        ),
+                      ),
+                      child: done
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: AppTheme.success,
+                              size: 18,
+                            )
+                          : Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                color: AppTheme.blue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _lessonTitle(asset),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: active ? AppTheme.blue : AppTheme.ink,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      active
+                          ? Icons.play_circle_fill_rounded
+                          : Icons.play_circle_outline_rounded,
+                      color: active ? AppTheme.blue : AppTheme.subtle,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'مساحة التعلّم',
+                        style: TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'تقدّمك محفوظ تلقائيًا ويظهر على كل أجهزتك.',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${_progress.progressPercent.toStringAsFixed(_progress.progressPercent % 1 == 0 ? 0 : 1)}%',
+                  style: const TextStyle(
+                    color: AppTheme.blue,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: (_progress.progressPercent / 100).clamp(0, 1),
+                minHeight: 8,
+                backgroundColor: AppTheme.border,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${_progress.completedCount} من ${_progress.totalLessons} دروس مكتملة',
+              style: const TextStyle(
+                color: AppTheme.muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 860) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 7, child: player),
+                      const SizedBox(width: 22),
+                      Expanded(flex: 4, child: lessonList),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    player,
+                    const SizedBox(height: 22),
+                    lessonList,
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CourseAssetsSection extends StatefulWidget {
+  const _CourseAssetsSection({
+    required this.data,
+    this.attachmentsOnly = false,
+  });
+
+  final _CourseDetailsData data;
+  final bool attachmentsOnly;
 
   @override
   State<_CourseAssetsSection> createState() => _CourseAssetsSectionState();
@@ -1048,7 +1513,9 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
       );
     }
 
-    final assets = data.assets;
+    final assets = widget.attachmentsOnly
+        ? data.assets.where((asset) => !asset.isVideo).toList(growable: false)
+        : data.assets;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1059,10 +1526,10 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
               children: [
                 const Icon(Icons.folder_special_outlined, color: AppTheme.cyan),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'محتوى الكورس',
-                    style: TextStyle(
+                    widget.attachmentsOnly ? 'المرفقات والمواد' : 'محتوى الكورس',
+                    style: const TextStyle(
                       color: AppTheme.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -1076,8 +1543,10 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
               ],
             ),
             const SizedBox(height: 6),
-            const Text(
-              'فيديوهات ومرفقات محمية ولا تظهر إلا للمستخدم المصرح له.',
+            Text(
+              widget.attachmentsOnly
+                  ? 'الملفات والمواد المساندة الخاصة بهذا الكورس.'
+                  : 'فيديوهات ومرفقات محمية ولا تظهر إلا للمستخدم المصرح له.',
               style: TextStyle(
                 color: AppTheme.muted,
                 fontSize: 12,
@@ -1145,10 +1614,16 @@ class _CourseAssetsSectionState extends State<_CourseAssetsSection> {
 }
 
 class _ProtectedVideoPlayer extends StatefulWidget {
-  const _ProtectedVideoPlayer({required this.courseId, required this.asset});
+  const _ProtectedVideoPlayer({
+    required this.courseId,
+    required this.asset,
+    this.onEnded,
+    super.key,
+  });
 
   final int courseId;
   final CourseAsset asset;
+  final VoidCallback? onEnded;
 
   @override
   State<_ProtectedVideoPlayer> createState() => _ProtectedVideoPlayerState();
@@ -1157,6 +1632,7 @@ class _ProtectedVideoPlayer extends StatefulWidget {
 class _ProtectedVideoPlayerState extends State<_ProtectedVideoPlayer> {
   VideoPlayerController? _controller;
   late final Future<void> _initializeFuture;
+  bool _reportedEnded = false;
 
   @override
   void initState() {
@@ -1258,6 +1734,7 @@ class _CourseDetailsData {
     required this.course,
     required this.enrolled,
     required this.curriculum,
+    required this.progress,
     required this.assets,
     required this.assetsForbidden,
     required this.isAuthenticated,
@@ -1267,6 +1744,7 @@ class _CourseDetailsData {
   final Course course;
   final bool enrolled;
   final List<CourseCurriculumItem> curriculum;
+  final CourseProgress? progress;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
   final bool isAuthenticated;
