@@ -793,3 +793,178 @@ a {
     transition: none !important;
   }
 }
+
+
+/* Course curriculum + enrollment confirmation */
+.course-curriculum-section {
+  padding: clamp(1.1rem, 2vw, 1.45rem);
+}
+
+.curriculum-list-v4 {
+  display: grid;
+  gap: .65rem;
+}
+
+.curriculum-row-v4 {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 64px;
+  padding: .75rem .85rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 14px;
+  background: var(--hf-surface-soft);
+}
+
+.curriculum-row-v4:hover {
+  border-color: var(--hf-border-strong);
+  background: #fff;
+}
+
+.curriculum-index {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hf-border);
+  border-radius: 11px;
+  color: var(--hf-blue-600);
+  background: #fff;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.curriculum-row-v4 small {
+  display: block;
+  margin-bottom: .15rem;
+  color: var(--hf-muted);
+  font-size: .68rem;
+}
+
+.curriculum-row-v4 strong {
+  color: var(--hf-ink);
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+.curriculum-access {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  flex: 0 0 auto;
+  padding: .38rem .55rem;
+  border-radius: 999px;
+  color: #71829b;
+  background: #fff;
+  border: 1px solid var(--hf-border);
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.curriculum-access.is-open {
+  color: var(--hf-success);
+  background: #eefaf6;
+  border-color: #d8f1e8;
+}
+
+.enroll-confirm-modal {
+  overflow: hidden;
+  border: 1px solid var(--hf-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--hf-shadow-md);
+}
+
+.enroll-confirm-modal .modal-header,
+.enroll-confirm-modal .modal-footer {
+  padding: 1.1rem 1.2rem;
+  border-color: var(--hf-border);
+}
+
+.enroll-confirm-modal .modal-body {
+  padding: 1.15rem 1.2rem;
+}
+
+.enroll-confirm-summary {
+  display: grid;
+  gap: .65rem;
+}
+
+.enroll-confirm-summary > div {
+  display: grid;
+  grid-template-columns: minmax(120px, .8fr) minmax(0, 1.2fr);
+  gap: .75rem;
+  align-items: center;
+  padding: .8rem .85rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 13px;
+  background: var(--hf-surface-soft);
+}
+
+.enroll-confirm-summary span {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  color: var(--hf-muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.enroll-confirm-summary strong {
+  min-width: 0;
+  color: var(--hf-ink);
+  font-size: .78rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.enroll-confirm-note {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin-top: 1rem;
+  padding: .85rem;
+  border: 1px solid rgba(36, 99, 235, .10);
+  border-radius: 14px;
+  color: #3c5475;
+  background: rgba(36, 99, 235, .045);
+  font-size: .72rem;
+  line-height: 1.7;
+}
+
+.enroll-confirm-note i {
+  color: var(--hf-blue-600);
+  margin-top: .08rem;
+}
+
+@media (max-width: 575.98px) {
+  .curriculum-row-v4 {
+    align-items: flex-start;
+  }
+
+  .curriculum-access {
+    padding-inline: .45rem;
+  }
+
+  .curriculum-access {
+    font-size: 0;
+  }
+
+  .curriculum-access i {
+    font-size: .9rem;
+  }
+
+  .enroll-confirm-summary > div {
+    grid-template-columns: 1fr;
+    gap: .3rem;
+  }
+
+  .enroll-confirm-modal .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .enroll-confirm-modal .modal-footer > * {
+    width: 100%;
+  }
+}
