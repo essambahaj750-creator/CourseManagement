@@ -40,6 +40,20 @@ public class CourseController(
     public async Task<IActionResult> GetInstructors() =>
         Ok(await courseService.GetInstructorOptionsAsync());
 
+    [HttpGet("instructors/{instructorId:int}/profile")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetInstructorProfile(
+        int instructorId,
+        CancellationToken cancellationToken)
+    {
+        var profile = await discoveryService.GetInstructorProfileAsync(
+            instructorId,
+            cancellationToken);
+        return profile is null
+            ? NotFound(new { message = "Instructor not found" })
+            : Ok(profile);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
