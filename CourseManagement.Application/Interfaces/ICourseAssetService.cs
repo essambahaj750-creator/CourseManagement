@@ -21,6 +21,10 @@ public interface ICourseAssetService
         int courseId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<CourseCurriculumItemDto>> GetPublicCurriculumAsync(
+        int courseId,
+        CancellationToken cancellationToken = default);
+
     Task<CourseAssetDownload?> OpenPreviewAsync(
         int courseId,
         CancellationToken cancellationToken = default);
