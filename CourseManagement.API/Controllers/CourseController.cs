@@ -11,7 +11,8 @@ namespace CourseManagement.API.Controllers;
 public class CourseController(
     ICourseService courseService,
     ICourseAssetService assetService,
-    IUserService userService) : ControllerBase
+    IUserService userService,
+    ICourseReviewService reviewService) : ControllerBase
 {
     /// <summary>كتالوج الكورسات — عام</summary>
     [HttpGet]
@@ -42,6 +43,39 @@ public class CourseController(
     [AllowAnonymous]
     public async Task<IActionResult> GetCurriculum(int id, CancellationToken cancellationToken) =>
         Ok(await assetService.GetPublicCurriculumAsync(id, cancellationToken));
+
+    [HttpGet("{id:int}/reviews")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetReviews(
+        int id,
+        CancellationToken cancellationToken) =>
+        Ok(await reviewService.GetSummaryAsync(id, cancellationToken));
+
+    [HttpPut("{id:int}/reviews")]
+    [Authorize]
+    public async Task<IActionResult> UpsertReview(
+        int id,
+        [FromBody] CourseReviewUpsertDto dto,
+        CancellationToken cancellationToken) =>
+        Ok(await reviewService.UpsertAsync(
+            User.GetUserId(),
+            id,
+            dto.Rating,
+            dto.Comment,
+            cancellationToken));
+
+    [HttpDelete("{id:int}/reviews")]
+    [Authorize]
+    public async Task<IActionResult> DeleteReview(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        await reviewService.DeleteOwnAsync(
+            User.GetUserId(),
+            id,
+            cancellationToken);
+        return NoContent();
+    }
 
     [HttpGet("{id:int}/cover")]
     [AllowAnonymous]
