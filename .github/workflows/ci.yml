@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, mvc-implementation, professional-refactor ]
+    branches: [ main, mvc-implementation, professional-refactor, redesign/ux-ui-v2 ]
   pull_request:
     branches: [ main ]
 
