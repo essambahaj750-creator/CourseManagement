@@ -486,6 +486,29 @@ class ApiClient {
     );
   }
 
+  Future<CourseProgress> getCourseProgress(int courseId) async {
+    final json = await _jsonRequest(
+      'GET',
+      '/api/enrollment/course/$courseId/progress',
+      authenticated: true,
+    );
+    return CourseProgress.fromJson(json);
+  }
+
+  Future<CourseProgress> updateCourseProgress({
+    required int courseId,
+    required int assetId,
+    required bool completed,
+  }) async {
+    final json = await _jsonRequest(
+      'PUT',
+      '/api/enrollment/course/$courseId/progress',
+      authenticated: true,
+      body: {'assetId': assetId, 'completed': completed},
+    );
+    return CourseProgress.fromJson(json);
+  }
+
   Future<PagedList<Enrollment>> getAllEnrollments({
     int page = 1,
     int pageSize = 50,
