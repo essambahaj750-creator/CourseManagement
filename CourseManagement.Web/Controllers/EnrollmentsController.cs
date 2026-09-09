@@ -64,6 +64,23 @@ public sealed class EnrollmentsController(IEnrollmentService enrollmentService) 
         return Redirect($"{Url.Action("Details", "Courses", new { id = courseId })}#lesson-{assetId}");
     }
 
+    [HttpGet("Certificate/{courseId:int}")]
+    public async Task<IActionResult> Certificate(int courseId)
+    {
+        try
+        {
+            var certificate = await enrollmentService.GetCertificateAsync(
+                GetUserId(),
+                courseId);
+            return View(certificate);
+        }
+        catch (Exception ex) when (ex.IsUserFacing())
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction("Details", "Courses", new { id = courseId });
+        }
+    }
+
     [HttpPost("Unenroll/{courseId:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Unenroll(int courseId)
