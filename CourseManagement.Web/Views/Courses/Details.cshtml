@@ -18,6 +18,7 @@
     var curriculumAccessLabel = canSeeAssets ? "متاح" : "بعد التسجيل";
     var progress = Model.Progress;
     var reviewSummary = Model.Reviews;
+    var instructorProfile = Model.InstructorProfile;
     var ownReview = viewerId > 0 ? reviewSummary.Reviews.FirstOrDefault(review => review.UserId == viewerId) : null;
     var completedLessonIds = progress?.CompletedLessonAssetIds.ToHashSet() ?? new HashSet<int>();
     var continueLessonId = progress?.LastLessonAssetId ?? videos.FirstOrDefault()?.Id;
@@ -138,6 +139,55 @@
                     <div class="course-fact-v3"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div>
                 </div>
             </section>
+
+            @if (instructorProfile is not null)
+            {
+                <section class="surface-card instructor-profile-section">
+                    <div class="instructor-profile-main">
+                        <div class="instructor-profile-avatar">
+                            @(string.IsNullOrWhiteSpace(instructorProfile.FullName) ? "م" : instructorProfile.FullName[..1])
+                        </div>
+                        <div class="instructor-profile-copy">
+                            <span class="section-kicker">عن المدرّس</span>
+                            <h2>@instructorProfile.FullName</h2>
+                            <p>مدرّس على منصة المعرفة ويقدّم محتوى تعليميًا مرتبطًا بهذا المسار.</p>
+                            <div class="instructor-profile-stats">
+                                <span><i class="bi bi-journals"></i><strong>@instructorProfile.CourseCount</strong><small>كورس</small></span>
+                                <span><i class="bi bi-people"></i><strong>@instructorProfile.TotalStudents</strong><small>طالب</small></span>
+                                <span><i class="bi bi-star-fill"></i><strong>@(instructorProfile.ReviewCount == 0 ? "—" : instructorProfile.AverageRating.ToString("0.0"))</strong><small>@instructorProfile.ReviewCount تقييم</small></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @{
+                        var otherInstructorCourses = instructorProfile.Courses
+                            .Where(item => item.Id != course.Id)
+                            .Take(3)
+                            .ToList();
+                    }
+                    @if (otherInstructorCourses.Count > 0)
+                    {
+                        <div class="instructor-other-courses">
+                            <div class="instructor-other-head">
+                                <strong>كورسات أخرى لهذا المدرّس</strong>
+                                <span>@otherInstructorCourses.Count</span>
+                            </div>
+                            <div class="instructor-mini-grid">
+                                @foreach (var item in otherInstructorCourses)
+                                {
+                                    <a class="instructor-mini-course text-decoration-none" asp-action="Details" asp-route-id="@item.Id">
+                                        <div>
+                                            <strong>@item.Title</strong>
+                                            <small>@(item.Price <= 0 ? "مجاني" : $"{item.Price:N0} ر.س")</small>
+                                        </div>
+                                        <i class="bi bi-arrow-left"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </section>
+            }
 
             <section class="surface-card course-curriculum-section">
                 <div class="course-section-head">
