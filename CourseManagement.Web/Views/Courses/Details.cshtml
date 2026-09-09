@@ -12,6 +12,9 @@
     var isEnrolledStudent = User.Identity?.IsAuthenticated == true && !isOwner && canSeeAssets;
     var accountEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
     var accountName = User.FindFirstValue(ClaimTypes.Name) ?? "حساب الطالب";
+    var curriculumAccessClass = canSeeAssets ? "is-open" : string.Empty;
+    var curriculumIconClass = canSeeAssets ? "bi-play-circle" : "bi-lock";
+    var curriculumAccessLabel = canSeeAssets ? "متاح" : "بعد التسجيل";
     string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
 }
 
@@ -148,9 +151,9 @@
                                     <small>الدرس @lesson.Position</small>
                                     <strong class="d-block text-truncate">@lesson.Title</strong>
                                 </div>
-                                <span class="curriculum-access @(canSeeAssets ? "is-open" : string.Empty)">
-                                    <i class="bi @(canSeeAssets ? "bi-play-circle" : "bi-lock")"></i>
-                                    @(canSeeAssets ? "متاح" : "بعد التسجيل")
+                                <span class="curriculum-access @curriculumAccessClass">
+                                    <i class="bi @curriculumIconClass"></i>
+                                    @curriculumAccessLabel
                                 </span>
                             </div>
                         }
