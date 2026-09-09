@@ -10,6 +10,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Course> Courses { get; set; }
     public DbSet<Enrollment> Enrollments { get; set; }
     public DbSet<CourseAsset> CourseAssets { get; set; }
+    public DbSet<CourseReview> CourseReviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                   .WithMany(c => c.Assets)
                   .HasForeignKey(e => e.CourseId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CourseReview>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Rating).IsRequired();
+            entity.Property(e => e.Comment).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).IsRequired();
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Course)
+                  .WithMany()
+                  .HasForeignKey(e => e.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.UserId, e.CourseId }).IsUnique();
+            entity.HasIndex(e => e.CourseId);
         });
 
         modelBuilder.Entity<Enrollment>(entity =>
