@@ -1,4 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Bootstrap backdrops are appended to <body>. Keep modals at the same
+    // stacking level so transformed/animated page containers cannot trap
+    // the dialog underneath the backdrop.
+    document.querySelectorAll('.modal').forEach((modal) => {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
     document.querySelectorAll('[data-confirm]').forEach((element) => {
         element.addEventListener('click', (event) => {
             const message = element.getAttribute('data-confirm') || 'هل أنت متأكد من تنفيذ العملية؟';
