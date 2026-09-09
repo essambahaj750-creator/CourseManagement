@@ -58,7 +58,12 @@ class AppShell extends StatelessWidget {
           child: Container(height: 1, color: AppTheme.border),
         ),
       ),
-      drawer: desktop ? null : Drawer(child: _NavigationPanel(auth: auth, path: path, items: items)),
+      drawer: desktop
+          ? null
+          : Drawer(
+              width: 310,
+              child: _NavigationPanel(auth: auth, path: path, items: items),
+            ),
       body: SafeArea(child: child),
       bottomNavigationBar: mobile
           ? NavigationBar(
@@ -82,9 +87,9 @@ class AppShell extends StatelessWidget {
       textDirection: TextDirection.rtl,
       children: [
         SizedBox(
-          width: 248,
+          width: 264,
           child: Material(
-            color: Colors.white,
+            color: const Color(0xFFFCFDFE),
             child: _NavigationPanel(auth: auth, path: path, items: items),
           ),
         ),
@@ -214,7 +219,12 @@ class _IdentityCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(gradient: AppTheme.brandGradient, borderRadius: BorderRadius.circular(22), boxShadow: AppTheme.softShadow),
+      decoration: BoxDecoration(
+        gradient: AppTheme.brandGradient,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: Colors.white.withValues(alpha: .06)),
+        boxShadow: AppTheme.softShadow,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -223,7 +233,11 @@ class _IdentityCard extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .12), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: Colors.white.withValues(alpha: .08)),
+                ),
                 child: Icon(auth.isAuthenticated ? Icons.person_rounded : Icons.explore_rounded, color: Colors.white),
               ),
               const SizedBox(width: 11),
@@ -267,10 +281,14 @@ class _NavigationTile extends StatelessWidget {
       leading: Icon(active ? (item.selectedIcon ?? item.icon) : item.icon),
       title: Text(item.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
       trailing: active ? const Icon(Icons.arrow_back_ios_new_rounded, size: 13) : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
       selectedColor: AppTheme.blue,
-      selectedTileColor: AppTheme.blue.withValues(alpha: .08),
-      minTileHeight: 50,
+      selectedTileColor: AppTheme.blue.withValues(alpha: .075),
+      iconColor: AppTheme.muted,
+      textColor: AppTheme.text,
+      minTileHeight: 52,
     ),
   );
 }
@@ -286,7 +304,11 @@ class _Brand extends StatelessWidget {
       Container(
         width: compact ? 38 : 42,
         height: compact ? 38 : 42,
-        decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(13)),
+        decoration: BoxDecoration(
+          gradient: AppTheme.accentGradient,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          boxShadow: AppTheme.softShadow,
+        ),
         child: const Icon(Icons.school_rounded, color: Colors.white, size: 22),
       ),
       const SizedBox(width: 9),
