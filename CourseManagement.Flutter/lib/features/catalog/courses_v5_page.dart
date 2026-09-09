@@ -813,12 +813,12 @@ class _SortOption extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Radio<String>(
-                    value: value,
-                    groupValue: selected,
-                    onChanged: (v) {
-                      if (v != null) onTap(v);
-                    },
+                  Icon(
+                    selected == value
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: selected == value ? AppTheme.blue : AppTheme.subtle,
+                    size: 21,
                   ),
                 ],
               ),
