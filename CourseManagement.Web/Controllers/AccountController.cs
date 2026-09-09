@@ -46,7 +46,8 @@ public sealed class AccountController(IAuthService authService) : Controller
 
     [HttpGet("Register")]
     [AllowAnonymous]
-    public IActionResult Register() => View(new RegisterViewModel());
+    public IActionResult Register(string? returnUrl = null) =>
+        View(new RegisterViewModel { ReturnUrl = returnUrl });
 
     [HttpPost("Register")]
     [AllowAnonymous]
@@ -60,7 +61,7 @@ public sealed class AccountController(IAuthService authService) : Controller
             var auth = await authService.RegisterAsync(model.ToDto());
             await SignInAsync(auth.UserId, auth.FullName, auth.Email, auth.Role, auth.SecurityStamp, false, auth.ExpiresAtUtc);
             TempData["Success"] = "تم إنشاء حسابك بنجاح.";
-            return RedirectToAction("Index", "Home");
+            return RedirectToLocal(model.ReturnUrl);
         }
         catch (ConflictException ex)
         {
