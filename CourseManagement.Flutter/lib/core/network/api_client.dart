@@ -524,6 +524,15 @@ class ApiClient {
     );
   }
 
+  Future<CourseCertificate> getCourseCertificate(int courseId) async {
+    final json = await _jsonRequest(
+      'GET',
+      '/api/enrollment/course/$courseId/certificate',
+      authenticated: true,
+    );
+    return CourseCertificate.fromJson(json);
+  }
+
   Future<CourseProgress> getCourseProgress(int courseId) async {
     final json = await _jsonRequest(
       'GET',
