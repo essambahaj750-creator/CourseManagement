@@ -10,6 +10,8 @@
     var videos = course.Assets.Where(asset => asset.Type == CourseAssetType.Video).ToList();
     var attachments = course.Assets.Where(asset => asset.Type == CourseAssetType.Attachment).ToList();
     var isEnrolledStudent = User.Identity?.IsAuthenticated == true && !isOwner && canSeeAssets;
+    var accountEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+    var accountName = User.FindFirstValue(ClaimTypes.Name) ?? "حساب الطالب";
     string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
 }
 
@@ -119,6 +121,41 @@
                     <div class="course-fact-v3"><span><i class="bi bi-collection-play"></i></span><div><small>الدروس</small><strong>@(canSeeAssets ? $"{videos.Count} فيديو" : "بعد التسجيل")</strong></div></div>
                     <div class="course-fact-v3"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div>
                 </div>
+            </section>
+
+            <section class="surface-card course-curriculum-section">
+                <div class="course-section-head">
+                    <div>
+                        <span class="section-kicker">المنهج</span>
+                        <h2>محتوى الكورس</h2>
+                        <p>يمكنك الاطلاع على عناوين الدروس قبل التسجيل. تشغيل الفيديوهات والملفات الكاملة يبقى محميًا.</p>
+                    </div>
+                    <span class="content-count-chip">@Model.Curriculum.Count درس</span>
+                </div>
+
+                @if (Model.Curriculum.Count == 0)
+                {
+                    <div class="inline-empty"><i class="bi bi-journal"></i><span>المدرّس لم يضف دروسًا إلى المنهج بعد.</span></div>
+                }
+                else
+                {
+                    <div class="curriculum-list-v4">
+                        @foreach (var lesson in Model.Curriculum)
+                        {
+                            <div class="curriculum-row-v4">
+                                <span class="curriculum-index">@lesson.Position</span>
+                                <div class="flex-grow-1 min-width-0">
+                                    <small>الدرس @lesson.Position</small>
+                                    <strong class="d-block text-truncate">@lesson.Title</strong>
+                                </div>
+                                <span class="curriculum-access @(canSeeAssets ? "is-open" : string.Empty)">
+                                    <i class="bi @(canSeeAssets ? "bi-play-circle" : "bi-lock")"></i>
+                                    @(canSeeAssets ? "متاح" : "بعد التسجيل")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
             </section>
 
             @if (canSeeAssets)
@@ -232,11 +269,19 @@
                 }
                 else if (User.Identity?.IsAuthenticated == true && !isOwner)
                 {
-                    <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@course.Id" method="post"><button class="btn btn-primary w-100" type="submit"><i class="bi bi-journal-plus ms-2"></i>التسجيل في الكورس</button></form>
+                    <button class="btn btn-primary w-100" type="button" data-bs-toggle="modal" data-bs-target="#enrollConfirmModal">
+                        <i class="bi bi-person-check ms-2"></i>ابدأ التسجيل
+                    </button>
+                    <div class="small text-muted text-center mt-2">سيظهر لك تأكيد الحساب والبريد قبل إتمام التسجيل.</div>
                 }
                 else if (User.Identity?.IsAuthenticated != true)
                 {
-                    <a class="btn btn-primary w-100" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"><i class="bi bi-box-arrow-in-left ms-2"></i>سجل الدخول للتسجيل</a>
+                    <a class="btn btn-primary w-100" asp-controller="Account" asp-action="Register" asp-route-returnUrl="@Context.Request.Path">
+                        <i class="bi bi-person-plus ms-2"></i>أنشئ حسابًا للتسجيل
+                    </a>
+                    <a class="btn btn-outline-primary w-100 mt-2" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">
+                        لدي حساب بالفعل
+                    </a>
                 }
                 else
                 {
@@ -252,5 +297,46 @@
         </aside>
     </div>
 </div>
+
+@if (User.Identity?.IsAuthenticated == true && !isOwner && !isEnrolledStudent)
+{
+    <div class="modal fade" id="enrollConfirmModal" tabindex="-1" aria-labelledby="enrollConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content enroll-confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="section-kicker">خطوة أخيرة</span>
+                        <h2 class="modal-title h5 mb-0 mt-1" id="enrollConfirmModalLabel">تأكيد التسجيل</h2>
+                    </div>
+                    <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-4">راجع بيانات حسابك والكورس قبل إتمام التسجيل.</p>
+
+                    <div class="enroll-confirm-summary">
+                        <div><span><i class="bi bi-person"></i> الحساب</span><strong>@accountName</strong></div>
+                        <div><span><i class="bi bi-envelope"></i> البريد الإلكتروني</span><strong dir="ltr">@accountEmail</strong></div>
+                        <div><span><i class="bi bi-book"></i> الكورس</span><strong>@course.Title</strong></div>
+                        <div><span><i class="bi bi-cash-stack"></i> القيمة</span><strong>@(course.Price <= 0 ? "مجاني" : $"{course.Price:N2} ر.س")</strong></div>
+                    </div>
+
+                    <div class="enroll-confirm-note">
+                        <i class="bi bi-shield-check"></i>
+                        <span>بعد التأكيد سيُربط الكورس بهذا الحساب ويظهر في «تسجيلاتي» على الويب والموبايل.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">ليس الآن</button>
+                    <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@course.Id" method="post" class="m-0 flex-grow-1">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="bi bi-check2-circle ms-2"></i>تأكيد التسجيل في الكورس
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }
