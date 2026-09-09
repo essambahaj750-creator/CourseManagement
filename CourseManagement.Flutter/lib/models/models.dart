@@ -47,6 +47,9 @@ class Course {
     required this.imageUrl,
     required this.instructorId,
     required this.instructorName,
+    required this.averageRating,
+    required this.reviewCount,
+    required this.enrolledStudents,
   });
 
   final int id;
@@ -56,6 +59,9 @@ class Course {
   final String? imageUrl;
   final int instructorId;
   final String instructorName;
+  final double averageRating;
+  final int reviewCount;
+  final int enrolledStudents;
 
   factory Course.fromJson(Map<String, dynamic> json) => Course(
     id: (json['id'] as num?)?.toInt() ?? 0,
@@ -67,6 +73,9 @@ class Course {
         : json['imageUrl'] as String?,
     instructorId: (json['instructorId'] as num?)?.toInt() ?? 0,
     instructorName: json['instructorName'] as String? ?? 'لم يُعيّن مدرّس بعد',
+    averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
+    reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+    enrolledStudents: (json['enrolledStudents'] as num?)?.toInt() ?? 0,
   );
 }
 
