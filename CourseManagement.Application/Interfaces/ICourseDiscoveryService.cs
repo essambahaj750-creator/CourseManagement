@@ -12,4 +12,8 @@ public interface ICourseDiscoveryService
         int courseId,
         int limit = 4,
         CancellationToken cancellationToken = default);
+
+    Task<InstructorPublicProfileDto?> GetInstructorProfileAsync(
+        int instructorId,
+        CancellationToken cancellationToken = default);
 }
