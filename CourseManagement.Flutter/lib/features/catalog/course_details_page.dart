@@ -36,6 +36,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final course = await api.getCourse(widget.courseId);
     final curriculum = await api.getCourseCurriculum(widget.courseId);
     final reviews = await api.getCourseReviews(widget.courseId);
+    final related = await api.getRelatedCourses(widget.courseId);
     final session = auth.session;
     final isAuthenticated = auth.isAuthenticated;
     final isOwner = session?.role == 'Admin' ||
@@ -72,6 +73,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       curriculum: curriculum,
       progress: progress,
       reviews: reviews,
+      relatedCourses: related,
       assets: assets,
       assetsForbidden: assetsForbidden,
       isAuthenticated: isAuthenticated,
@@ -250,6 +252,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               _CurriculumSection(data: data),
               const SizedBox(height: 18),
               _CourseReviewsSection(data: data),
+              if (data.relatedCourses.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                _RelatedCoursesSection(courses: data.relatedCourses),
+              ],
               if (!data.assetsForbidden) ...[
                 const SizedBox(height: 18),
                 KeyedSubtree(
@@ -898,6 +904,152 @@ class _ConfirmationRow extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      );
+}
+
+class _RelatedCoursesSection extends StatelessWidget {
+  const _RelatedCoursesSection({required this.courses});
+
+  final List<Course> courses;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'قد يناسبك أيضًا',
+                style: TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'كورسات مرتبطة بالمدرّس والسعر مع أولوية للأعلى تقييمًا.',
+                style: TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 11,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 14),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 900
+                      ? 4
+                      : constraints.maxWidth >= 580
+                          ? 2
+                          : 1;
+                  const gap = 12.0;
+                  final width =
+                      (constraints.maxWidth - (columns - 1) * gap) / columns;
+
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
+                    children: [
+                      for (final course in courses)
+                        SizedBox(
+                          width: width,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            onTap: () => context.push('/courses/${course.id}'),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceMuted,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                                border: Border.all(color: AppTheme.border),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CourseCover(course: course, height: 118),
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          course.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: AppTheme.ink,
+                                            fontSize: 12,
+                                            height: 1.5,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            if (course.reviewCount > 0) ...[
+                                              const Icon(
+                                                Icons.star_rounded,
+                                                color: Color(0xFFE9A51D),
+                                                size: 15,
+                                              ),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                course.averageRating
+                                                    .toStringAsFixed(1),
+                                                style: const TextStyle(
+                                                  color: AppTheme.ink,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            const Icon(
+                                              Icons.people_alt_outlined,
+                                              color: AppTheme.muted,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 3),
+                                            Expanded(
+                                              child: Text(
+                                                '${course.enrolledStudents} طالب',
+                                                style: const TextStyle(
+                                                  color: AppTheme.muted,
+                                                  fontSize: 9,
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              course.price == 0
+                                                  ? 'مجاني'
+                                                  : '${course.price.toStringAsFixed(0)} ر.س',
+                                              style: const TextStyle(
+                                                color: AppTheme.blue,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       );
 }
@@ -2202,6 +2354,7 @@ class _CourseDetailsData {
     required this.curriculum,
     required this.progress,
     required this.reviews,
+    required this.relatedCourses,
     required this.assets,
     required this.assetsForbidden,
     required this.isAuthenticated,
@@ -2213,6 +2366,7 @@ class _CourseDetailsData {
   final List<CourseCurriculumItem> curriculum;
   final CourseProgress? progress;
   final CourseReviewSummary reviews;
+  final List<Course> relatedCourses;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
   final bool isAuthenticated;
