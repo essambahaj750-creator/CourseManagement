@@ -73,6 +73,53 @@ void main() {
     expect(item.type, 'Video');
   });
 
+  test('Enrollment parses shared progress summary', () {
+    final enrollment = Enrollment.fromJson({
+      'id': 8,
+      'userId': 3,
+      'userName': 'Student',
+      'courseId': 11,
+      'courseTitle': 'Course',
+      'enrolledDate': '2026-09-09T10:00:00Z',
+      'lastLessonAssetId': 44,
+      'completedLessons': 2,
+      'totalLessons': 4,
+      'progressPercent': 50,
+      'lastAccessedAtUtc': '2026-09-09T11:00:00Z',
+    });
+
+    expect(enrollment.lastLessonAssetId, 44);
+    expect(enrollment.completedLessons, 2);
+    expect(enrollment.totalLessons, 4);
+    expect(enrollment.progressPercent, 50);
+    expect(enrollment.hasStarted, isTrue);
+    expect(enrollment.isComplete, isFalse);
+  });
+
+  test('CourseReviewSummary parses public review data', () {
+    final summary = CourseReviewSummary.fromJson({
+      'courseId': 11,
+      'averageRating': 4.5,
+      'reviewCount': 1,
+      'reviews': [
+        {
+          'id': 1,
+          'userId': 3,
+          'userName': 'Student',
+          'rating': 5,
+          'comment': 'ممتاز',
+          'createdAtUtc': '2026-09-09T10:00:00Z',
+          'updatedAtUtc': '2026-09-09T10:30:00Z',
+        },
+      ],
+    });
+
+    expect(summary.averageRating, 4.5);
+    expect(summary.reviewCount, 1);
+    expect(summary.reviews.single.rating, 5);
+    expect(summary.reviews.single.comment, 'ممتاز');
+  });
+
   test('AuthSession detects expired token timestamps', () {
     final session = AuthSession.fromJson({
       'token': 'token',
