@@ -5,7 +5,8 @@
     ViewData["Title"] = Model.Course.Title;
     var course = Model.Course;
     var isAdmin = User.IsInRole("Admin");
-    var isOwner = isAdmin || (User.IsInRole("Instructor") && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentId) && currentId == course.InstructorId);
+    var viewerId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedViewerId) ? parsedViewerId : 0;
+    var isOwner = isAdmin || (User.IsInRole("Instructor") && viewerId == course.InstructorId);
     var canSeeAssets = Model.CanAccessAssets;
     var videos = course.Assets.Where(asset => asset.Type == CourseAssetType.Video).ToList();
     var attachments = course.Assets.Where(asset => asset.Type == CourseAssetType.Attachment).ToList();
@@ -16,6 +17,8 @@
     var curriculumIconClass = canSeeAssets ? "bi-play-circle" : "bi-lock";
     var curriculumAccessLabel = canSeeAssets ? "متاح" : "بعد التسجيل";
     var progress = Model.Progress;
+    var reviewSummary = Model.Reviews;
+    var ownReview = viewerId > 0 ? reviewSummary.Reviews.FirstOrDefault(review => review.UserId == viewerId) : null;
     var completedLessonIds = progress?.CompletedLessonAssetIds.ToHashSet() ?? new HashSet<int>();
     var continueLessonId = progress?.LastLessonAssetId ?? videos.FirstOrDefault()?.Id;
     string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
@@ -56,6 +59,13 @@
         <div class="course-hero-copy">
             <div class="d-flex gap-2 flex-wrap mb-3">
                 <span class="badge bg-light text-primary"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span>
+                @if (reviewSummary.ReviewCount > 0)
+                {
+                    <span class="badge review-badge">
+                        <i class="bi bi-star-fill ms-1"></i>
+                        @reviewSummary.AverageRating.ToString("0.0") من 5 · @reviewSummary.ReviewCount تقييم
+                    </span>
+                }
                 @if (Model.PreviewAsset is not null)
                 {
                     <span class="badge preview-badge"><i class="bi bi-play-circle ms-1"></i>معاينة متاحة</span>
@@ -169,6 +179,108 @@
                                     </span>
                                 }
                             </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section id="course-reviews" class="surface-card course-reviews-section">
+                <div class="course-section-head">
+                    <div>
+                        <span class="section-kicker">تجارب الطلاب</span>
+                        <h2>التقييمات والمراجعات</h2>
+                        <p>آراء طلاب مسجلين فعليًا في هذا الكورس.</p>
+                    </div>
+                    <div class="review-score-card">
+                        <strong>@(reviewSummary.ReviewCount == 0 ? "—" : reviewSummary.AverageRating.ToString("0.0"))</strong>
+                        <span class="review-stars" aria-label="متوسط التقييم">
+                            @for (var star = 1; star <= 5; star++)
+                            {
+                                <i class="bi @(reviewSummary.AverageRating >= star - 0.4 ? "bi-star-fill" : "bi-star")"></i>
+                            }
+                        </span>
+                        <small>@reviewSummary.ReviewCount مراجعة</small>
+                    </div>
+                </div>
+
+                @if (isEnrolledStudent)
+                {
+                    <form asp-action="SaveReview" asp-route-id="@course.Id" method="post" class="review-form-v4">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="rating">تقييمك</label>
+                                <select class="form-select" id="rating" name="rating" required>
+                                    <option value="5" selected="@(ownReview?.Rating == 5)">★★★★★ — ممتاز</option>
+                                    <option value="4" selected="@(ownReview?.Rating == 4)">★★★★☆ — جيد جدًا</option>
+                                    <option value="3" selected="@(ownReview?.Rating == 3)">★★★☆☆ — جيد</option>
+                                    <option value="2" selected="@(ownReview?.Rating == 2)">★★☆☆☆ — مقبول</option>
+                                    <option value="1" selected="@(ownReview?.Rating == 1)">★☆☆☆☆ — ضعيف</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label" for="comment">رأيك في الكورس</label>
+                                <textarea class="form-control" id="comment" name="comment" maxlength="1000" rows="3" placeholder="ما الذي أعجبك؟ وما الذي يمكن تحسينه؟">@ownReview?.Comment</textarea>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap gap-2">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-star ms-2"></i>@(ownReview is null ? "إرسال التقييم" : "تحديث التقييم")
+                                </button>
+                                @if (ownReview is not null)
+                                {
+                                    <button class="btn btn-outline-danger"
+                                            type="submit"
+                                            formaction="@Url.Action("DeleteReview", "Courses", new { id = course.Id })"
+                                            formmethod="post"
+                                            data-confirm="هل تريد حذف تقييمك؟">
+                                        حذف تقييمي
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </form>
+                }
+                else if (User.Identity?.IsAuthenticated != true)
+                {
+                    <div class="review-signin-note">
+                        <i class="bi bi-shield-check"></i>
+                        <span>يمكنك قراءة جميع المراجعات الآن. بعد التسجيل في الكورس ستتمكن من إضافة تقييمك.</span>
+                    </div>
+                }
+
+                @if (reviewSummary.ReviewCount == 0)
+                {
+                    <div class="inline-empty mt-3">
+                        <i class="bi bi-chat-square-heart"></i>
+                        <span>لا توجد مراجعات بعد. كن أول طالب يشارك تجربته بعد التسجيل.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="review-list-v4 mt-3">
+                        @foreach (var review in reviewSummary.Reviews.Take(12))
+                        {
+                            <article class="review-card-v4">
+                                <div class="review-avatar">@(string.IsNullOrWhiteSpace(review.UserName) ? "ط" : review.UserName[..1])</div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <div class="review-card-head">
+                                        <div>
+                                            <strong>@review.UserName</strong>
+                                            <div class="review-stars small" aria-label="@review.Rating من 5">
+                                                @for (var star = 1; star <= 5; star++)
+                                                {
+                                                    <i class="bi @(review.Rating >= star ? "bi-star-fill" : "bi-star")"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        <small>@review.UpdatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")</small>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(review.Comment))
+                                    {
+                                        <p>@review.Comment</p>
+                                    }
+                                </div>
+                            </article>
                         }
                     </div>
                 }
