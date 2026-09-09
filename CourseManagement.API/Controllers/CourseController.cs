@@ -37,6 +37,12 @@ public class CourseController(
         return Ok(course);
     }
 
+    /// <summary>عناوين دروس الكورس العامة بدون كشف روابط أو ملفات المحتوى المحمي.</summary>
+    [HttpGet("{id:int}/curriculum")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetCurriculum(int id, CancellationToken cancellationToken) =>
+        Ok(await assetService.GetPublicCurriculumAsync(id, cancellationToken));
+
     [HttpGet("{id:int}/cover")]
     [AllowAnonymous]
     public async Task<IActionResult> GetCover(int id, CancellationToken cancellationToken)
