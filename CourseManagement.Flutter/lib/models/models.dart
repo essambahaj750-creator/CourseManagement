@@ -173,6 +173,11 @@ class Enrollment {
     required this.courseId,
     required this.courseTitle,
     required this.enrolledDate,
+    required this.lastLessonAssetId,
+    required this.completedLessons,
+    required this.totalLessons,
+    required this.progressPercent,
+    required this.lastAccessedAtUtc,
   });
 
   final int id;
@@ -181,6 +186,14 @@ class Enrollment {
   final int courseId;
   final String courseTitle;
   final DateTime enrolledDate;
+  final int? lastLessonAssetId;
+  final int completedLessons;
+  final int totalLessons;
+  final double progressPercent;
+  final DateTime? lastAccessedAtUtc;
+
+  bool get isComplete => totalLessons > 0 && completedLessons >= totalLessons;
+  bool get hasStarted => completedLessons > 0 || lastLessonAssetId != null;
 
   factory Enrollment.fromJson(Map<String, dynamic> json) => Enrollment(
     id: (json['id'] as num?)?.toInt() ?? 0,
@@ -191,6 +204,12 @@ class Enrollment {
     enrolledDate:
         DateTime.tryParse(json['enrolledDate'] as String? ?? '')?.toLocal() ??
         DateTime.now(),
+    lastLessonAssetId: (json['lastLessonAssetId'] as num?)?.toInt(),
+    completedLessons: (json['completedLessons'] as num?)?.toInt() ?? 0,
+    totalLessons: (json['totalLessons'] as num?)?.toInt() ?? 0,
+    progressPercent: (json['progressPercent'] as num?)?.toDouble() ?? 0,
+    lastAccessedAtUtc:
+        DateTime.tryParse(json['lastAccessedAtUtc'] as String? ?? '')?.toLocal(),
   );
 }
 
