@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                   value == null || value.isEmpty ? 'أدخل كلمة المرور' : null,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: auth.isBusy ? null : _submit,
               icon: auth.isBusy
                   ? const SizedBox(
@@ -133,15 +133,15 @@ class _ErrorBanner extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 18),
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFE9EA),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFFFC9CC)),
+      color: const Color(0xFFFFF2F5),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: Border.all(color: const Color(0xFFFFDCE5)),
     ),
     child: Row(
       children: [
         const Icon(
           Icons.error_outline_rounded,
-          color: Color(0xFFC73A48),
+          color: AppTheme.danger,
           size: 19,
         ),
         const SizedBox(width: 9),
@@ -149,7 +149,7 @@ class _ErrorBanner extends StatelessWidget {
           child: Text(
             message,
             style: const TextStyle(
-              color: Color(0xFF9D2836),
+              color: Color(0xFFB33855),
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
