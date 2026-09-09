@@ -1501,10 +1501,16 @@ class _LearningWorkspaceState extends State<_LearningWorkspace> {
 
     final ids = videos.map((item) => item.id).toSet();
     final last = _progress.lastLessonAssetId;
-    if (last != null && ids.contains(last)) {
+    if (last != null && ids.contains(last) && !_progress.isCompleted(last)) {
       _selectedAssetId = last;
     } else {
-      for (final video in videos) {
+      final lastIndex = last == null
+          ? -1
+          : videos.indexWhere((item) => item.id == last);
+      final ordered = lastIndex >= 0
+          ? [...videos.skip(lastIndex + 1), ...videos.take(lastIndex + 1)]
+          : videos;
+      for (final video in ordered) {
         if (!_progress.isCompleted(video.id)) {
           _selectedAssetId = video.id;
           break;
@@ -1840,7 +1846,7 @@ class _LearningWorkspaceState extends State<_LearningWorkspace> {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
-                value: (_progress.progressPercent / 100).clamp(0, 1),
+                value: (_progress.progressPercent / 100).clamp(0.0, 1.0).toDouble(),
                 minHeight: 8,
                 backgroundColor: AppTheme.border,
               ),
