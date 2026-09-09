@@ -977,15 +977,76 @@ class _CourseCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 11),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (course.reviewCount > 0)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Color(0xFFE9A51D),
+                                size: 17,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                course.averageRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: AppTheme.ink,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '(${course.reviewCount})',
+                                style: const TextStyle(
+                                  color: AppTheme.subtle,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ],
+                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.people_alt_outlined,
+                              color: AppTheme.muted,
+                              size: 15,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${course.enrolledStudents} طالب',
+                              style: const TextStyle(
+                                color: AppTheme.muted,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
                     Row(
                       children: [
                         CircleAvatar(
                           radius: 13,
                           backgroundColor: AppTheme.blue.withValues(alpha: .1),
                           child: Text(
-                            course.instructorName.isEmpty ? 'م' : course.instructorName.substring(0, 1),
-                            style: const TextStyle(color: AppTheme.blue, fontSize: 10, fontWeight: FontWeight.w900),
+                            course.instructorName.isEmpty
+                                ? 'م'
+                                : course.instructorName.substring(0, 1),
+                            style: const TextStyle(
+                              color: AppTheme.blue,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 7),
@@ -994,10 +1055,17 @@ class _CourseCard extends StatelessWidget {
                             course.instructorName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                            style: const TextStyle(
+                              color: AppTheme.muted,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
-                        const Icon(Icons.arrow_back_rounded, color: AppTheme.blue, size: 18),
+                        const Icon(
+                          Icons.arrow_back_rounded,
+                          color: AppTheme.blue,
+                          size: 18,
+                        ),
                       ],
                     ),
                   ],
