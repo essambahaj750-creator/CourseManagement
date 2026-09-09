@@ -267,6 +267,14 @@ class ApiClient {
     return Course.fromJson(json);
   }
 
+  Future<List<CourseCurriculumItem>> getCourseCurriculum(int id) async {
+    final list = await _jsonListRequest('GET', '/api/course/$id/curriculum');
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(CourseCurriculumItem.fromJson)
+        .toList(growable: false);
+  }
+
   Future<Course> createCourse({
     required String title,
     required String description,
