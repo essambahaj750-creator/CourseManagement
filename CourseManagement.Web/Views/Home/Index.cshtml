@@ -4,6 +4,11 @@
     ViewData["Title"] = "لوحة التحكم";
     var courseCount = Model.Courses.Count();
     var enrollmentCount = Model.MyEnrollments.Count();
+    var activeEnrollments = Model.MyEnrollments
+        .Where(item => item.TotalLessons == 0 || item.CompletedLessons < item.TotalLessons)
+        .OrderByDescending(item => item.LastAccessedAtUtc ?? item.EnrolledDate)
+        .Take(3)
+        .ToList();
     var displayName = User.Identity?.IsAuthenticated == true
         ? (User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "متعلم")
         : "زائر";
@@ -63,6 +68,50 @@
         }
     </div>
 
+    @if (Model.IsAuthenticated && Model.Role == "Student" && activeEnrollments.Count > 0)
+    {
+        <section class="surface-card hf-panel home-continue-panel mb-4">
+            <div class="hf-panel-header">
+                <div>
+                    <span class="hf-eyebrow">مسارك الحالي</span>
+                    <h2>تابع من حيث توقفت</h2>
+                    <p>تقدّمك محفوظ في حسابك نفسه ويظهر على الويب والموبايل.</p>
+                </div>
+                <a class="btn btn-light" asp-controller="Enrollments" asp-action="Index">كل كورساتي</a>
+            </div>
+
+            <div class="home-continue-grid">
+                @foreach (var enrollment in activeEnrollments)
+                {
+                    var percent = Math.Clamp(enrollment.ProgressPercent, 0, 100);
+                    <a class="home-continue-card text-decoration-none"
+                       asp-controller="Courses"
+                       asp-action="Details"
+                       asp-route-id="@enrollment.CourseId">
+                        <div class="home-continue-icon"><i class="bi bi-play-fill"></i></div>
+                        <div class="home-continue-copy">
+                            <div class="home-continue-title">
+                                <strong>@enrollment.CourseTitle</strong>
+                                <span>@percent.ToString("0")%</span>
+                            </div>
+                            <div class="learning-progress-track">
+                                <span style="width:@percent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                            </div>
+                            <div class="home-continue-foot">
+                                <small>
+                                    @(enrollment.TotalLessons == 0
+                                        ? "المحتوى قيد التجهيز"
+                                        : $"{enrollment.CompletedLessons} من {enrollment.TotalLessons} دروس مكتملة")
+                                </small>
+                                <b>متابعة <i class="bi bi-arrow-left"></i></b>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
     <div class="dashboard-grid mb-4">
         <section class="surface-card hf-panel dashboard-panel">
             <div class="hf-panel-header">
@@ -89,9 +138,16 @@
                                 <div class="course-body">
                                     <h3 class="mb-2">@course.Title</h3>
                                     <p class="course-description mb-3">@excerpt</p>
+                                    <div class="course-social-proof">
+                                        @if (course.ReviewCount > 0)
+                                        {
+                                            <span><i class="bi bi-star-fill"></i><strong>@course.AverageRating.ToString("0.0")</strong><small>(@course.ReviewCount)</small></span>
+                                        }
+                                        <span><i class="bi bi-people"></i><strong>@course.EnrolledStudents</strong><small>طالب</small></span>
+                                    </div>
                                     <div class="course-footer-meta">
                                         <span class="course-author"><span class="avatar">@instructorInitial</span><span class="text-truncate">@course.InstructorName</span></span>
-                                        <span class="price-stack"><small>قيمة الكورس</small><span class="price">@course.Price.ToString("N2")</span></span>
+                                        <span class="price-stack"><small>قيمة الكورس</small><span class="price">@(course.Price <= 0 ? "مجاني" : course.Price.ToString("N2"))</span></span>
                                     </div>
                                     <a class="btn btn-primary w-100 mt-3" asp-controller="Courses" asp-action="Details" asp-route-id="@course.Id">عرض التفاصيل <i class="bi bi-arrow-left me-1"></i></a>
                                 </div>
