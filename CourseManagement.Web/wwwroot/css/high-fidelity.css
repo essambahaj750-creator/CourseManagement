@@ -968,3 +968,88 @@ a {
     width: 100%;
   }
 }
+
+
+/* Persistent learning progress */
+.curriculum-access.is-complete {
+  color: var(--hf-success);
+  background: #eefaf6;
+  border-color: #d5efe6;
+}
+
+.learning-progress-panel,
+.purchase-progress-v4 {
+  padding: .9rem 1rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f8fbff, #f7fcfb);
+}
+
+.learning-progress-panel small,
+.purchase-progress-v4 span,
+.purchase-progress-v4 small {
+  color: var(--hf-muted);
+  font-size: .7rem;
+}
+
+.learning-progress-panel strong {
+  display: block;
+  margin-top: .15rem;
+  color: var(--hf-ink);
+  font-size: .82rem;
+}
+
+.learning-progress-panel > div > span,
+.purchase-progress-v4 strong {
+  color: var(--hf-blue-600);
+  font-size: .86rem;
+  font-weight: 900;
+}
+
+.learning-progress-track {
+  position: relative;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #e8eef7;
+}
+
+.learning-progress-track > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hf-blue-600), var(--hf-teal-500));
+  transition: width .25s ease;
+}
+
+[dir="rtl"] .learning-progress-track > span {
+  inset: 0 0 0 auto;
+}
+
+.purchase-progress-v4 {
+  margin: .8rem 0 1rem;
+}
+
+.purchase-progress-v4 > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .55rem;
+}
+
+.purchase-progress-v4 small {
+  display: block;
+  margin-top: .45rem;
+}
+
+.lesson-card.is-complete {
+  border-color: #cfeadf !important;
+  box-shadow: 0 10px 28px rgba(22, 154, 116, .07);
+}
+
+.lesson-card.is-complete .lesson-number {
+  color: var(--hf-success);
+  background: #eefaf6;
+}
