@@ -1764,3 +1764,108 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Personalized continue-learning home */
+.home-continue-panel {
+  padding: clamp(1rem, 2vw, 1.35rem);
+}
+
+.home-continue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+}
+
+.home-continue-card {
+  display: flex;
+  align-items: flex-start;
+  gap: .8rem;
+  padding: .9rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 16px;
+  color: inherit;
+  background: linear-gradient(145deg, #fff, #f9fbff);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.home-continue-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--hf-border-strong);
+  box-shadow: 0 12px 30px rgba(20, 44, 86, .07);
+}
+
+.home-continue-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--hf-blue-600), var(--hf-teal-500));
+  box-shadow: 0 8px 22px rgba(36, 99, 235, .16);
+}
+
+.home-continue-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.home-continue-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .65rem;
+  margin-bottom: .65rem;
+}
+
+.home-continue-title strong {
+  overflow: hidden;
+  color: var(--hf-ink);
+  font-size: .78rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-continue-title span {
+  flex: 0 0 auto;
+  color: var(--hf-blue-600);
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.home-continue-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem;
+  margin-top: .55rem;
+}
+
+.home-continue-foot small {
+  overflow: hidden;
+  color: var(--hf-muted);
+  font-size: .64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-continue-foot b {
+  flex: 0 0 auto;
+  color: var(--hf-blue-600);
+  font-size: .66rem;
+}
+
+@media (max-width: 991.98px) {
+  .home-continue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .home-continue-grid {
+    grid-template-columns: 1fr;
+  }
+}
