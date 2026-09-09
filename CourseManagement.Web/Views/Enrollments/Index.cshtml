@@ -69,6 +69,14 @@
                                     <a class="btn btn-sm btn-primary" asp-controller="Courses" asp-action="Details" asp-route-id="@enrollment.CourseId">
                                         <i class="bi bi-play-circle ms-1"></i>@(enrollment.LastLessonAssetId.HasValue ? "متابعة" : "ابدأ")
                                     </a>
+                                    @if (enrollment.TotalLessons > 0 && enrollment.CompletedLessons >= enrollment.TotalLessons)
+                                    {
+                                        <a class="btn btn-sm btn-outline-success"
+                                           asp-action="Certificate"
+                                           asp-route-courseId="@enrollment.CourseId">
+                                            <i class="bi bi-award ms-1"></i>الشهادة
+                                        </a>
+                                    }
                                     <form asp-action="Unenroll" asp-route-courseId="@enrollment.CourseId" method="post" class="d-inline">
                                         <button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="هل تريد إلغاء التسجيل من كورس @enrollment.CourseTitle؟">
                                             <i class="bi bi-x-circle ms-1"></i>إلغاء
