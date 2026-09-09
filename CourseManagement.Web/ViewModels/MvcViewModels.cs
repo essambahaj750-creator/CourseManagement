@@ -113,6 +113,7 @@ public sealed class CourseDetailsViewModel
     public bool CanAccessAssets { get; init; }
     public CourseAssetDto? PreviewAsset { get; init; }
     public IReadOnlyList<CourseCurriculumItemDto> Curriculum { get; init; } = [];
+    public CourseProgressDto? Progress { get; init; }
     public int PreviewSeconds { get; init; } = 60;
 }
 
