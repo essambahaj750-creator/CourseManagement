@@ -116,6 +116,7 @@ public sealed class CourseDetailsViewModel
     public CourseProgressDto? Progress { get; init; }
     public CourseReviewSummaryDto Reviews { get; init; } = new();
     public IReadOnlyList<CourseResponseDto> RelatedCourses { get; init; } = [];
+    public InstructorPublicProfileDto? InstructorProfile { get; init; }
     public int PreviewSeconds { get; init; } = 60;
 }
 
