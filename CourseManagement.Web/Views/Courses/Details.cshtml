@@ -15,6 +15,9 @@
     var curriculumAccessClass = canSeeAssets ? "is-open" : string.Empty;
     var curriculumIconClass = canSeeAssets ? "bi-play-circle" : "bi-lock";
     var curriculumAccessLabel = canSeeAssets ? "متاح" : "بعد التسجيل";
+    var progress = Model.Progress;
+    var completedLessonIds = progress?.CompletedLessonAssetIds.ToHashSet() ?? new HashSet<int>();
+    var continueLessonId = progress?.LastLessonAssetId ?? videos.FirstOrDefault()?.Id;
     string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
 }
 
@@ -151,10 +154,20 @@
                                     <small>الدرس @lesson.Position</small>
                                     <strong class="d-block text-truncate">@lesson.Title</strong>
                                 </div>
-                                <span class="curriculum-access @curriculumAccessClass">
-                                    <i class="bi @curriculumIconClass"></i>
-                                    @curriculumAccessLabel
-                                </span>
+                                @if (completedLessonIds.Contains(lesson.Id))
+                                {
+                                    <span class="curriculum-access is-complete">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        مكتمل
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="curriculum-access @curriculumAccessClass">
+                                        <i class="bi @curriculumIconClass"></i>
+                                        @curriculumAccessLabel
+                                    </span>
+                                }
                             </div>
                         }
                     </div>
@@ -179,11 +192,28 @@
                     }
                     else
                     {
+                        @if (isEnrolledStudent && progress is not null)
+                        {
+                            <div class="learning-progress-panel mb-3">
+                                <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                                    <div>
+                                        <small>تقدّمك في الكورس</small>
+                                        <strong>@progress.CompletedCount من @progress.TotalLessons دروس مكتملة</strong>
+                                    </div>
+                                    <span>@progress.ProgressPercent.ToString("0.#")%</span>
+                                </div>
+                                <div class="learning-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@progress.ProgressPercent">
+                                    <span style="width:@progress.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                </div>
+                            </div>
+                        }
+
                         <div class="lesson-list">
                             @for (var index = 0; index < videos.Count; index++)
                             {
                                 var video = videos[index];
-                                <article class="lesson-card">
+                                var isCompleted = completedLessonIds.Contains(video.Id);
+                                <article class="lesson-card @(isCompleted ? "is-complete" : string.Empty)" id="lesson-@video.Id">
                                     <div class="lesson-card-head">
                                         <div class="lesson-number">@(index + 1)</div>
                                         <div class="flex-grow-1 min-width-0"><small>الدرس @(index + 1)</small><strong class="d-block text-truncate">@video.OriginalFileName</strong></div>
@@ -196,6 +226,17 @@
                                         </video>
                                     </div>
                                     <div class="lesson-card-actions">
+                                        @if (isEnrolledStudent)
+                                        {
+                                            <form asp-controller="Enrollments" asp-action="UpdateProgress" asp-route-courseId="@course.Id" asp-route-assetId="@video.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="completed" value="@(!isCompleted ? "true" : "false")" />
+                                                <button class="btn btn-sm @(isCompleted ? "btn-outline-secondary" : "btn-outline-success")" type="submit">
+                                                    <i class="bi @(isCompleted ? "bi-arrow-counterclockwise" : "bi-check2-circle") ms-1"></i>
+                                                    @(isCompleted ? "إعادة كغير مكتمل" : "تم إكمال الدرس")
+                                                </button>
+                                            </form>
+                                        }
                                         <a class="btn btn-sm btn-outline-primary" asp-action="DownloadAsset" asp-route-id="@course.Id" asp-route-assetId="@video.Id"><i class="bi bi-download ms-1"></i>تنزيل الفيديو</a>
                                         @if (isOwner)
                                         {
@@ -268,7 +309,19 @@
                 @if (isEnrolledStudent)
                 {
                     <div class="enrolled-state"><i class="bi bi-check-circle-fill"></i><div><strong>أنت مسجل في الكورس</strong><span>يمكنك مشاهدة جميع الدروس الآن.</span></div></div>
-                    <a class="btn btn-primary w-100" href="#course-content"><i class="bi bi-play-circle ms-2"></i>ابدأ التعلّم</a>
+                    @if (progress is not null)
+                    {
+                        <div class="purchase-progress-v4">
+                            <div><span>تقدّمك</span><strong>@progress.ProgressPercent.ToString("0.#")%</strong></div>
+                            <div class="learning-progress-track">
+                                <span style="width:@progress.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                            </div>
+                            <small>@progress.CompletedCount من @progress.TotalLessons دروس مكتملة</small>
+                        </div>
+                    }
+                    <a class="btn btn-primary w-100" href="@(continueLessonId.HasValue ? $"#lesson-{continueLessonId}" : "#course-content")">
+                        <i class="bi bi-play-circle ms-2"></i>@(progress?.CompletedCount > 0 ? "متابعة التعلّم" : "ابدأ التعلّم")
+                    </a>
                 }
                 else if (User.Identity?.IsAuthenticated == true && !isOwner)
                 {
