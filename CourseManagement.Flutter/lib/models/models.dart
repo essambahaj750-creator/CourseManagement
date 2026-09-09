@@ -319,6 +319,39 @@ class CourseProgress {
   );
 }
 
+class CourseCertificate {
+  const CourseCertificate({
+    required this.certificateCode,
+    required this.userId,
+    required this.courseId,
+    required this.studentName,
+    required this.courseTitle,
+    required this.instructorName,
+    required this.completedAtUtc,
+  });
+
+  final String certificateCode;
+  final int userId;
+  final int courseId;
+  final String studentName;
+  final String courseTitle;
+  final String instructorName;
+  final DateTime completedAtUtc;
+
+  factory CourseCertificate.fromJson(Map<String, dynamic> json) =>
+      CourseCertificate(
+        certificateCode: json['certificateCode'] as String? ?? '',
+        userId: (json['userId'] as num?)?.toInt() ?? 0,
+        courseId: (json['courseId'] as num?)?.toInt() ?? 0,
+        studentName: json['studentName'] as String? ?? '',
+        courseTitle: json['courseTitle'] as String? ?? '',
+        instructorName: json['instructorName'] as String? ?? '',
+        completedAtUtc:
+            DateTime.tryParse(json['completedAtUtc'] as String? ?? '')?.toUtc() ??
+            DateTime.now().toUtc(),
+      );
+}
+
 class CourseReview {
   const CourseReview({
     required this.id,
