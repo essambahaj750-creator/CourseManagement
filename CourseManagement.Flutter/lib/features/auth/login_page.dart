@@ -7,7 +7,9 @@ import 'auth_controller.dart';
 import 'auth_shell.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({this.returnPath, super.key});
+
+  final String? returnPath;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -30,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthController>();
     final success = await auth.login(_email.text, _password.text);
-    if (success && mounted) context.go('/');
+    if (success && mounted) context.go(widget.returnPath ?? '/');
   }
 
   @override
@@ -110,7 +112,15 @@ class _LoginPageState extends State<LoginPage> {
                   TextButton(
                     onPressed: auth.isBusy
                         ? null
-                        : () => context.go('/register'),
+                        : () => context.go(
+                            Uri(
+                              path: '/register',
+                              queryParameters: {
+                                if (widget.returnPath != null)
+                                  'return': widget.returnPath!,
+                              },
+                            ).toString(),
+                          ),
                     child: const Text('أنشئ حسابك'),
                   ),
                 ],
