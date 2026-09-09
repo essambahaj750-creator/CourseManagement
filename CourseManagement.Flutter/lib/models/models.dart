@@ -254,6 +254,43 @@ class CourseAsset {
   }
 }
 
+class CourseProgress {
+  const CourseProgress({
+    required this.courseId,
+    required this.lastLessonAssetId,
+    required this.completedLessonAssetIds,
+    required this.completedCount,
+    required this.totalLessons,
+    required this.progressPercent,
+    required this.lastAccessedAtUtc,
+  });
+
+  final int courseId;
+  final int? lastLessonAssetId;
+  final List<int> completedLessonAssetIds;
+  final int completedCount;
+  final int totalLessons;
+  final double progressPercent;
+  final DateTime? lastAccessedAtUtc;
+
+  bool isCompleted(int assetId) => completedLessonAssetIds.contains(assetId);
+
+  factory CourseProgress.fromJson(Map<String, dynamic> json) => CourseProgress(
+    courseId: (json['courseId'] as num?)?.toInt() ?? 0,
+    lastLessonAssetId: (json['lastLessonAssetId'] as num?)?.toInt(),
+    completedLessonAssetIds:
+        ((json['completedLessonAssetIds'] as List<dynamic>?) ?? const [])
+            .whereType<num>()
+            .map((value) => value.toInt())
+            .toList(growable: false),
+    completedCount: (json['completedCount'] as num?)?.toInt() ?? 0,
+    totalLessons: (json['totalLessons'] as num?)?.toInt() ?? 0,
+    progressPercent: (json['progressPercent'] as num?)?.toDouble() ?? 0,
+    lastAccessedAtUtc:
+        DateTime.tryParse(json['lastAccessedAtUtc'] as String? ?? '')?.toUtc(),
+  );
+}
+
 class UserSummary {
   const UserSummary({
     required this.id,
