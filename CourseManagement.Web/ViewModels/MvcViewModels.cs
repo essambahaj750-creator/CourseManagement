@@ -115,6 +115,7 @@ public sealed class CourseDetailsViewModel
     public IReadOnlyList<CourseCurriculumItemDto> Curriculum { get; init; } = [];
     public CourseProgressDto? Progress { get; init; }
     public CourseReviewSummaryDto Reviews { get; init; } = new();
+    public IReadOnlyList<CourseResponseDto> RelatedCourses { get; init; } = [];
     public int PreviewSeconds { get; init; } = 60;
 }
 
