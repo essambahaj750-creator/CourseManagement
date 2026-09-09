@@ -338,66 +338,82 @@ class _CourseInformation extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'قيمة المسار',
-                        style: TextStyle(color: AppTheme.muted, fontSize: 11),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compactAction = constraints.maxWidth < 520;
+                final price = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'قيمة المسار',
+                      style: TextStyle(color: AppTheme.muted, fontSize: 11),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      course.price == 0
+                          ? 'مجاني'
+                          : '${course.price.toStringAsFixed(2)} ر.س',
+                      style: const TextStyle(
+                        color: AppTheme.blue,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        course.price == 0
-                            ? 'مجاني'
-                            : '${course.price.toStringAsFixed(2)} ر.س',
-                        style: const TextStyle(
-                          color: AppTheme.blue,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: wide ? 220 : 160,
-                  child: data.isOwner
-                      ? FilledButton.tonalIcon(
-                          onPressed: null,
-                          icon: const Icon(Icons.admin_panel_settings_outlined),
-                          label: const Text('إدارة الكورس'),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: actionBusy ? null : onToggle,
-                          icon: actionBusy
-                              ? const SizedBox(
-                                  width: 17,
-                                  height: 17,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  !data.isAuthenticated
-                                      ? Icons.person_add_alt_1_rounded
-                                      : data.enrolled
-                                      ? Icons.remove_circle_outline_rounded
-                                      : Icons.add_task_rounded,
+                    ),
+                  ],
+                );
+
+                final action = data.isOwner
+                    ? FilledButton.tonalIcon(
+                        onPressed: null,
+                        icon: const Icon(Icons.admin_panel_settings_outlined),
+                        label: const Text('إدارة الكورس'),
+                      )
+                    : FilledButton.icon(
+                        onPressed: actionBusy ? null : onToggle,
+                        icon: actionBusy
+                            ? const SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
                                 ),
-                          label: Text(
-                            !data.isAuthenticated
-                                ? 'أنشئ حسابًا للتسجيل'
-                                : data.enrolled
-                                ? 'إلغاء التسجيل'
-                                : 'ابدأ التسجيل',
-                          ),
+                              )
+                            : Icon(
+                                !data.isAuthenticated
+                                    ? Icons.person_add_alt_1_rounded
+                                    : data.enrolled
+                                    ? Icons.remove_circle_outline_rounded
+                                    : Icons.add_task_rounded,
+                              ),
+                        label: Text(
+                          !data.isAuthenticated
+                              ? 'أنشئ حسابًا للتسجيل'
+                              : data.enrolled
+                              ? 'إلغاء التسجيل'
+                              : 'ابدأ التسجيل',
                         ),
-                ),
-              ],
+                      );
+
+                if (compactAction) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      price,
+                      const SizedBox(height: 16),
+                      action,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: price),
+                    const SizedBox(width: 18),
+                    SizedBox(width: wide ? 220 : 190, child: action),
+                  ],
+                );
+              },
             ),
           ),
         ),
