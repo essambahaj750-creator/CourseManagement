@@ -21,18 +21,7 @@
 
                 @if (User.IsInRole("Admin"))
                 {
-                    <div class="mb-3">
-                        <label asp-for="InstructorId" class="form-label"></label>
-                        <select asp-for="InstructorId" class="form-select">
-                            <option value="">اختر المدرّس المسؤول</option>
-                            @foreach (var instructor in Model.Instructors)
-                            {
-                                <option value="@instructor.Id">@instructor.FullName (@instructor.Role)</option>
-                            }
-                        </select>
-                        <div class="input-hint"><i class="bi bi-arrow-left-right ms-1"></i>إذا كان الكورس القديم مسندًا إلى Administrator، اختر حساب Instructor حقيقي لتصحيح الملكية.</div>
-                        <span asp-validation-for="InstructorId" class="text-danger small"></span>
-                    </div>
+                    <partial name="_InstructorPicker" model="Model" />
                 }
 
                 <div class="mb-3"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" autofocus /><span asp-validation-for="Title" class="text-danger small"></span></div>
