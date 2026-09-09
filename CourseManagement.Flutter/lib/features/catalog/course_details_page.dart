@@ -1680,7 +1680,7 @@ class _CourseReviewsSectionState extends State<_CourseReviewsSection> {
 
                 return Row(
                   children: [
-                    const Expanded(child: title),
+                    Expanded(child: title),
                     const SizedBox(width: 16),
                     score,
                   ],
