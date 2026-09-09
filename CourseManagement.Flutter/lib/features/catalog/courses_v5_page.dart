@@ -253,12 +253,12 @@ class _SearchBar extends StatelessWidget {
       ),
     );
 
-    final filterButton = OutlinedButton.icon(
+    final desktopFilterButton = OutlinedButton.icon(
       onPressed: onFilter,
       icon: Badge(
         isLabelVisible: activeCount > 0,
         label: Text('$activeCount'),
-        child: const Icon(Icons.tune_rounded),
+        child: const Icon(Icons.filter_list_rounded),
       ),
       label: Text(activeCount > 0 ? 'الفلاتر ($activeCount)' : 'الفلاتر'),
       style: OutlinedButton.styleFrom(
@@ -266,13 +266,40 @@ class _SearchBar extends StatelessWidget {
       ),
     );
 
+    final compactFilterButton = Tooltip(
+      message: activeCount > 0 ? 'الفلاتر ($activeCount)' : 'الفلاتر',
+      child: Material(
+        color: AppTheme.blue.withValues(alpha: .10),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onFilter,
+          child: SizedBox(
+            width: 54,
+            height: 54,
+            child: Center(
+              child: Badge(
+                isLabelVisible: activeCount > 0,
+                label: Text('$activeCount'),
+                child: const Icon(
+                  Icons.filter_list_rounded,
+                  color: AppTheme.ink,
+                  size: 27,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          searchField,
-          const SizedBox(height: 10),
-          filterButton,
+          Expanded(child: searchField),
+          const SizedBox(width: 10),
+          compactFilterButton,
         ],
       );
     }
@@ -281,7 +308,7 @@ class _SearchBar extends StatelessWidget {
       children: [
         Expanded(child: searchField),
         const SizedBox(width: 10),
-        filterButton,
+        desktopFilterButton,
       ],
     );
   }
