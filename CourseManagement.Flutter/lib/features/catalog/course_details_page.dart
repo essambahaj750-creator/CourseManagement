@@ -35,6 +35,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final auth = context.read<AuthController>();
     final course = await api.getCourse(widget.courseId);
     final curriculum = await api.getCourseCurriculum(widget.courseId);
+    final reviews = await api.getCourseReviews(widget.courseId);
     final session = auth.session;
     final isAuthenticated = auth.isAuthenticated;
     final isOwner = session?.role == 'Admin' ||
@@ -70,6 +71,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       enrolled: enrolled,
       curriculum: curriculum,
       progress: progress,
+      reviews: reviews,
       assets: assets,
       assetsForbidden: assetsForbidden,
       isAuthenticated: isAuthenticated,
@@ -246,6 +248,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               _CourseHighlights(data: data),
               const SizedBox(height: 18),
               _CurriculumSection(data: data),
+              const SizedBox(height: 18),
+              _CourseReviewsSection(data: data),
               if (!data.assetsForbidden) ...[
                 const SizedBox(height: 18),
                 KeyedSubtree(
@@ -329,6 +333,31 @@ class _CourseInformation extends StatelessWidget {
             fontSize: 13,
           ),
         ),
+        const SizedBox(height: 14),
+        if (data.reviews.reviewCount > 0)
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, color: Color(0xFFE9A51D), size: 20),
+              const SizedBox(width: 5),
+              Text(
+                data.reviews.averageRating.toStringAsFixed(1),
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '(${data.reviews.reviewCount} تقييم)',
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -871,6 +900,437 @@ class _ConfirmationRow extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _CourseReviewsSection extends StatefulWidget {
+  const _CourseReviewsSection({required this.data});
+
+  final _CourseDetailsData data;
+
+  @override
+  State<_CourseReviewsSection> createState() => _CourseReviewsSectionState();
+}
+
+class _CourseReviewsSectionState extends State<_CourseReviewsSection> {
+  late CourseReviewSummary _summary;
+  final _comment = TextEditingController();
+  int _rating = 5;
+  bool _busy = false;
+
+  int? get _viewerId => context.read<AuthController>().session?.userId;
+
+  CourseReview? get _ownReview {
+    final viewerId = _viewerId;
+    if (viewerId == null) return null;
+    for (final review in _summary.reviews) {
+      if (review.userId == viewerId) return review;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _summary = widget.data.reviews;
+    final userId = context.read<AuthController>().session?.userId;
+    CourseReview? own;
+    if (userId != null) {
+      for (final review in _summary.reviews) {
+        if (review.userId == userId) {
+          own = review;
+          break;
+        }
+      }
+    }
+    if (own != null) {
+      _rating = own.rating;
+      _comment.text = own.comment;
+    }
+  }
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await context.read<ApiClient>().saveCourseReview(
+            courseId: widget.data.course.id,
+            rating: _rating,
+            comment: _comment.text,
+          );
+      final summary = await context
+          .read<ApiClient>()
+          .getCourseReviews(widget.data.course.id);
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+        _busy = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ تقييمك للكورس.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  Future<void> _delete() async {
+    if (_busy || _ownReview == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف التقييم؟'),
+        content: const Text('سيتم حذف تقييمك ومراجعتك لهذا الكورس.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('رجوع'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await context.read<ApiClient>().deleteCourseReview(widget.data.course.id);
+      final summary = await context
+          .read<ApiClient>()
+          .getCourseReviews(widget.data.course.id);
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+        _rating = 5;
+        _comment.clear();
+        _busy = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canReview = widget.data.enrolled && !widget.data.isOwner;
+    final ownReview = _ownReview;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 560;
+                final title = const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'التقييمات والمراجعات',
+                      style: TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'آراء طلاب مسجلين فعليًا في الكورس.',
+                      style: TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                );
+
+                final score = Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFAEC),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(color: const Color(0xFFF4E4B3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFE9A51D),
+                        size: 22,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        _summary.reviewCount == 0
+                            ? 'لا تقييمات'
+                            : '${_summary.averageRating.toStringAsFixed(1)} · ${_summary.reviewCount}',
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [title, const SizedBox(height: 12), score],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    const Expanded(child: title),
+                    const SizedBox(width: 16),
+                    score,
+                  ],
+                );
+              },
+            ),
+            if (canReview) ...[
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'شارك تجربتك',
+                      style: TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: List.generate(5, (index) {
+                        final value = index + 1;
+                        final selected = value <= _rating;
+                        return IconButton(
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() => _rating = value),
+                          tooltip: '$value من 5',
+                          style: IconButton.styleFrom(
+                            backgroundColor: selected
+                                ? const Color(0xFFFFF4D1)
+                                : Colors.white,
+                            side: BorderSide(
+                              color: selected
+                                  ? const Color(0xFFF0D382)
+                                  : AppTheme.border,
+                            ),
+                          ),
+                          icon: Icon(
+                            selected
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: const Color(0xFFE9A51D),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _comment,
+                      minLines: 3,
+                      maxLines: 5,
+                      maxLength: 1000,
+                      decoration: const InputDecoration(
+                        labelText: 'مراجعتك',
+                        hintText: 'ما الذي أعجبك؟ وما الذي يمكن تحسينه؟',
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _busy ? null : _save,
+                            icon: _busy
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.star_rounded),
+                            label: Text(
+                              ownReview == null
+                                  ? 'إرسال التقييم'
+                                  : 'تحديث التقييم',
+                            ),
+                          ),
+                        ),
+                        if (ownReview != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            onPressed: _busy ? null : _delete,
+                            tooltip: 'حذف تقييمي',
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppTheme.danger,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (!widget.data.isAuthenticated) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: AppTheme.blue.withValues(alpha: .045),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(
+                    color: AppTheme.blue.withValues(alpha: .08),
+                  ),
+                ),
+                child: const Text(
+                  'يمكنك قراءة المراجعات الآن. بعد إنشاء حساب والتسجيل في الكورس ستتمكن من إضافة تقييمك.',
+                  style: TextStyle(
+                    color: AppTheme.text,
+                    fontSize: 10,
+                    height: 1.7,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (_summary.reviews.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'لا توجد مراجعات بعد.',
+                  style: TextStyle(color: AppTheme.muted),
+                ),
+              )
+            else
+              ..._summary.reviews.take(10).map(
+                (review) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppTheme.blue.withValues(alpha: .08),
+                        child: Text(
+                          review.userName.isEmpty
+                              ? 'ط'
+                              : review.userName.substring(0, 1),
+                          style: const TextStyle(
+                            color: AppTheme.blue,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    review.userName,
+                                    style: const TextStyle(
+                                      color: AppTheme.ink,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${review.updatedAtUtc.toLocal().day}/${review.updatedAtUtc.toLocal().month}/${review.updatedAtUtc.toLocal().year}',
+                                  style: const TextStyle(
+                                    color: AppTheme.subtle,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: List.generate(
+                                5,
+                                (index) => Icon(
+                                  index < review.rating
+                                      ? Icons.star_rounded
+                                      : Icons.star_border_rounded,
+                                  color: const Color(0xFFE9A51D),
+                                  size: 15,
+                                ),
+                              ),
+                            ),
+                            if (review.comment.trim().isNotEmpty) ...[
+                              const SizedBox(height: 7),
+                              Text(
+                                review.comment,
+                                style: const TextStyle(
+                                  color: AppTheme.text,
+                                  fontSize: 11,
+                                  height: 1.7,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _PublicPreviewPlayer extends StatefulWidget {
@@ -1735,6 +2195,7 @@ class _CourseDetailsData {
     required this.enrolled,
     required this.curriculum,
     required this.progress,
+    required this.reviews,
     required this.assets,
     required this.assetsForbidden,
     required this.isAuthenticated,
@@ -1745,6 +2206,7 @@ class _CourseDetailsData {
   final bool enrolled;
   final List<CourseCurriculumItem> curriculum;
   final CourseProgress? progress;
+  final CourseReviewSummary reviews;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
   final bool isAuthenticated;
