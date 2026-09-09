@@ -17,7 +17,8 @@ public sealed class CoursesController(
     ICourseAssetService assetService,
     IUserService userService,
     IEnrollmentService enrollmentService,
-    ICourseReviewService reviewService) : Controller
+    ICourseReviewService reviewService,
+    ICourseDiscoveryService discoveryService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
@@ -25,6 +26,7 @@ public sealed class CoursesController(
     {
         var catalog = await courseService.SearchCoursesAsync(filter.ToDto());
         var instructors = await courseService.GetInstructorOptionsAsync();
+        await discoveryService.EnrichSocialProofAsync(catalog.Items);
 
         foreach (var course in catalog.Items)
             UseMvcCoverUrl(course);
@@ -49,6 +51,10 @@ public sealed class CoursesController(
         var course = await courseService.GetCourseByIdAsync(id);
         if (course is null) return NotFound();
         UseMvcCoverUrl(course);
+        await discoveryService.EnrichSocialProofAsync([course], cancellationToken);
+        var related = await discoveryService.GetRelatedCoursesAsync(id, 4, cancellationToken);
+        foreach (var item in related)
+            UseMvcCoverUrl(item);
 
         var preview = await assetService.GetPreviewAsync(id, cancellationToken);
         var curriculum = await assetService.GetPublicCurriculumAsync(id, cancellationToken);
@@ -93,6 +99,7 @@ public sealed class CoursesController(
             Curriculum = curriculum,
             Progress = progress,
             Reviews = reviews,
+            RelatedCourses = related,
             PreviewSeconds = 60
         });
     }
