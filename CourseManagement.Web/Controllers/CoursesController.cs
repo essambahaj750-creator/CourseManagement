@@ -15,7 +15,8 @@ namespace CourseManagement.Web.Controllers;
 public sealed class CoursesController(
     ICourseService courseService,
     ICourseAssetService assetService,
-    IUserService userService) : Controller
+    IUserService userService,
+    IEnrollmentService enrollmentService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
@@ -51,6 +52,7 @@ public sealed class CoursesController(
         var preview = await assetService.GetPreviewAsync(id, cancellationToken);
         var curriculum = await assetService.GetPublicCurriculumAsync(id, cancellationToken);
         var canAccessAssets = false;
+        CourseProgressDto? progress = null;
         if (User.Identity?.IsAuthenticated == true)
         {
             try
@@ -61,6 +63,19 @@ public sealed class CoursesController(
                     User.IsInRole("Admin"),
                     cancellationToken);
                 canAccessAssets = true;
+
+                var isOwner = User.IsInRole("Admin") || course.InstructorId == GetUserId();
+                if (!isOwner)
+                {
+                    try
+                    {
+                        progress = await enrollmentService.GetCourseProgressAsync(GetUserId(), id);
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        progress = null;
+                    }
+                }
             }
             catch (ForbiddenAccessException)
             {
@@ -74,6 +89,7 @@ public sealed class CoursesController(
             CanAccessAssets = canAccessAssets,
             PreviewAsset = preview,
             Curriculum = curriculum,
+            Progress = progress,
             PreviewSeconds = 60
         });
     }
