@@ -1357,3 +1357,233 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Completion certificate */
+.certificate-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+}
+
+.certificate-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+
+.course-certificate {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(36, 99, 235, .12), transparent 30%),
+    radial-gradient(circle at 90% 85%, rgba(24, 171, 154, .12), transparent 32%),
+    linear-gradient(145deg, #f7faff, #fbfefe);
+  box-shadow: var(--hf-shadow-md);
+}
+
+.certificate-border {
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  border: 2px solid rgba(22, 58, 109, .16);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .92);
+}
+
+.certificate-brand {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+}
+
+.certificate-mark {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--hf-blue-600), var(--hf-teal-500));
+  box-shadow: 0 10px 28px rgba(36, 99, 235, .18);
+}
+
+.certificate-brand strong,
+.certificate-brand small {
+  display: block;
+}
+
+.certificate-brand strong {
+  color: var(--hf-ink);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.certificate-brand small {
+  margin-top: .15rem;
+  color: var(--hf-muted);
+  font-size: .7rem;
+}
+
+.certificate-content {
+  max-width: 780px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.certificate-kicker {
+  display: inline-flex;
+  padding: .4rem .75rem;
+  border-radius: 999px;
+  color: var(--hf-blue-600);
+  background: rgba(36, 99, 235, .07);
+  border: 1px solid rgba(36, 99, 235, .10);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.certificate-content h1 {
+  margin: .9rem 0 .4rem;
+  color: var(--hf-ink);
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  letter-spacing: -.03em;
+  font-weight: 900;
+}
+
+.certificate-intro,
+.certificate-copy {
+  margin: .7rem 0;
+  color: var(--hf-muted);
+  font-size: .92rem;
+}
+
+.certificate-content h2 {
+  margin: .35rem 0;
+  color: var(--hf-blue-600);
+  font-size: clamp(1.6rem, 4vw, 2.65rem);
+  font-weight: 900;
+}
+
+.certificate-content h3 {
+  margin: .45rem 0 0;
+  color: var(--hf-ink);
+  font-size: clamp(1.15rem, 2.5vw, 1.75rem);
+  line-height: 1.5;
+  font-weight: 850;
+}
+
+.certificate-divider {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin: 1.7rem 0 1.25rem;
+  color: #e9a51d;
+}
+
+.certificate-divider span {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(22, 58, 109, .18), transparent);
+}
+
+.certificate-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+}
+
+.certificate-meta-grid > div {
+  padding: .95rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 14px;
+  background: var(--hf-surface-soft);
+}
+
+.certificate-meta-grid small,
+.certificate-meta-grid strong {
+  display: block;
+}
+
+.certificate-meta-grid small {
+  color: var(--hf-muted);
+  font-size: .66rem;
+}
+
+.certificate-meta-grid strong {
+  margin-top: .3rem;
+  color: var(--hf-ink);
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.certificate-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hf-border);
+  color: var(--hf-muted);
+  font-size: .68rem;
+}
+
+.certificate-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.certificate-footer i {
+  color: var(--hf-success);
+}
+
+@media (max-width: 700px) {
+  .certificate-toolbar,
+  .certificate-footer {
+    flex-direction: column;
+  }
+
+  .certificate-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .certificate-border {
+    min-height: auto;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .no-print,
+  header,
+  nav,
+  footer,
+  .sidebar,
+  .app-sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  .certificate-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .course-certificate {
+    padding: 0;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .certificate-border {
+    min-height: 95vh;
+    border-color: #9eabc0;
+  }
+}
