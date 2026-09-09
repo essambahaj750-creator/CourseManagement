@@ -310,6 +310,65 @@ class CourseProgress {
   );
 }
 
+class CourseReview {
+  const CourseReview({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.rating,
+    required this.comment,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+
+  final int id;
+  final int userId;
+  final String userName;
+  final int rating;
+  final String comment;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+
+  factory CourseReview.fromJson(Map<String, dynamic> json) => CourseReview(
+    id: (json['id'] as num?)?.toInt() ?? 0,
+    userId: (json['userId'] as num?)?.toInt() ?? 0,
+    userName: json['userName'] as String? ?? 'طالب',
+    rating: (json['rating'] as num?)?.toInt() ?? 0,
+    comment: json['comment'] as String? ?? '',
+    createdAtUtc:
+        DateTime.tryParse(json['createdAtUtc'] as String? ?? '')?.toUtc() ??
+        DateTime.now().toUtc(),
+    updatedAtUtc:
+        DateTime.tryParse(json['updatedAtUtc'] as String? ?? '')?.toUtc() ??
+        DateTime.now().toUtc(),
+  );
+}
+
+class CourseReviewSummary {
+  const CourseReviewSummary({
+    required this.courseId,
+    required this.averageRating,
+    required this.reviewCount,
+    required this.reviews,
+  });
+
+  final int courseId;
+  final double averageRating;
+  final int reviewCount;
+  final List<CourseReview> reviews;
+
+  factory CourseReviewSummary.fromJson(Map<String, dynamic> json) =>
+      CourseReviewSummary(
+        courseId: (json['courseId'] as num?)?.toInt() ?? 0,
+        averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0,
+        reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+        reviews: ((json['reviews'] as List<dynamic>?) ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(CourseReview.fromJson)
+            .toList(growable: false),
+      );
+}
+
 class UserSummary {
   const UserSummary({
     required this.id,
