@@ -59,6 +59,20 @@ void main() {
     expect(catalog.totalPages, 10);
   });
 
+  test('CourseCurriculumItem parses public lesson metadata', () {
+    final item = CourseCurriculumItem.fromJson({
+      'id': 4,
+      'position': 2,
+      'title': 'إعداد المشروع',
+      'type': 'Video',
+    });
+
+    expect(item.id, 4);
+    expect(item.position, 2);
+    expect(item.title, 'إعداد المشروع');
+    expect(item.type, 'Video');
+  });
+
   test('AuthSession detects expired token timestamps', () {
     final session = AuthSession.fromJson({
       'token': 'token',
