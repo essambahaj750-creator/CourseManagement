@@ -57,6 +57,25 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
         return CreatedAtAction(nameof(GetById), new { id = enrollment.Id }, enrollment);
     }
 
+    [HttpGet("course/{courseId:int}/progress")]
+    public async Task<IActionResult> GetProgress(int courseId) =>
+        Ok(await enrollmentService.GetCourseProgressAsync(User.GetUserId(), courseId));
+
+    [HttpPut("course/{courseId:int}/progress")]
+    public async Task<IActionResult> UpdateProgress(
+        int courseId,
+        [FromBody] LessonProgressUpdateDto dto)
+    {
+        if (dto.AssetId <= 0)
+            return BadRequest(new { message = "A valid lesson asset is required." });
+
+        return Ok(await enrollmentService.UpdateCourseProgressAsync(
+            User.GetUserId(),
+            courseId,
+            dto.AssetId,
+            dto.Completed));
+    }
+
     [HttpDelete("course/{courseId:int}")]
     public async Task<IActionResult> Unenroll(int courseId)
     {
