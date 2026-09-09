@@ -10,4 +10,10 @@ public class Enrollment
     public Course Course { get; set; } = null!;
 
     public DateTime EnrolledDate { get; set; } = DateTime.UtcNow;
+
+    // Learning progress is stored on the enrollment so web and mobile share
+    // the same state through the same database.
+    public int? LastLessonAssetId { get; set; }
+    public string CompletedLessonAssetIds { get; set; } = "[]";
+    public DateTime? LastAccessedAtUtc { get; set; }
 }
