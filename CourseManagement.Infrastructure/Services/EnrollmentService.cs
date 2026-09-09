@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
@@ -8,7 +9,8 @@ namespace CourseManagement.Infrastructure.Services;
 
 public class EnrollmentService(
     IEnrollmentRepository enrollmentRepository,
-    ICourseRepository courseRepository) : IEnrollmentService
+    ICourseRepository courseRepository,
+    ICourseAssetRepository assetRepository) : IEnrollmentService
 {
     public async Task<IEnumerable<EnrollmentDto>> GetAllEnrollmentsAsync()
     {
@@ -99,12 +101,98 @@ public class EnrollmentService(
         return MapToDto(updated ?? enrollment);
     }
 
+    public async Task<CourseProgressDto> GetCourseProgressAsync(int userId, int courseId)
+    {
+        var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)
+            ?? throw new KeyNotFoundException("You are not enrolled in this course.");
+
+        var assets = await assetRepository.GetByCourseIdAsync(courseId);
+        return BuildProgress(enrollment, assets);
+    }
+
+    public async Task<CourseProgressDto> UpdateCourseProgressAsync(
+        int userId,
+        int courseId,
+        int assetId,
+        bool completed)
+    {
+        var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)
+            ?? throw new KeyNotFoundException("You are not enrolled in this course.");
+
+        var asset = await assetRepository.GetByIdAsync(assetId);
+        if (asset is null || asset.CourseId != courseId || asset.Type != CourseAssetType.Video)
+            throw new InvalidRequestException("The selected lesson does not belong to this course.");
+
+        var completedIds = ParseCompletedIds(enrollment.CompletedLessonAssetIds);
+        if (completed)
+            completedIds.Add(assetId);
+        else
+            completedIds.Remove(assetId);
+
+        enrollment.CompletedLessonAssetIds = JsonSerializer.Serialize(completedIds.OrderBy(id => id));
+        enrollment.LastLessonAssetId = assetId;
+        enrollment.LastAccessedAtUtc = DateTime.UtcNow;
+        await enrollmentRepository.UpdateAsync(enrollment);
+
+        var assets = await assetRepository.GetByCourseIdAsync(courseId);
+        return BuildProgress(enrollment, assets);
+    }
+
     public async Task UnenrollUserAsync(int userId, int courseId)
     {
         var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)
             ?? throw new KeyNotFoundException("You are not enrolled in this course.");
 
         await enrollmentRepository.DeleteAsync(enrollment.Id);
+    }
+
+    private static CourseProgressDto BuildProgress(
+        Enrollment enrollment,
+        IReadOnlyList<CourseAsset> assets)
+    {
+        var lessonIds = assets
+            .Where(asset => asset.Type == CourseAssetType.Video)
+            .Select(asset => asset.Id)
+            .ToHashSet();
+
+        var completed = ParseCompletedIds(enrollment.CompletedLessonAssetIds)
+            .Where(lessonIds.Contains)
+            .OrderBy(id => id)
+            .ToArray();
+
+        var total = lessonIds.Count;
+        var percent = total == 0 ? 0d : Math.Round(completed.Length * 100d / total, 1);
+
+        return new CourseProgressDto
+        {
+            CourseId = enrollment.CourseId,
+            LastLessonAssetId = enrollment.LastLessonAssetId.HasValue &&
+                                lessonIds.Contains(enrollment.LastLessonAssetId.Value)
+                ? enrollment.LastLessonAssetId
+                : null,
+            CompletedLessonAssetIds = completed,
+            CompletedCount = completed.Length,
+            TotalLessons = total,
+            ProgressPercent = percent,
+            LastAccessedAtUtc = enrollment.LastAccessedAtUtc
+        };
+    }
+
+    private static HashSet<int> ParseCompletedIds(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+
+        try
+        {
+            return (JsonSerializer.Deserialize<int[]>(json) ?? [])
+                .Where(id => id > 0)
+                .ToHashSet();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     private static EnrollmentDto MapToDto(Enrollment enrollment) => new()
