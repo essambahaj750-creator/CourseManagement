@@ -130,13 +130,60 @@ public class EnrollmentService(
         else
             completedIds.Remove(assetId);
 
+        var assets = await assetRepository.GetByCourseIdAsync(courseId);
+        var lessonIds = assets
+            .Where(item => item.Type == CourseAssetType.Video)
+            .Select(item => item.Id)
+            .ToHashSet();
+
         enrollment.CompletedLessonAssetIds = JsonSerializer.Serialize(completedIds.OrderBy(id => id));
         enrollment.LastLessonAssetId = assetId;
         enrollment.LastAccessedAtUtc = DateTime.UtcNow;
-        await enrollmentRepository.UpdateAsync(enrollment);
 
-        var assets = await assetRepository.GetByCourseIdAsync(courseId);
+        if (enrollment.CompletedAtUtc is null &&
+            lessonIds.Count > 0 &&
+            lessonIds.All(completedIds.Contains))
+        {
+            enrollment.CompletedAtUtc = enrollment.LastAccessedAtUtc;
+        }
+
+        await enrollmentRepository.UpdateAsync(enrollment);
         return BuildProgress(enrollment, assets);
+    }
+
+    public async Task<CourseCertificateDto> GetCertificateAsync(int userId, int courseId)
+    {
+        var enrollment = await enrollmentRepository.GetByUserAndCourseAsync(userId, courseId)
+            ?? throw new KeyNotFoundException("You are not enrolled in this course.");
+
+        var fullEnrollment = await enrollmentRepository.GetByIdAsync(enrollment.Id)
+            ?? enrollment;
+        var assets = await assetRepository.GetByCourseIdAsync(courseId);
+        var progress = BuildProgress(fullEnrollment, assets);
+
+        if (progress.TotalLessons == 0 || progress.CompletedCount < progress.TotalLessons)
+            throw new ConflictException("Complete all course lessons before requesting the certificate.");
+
+        if (fullEnrollment.CompletedAtUtc is null)
+        {
+            fullEnrollment.CompletedAtUtc =
+                fullEnrollment.LastAccessedAtUtc ?? DateTime.UtcNow;
+            await enrollmentRepository.UpdateAsync(fullEnrollment);
+        }
+
+        var course = fullEnrollment.Course ?? await courseRepository.GetByIdAsync(courseId)
+            ?? throw new KeyNotFoundException("Course not found.");
+
+        return new CourseCertificateDto
+        {
+            CertificateCode = $"CM-{courseId:D5}-{fullEnrollment.Id:D7}",
+            UserId = userId,
+            CourseId = courseId,
+            StudentName = fullEnrollment.User?.FullName ?? string.Empty,
+            CourseTitle = course.Title,
+            InstructorName = course.Instructor?.FullName ?? string.Empty,
+            CompletedAtUtc = fullEnrollment.CompletedAtUtc.Value
+        };
     }
 
     public async Task UnenrollUserAsync(int userId, int courseId)
