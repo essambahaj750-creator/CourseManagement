@@ -27,12 +27,14 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<ICourseAssetRepository, CourseAssetRepository>();
+builder.Services.AddScoped<ICourseReviewRepository, CourseReviewRepository>();
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICourseAssetService, CourseAssetService>();
+builder.Services.AddScoped<ICourseReviewService, CourseReviewService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 
 var fileUploadSection = builder.Configuration.GetSection("FileUploads");
