@@ -17,18 +17,31 @@ class HomeV3Page extends StatefulWidget {
 
 class _HomeV3PageState extends State<HomeV3Page> {
   late Future<CourseCatalog> _courses;
+  late Future<List<Enrollment>> _enrollments;
 
   @override
   void initState() {
     super.initState();
     _courses = _load();
+    _enrollments = _loadEnrollments();
   }
 
   Future<CourseCatalog> _load() => context.read<ApiClient>().searchCourses(
         const CourseFilter(pageSize: 6, sort: 'newest'),
       );
 
-  void _retry() => setState(() => _courses = _load());
+  Future<List<Enrollment>> _loadEnrollments() async {
+    final auth = context.read<AuthController>();
+    if (!auth.isAuthenticated || auth.isAdmin || auth.isInstructor) {
+      return const [];
+    }
+    return context.read<ApiClient>().getMyEnrollments();
+  }
+
+  void _retry() => setState(() {
+        _courses = _load();
+        _enrollments = _loadEnrollments();
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +56,10 @@ class _HomeV3PageState extends State<HomeV3Page> {
           _Hero(auth: auth, mobile: mobile),
           SizedBox(height: mobile ? 16 : 24),
           _QuickActions(auth: auth),
+          if (auth.isAuthenticated && !auth.isAdmin && !auth.isInstructor) ...[
+            SizedBox(height: mobile ? 24 : 30),
+            _ContinueLearningSection(future: _enrollments),
+          ],
           SizedBox(height: mobile ? 26 : 36),
           SectionTitle(
             title: 'أحدث الكورسات',
@@ -95,6 +112,193 @@ class _HomeV3PageState extends State<HomeV3Page> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ContinueLearningSection extends StatelessWidget {
+  const _ContinueLearningSection({required this.future});
+
+  final Future<List<Enrollment>> future;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<Enrollment>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 110,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) return const SizedBox.shrink();
+
+          final active = (snapshot.data ?? const <Enrollment>[])
+              .where((item) => !item.isComplete)
+              .toList()
+            ..sort((a, b) {
+              final aDate = a.lastAccessedAtUtc ?? a.enrolledDate;
+              final bDate = b.lastAccessedAtUtc ?? b.enrolledDate;
+              return bDate.compareTo(aDate);
+            });
+
+          if (active.isEmpty) return const SizedBox.shrink();
+
+          final visible = active.take(3).toList(growable: false);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SectionTitle(
+                title: 'تابع من حيث توقفت',
+                subtitle: 'تقدّمك محفوظ على حسابك ويمكنك المتابعة من أي جهاز',
+                action: TextButton(
+                  onPressed: () => context.go('/enrollments'),
+                  child: const Text('كورساتي'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 920
+                      ? visible.length.clamp(1, 3)
+                      : constraints.maxWidth >= 600
+                          ? visible.length.clamp(1, 2)
+                          : 1;
+                  const gap = 12.0;
+                  final width =
+                      (constraints.maxWidth - (columns - 1) * gap) / columns;
+
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
+                    children: [
+                      for (final item in visible)
+                        SizedBox(
+                          width: width,
+                          child: _ContinueLearningCard(item: item),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      );
+}
+
+class _ContinueLearningCard extends StatelessWidget {
+  const _ContinueLearningCard({required this.item});
+
+  final Enrollment item;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = item.totalLessons == 0
+        ? 0.0
+        : (item.progressPercent / 100).clamp(0.0, 1.0).toDouble();
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => context.push('/courses/${item.courseId}'),
+        child: Padding(
+          padding: const EdgeInsets.all(17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.accentGradient,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 25,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Text(
+                      item.courseTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.ink,
+                        fontSize: 13,
+                        height: 1.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    item.totalLessons == 0
+                        ? '—'
+                        : '${item.progressPercent.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      color: AppTheme.blue,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: percent,
+                  minHeight: 7,
+                  backgroundColor: AppTheme.border,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.totalLessons == 0
+                          ? 'المحتوى قيد التجهيز'
+                          : '${item.completedLessons} من ${item.totalLessons} دروس مكتملة',
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'متابعة',
+                        style: TextStyle(
+                          color: AppTheme.blue,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_back_rounded,
+                        color: AppTheme.blue,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
