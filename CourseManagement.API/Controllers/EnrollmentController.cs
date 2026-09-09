@@ -76,6 +76,10 @@ public class EnrollmentController(IEnrollmentService enrollmentService) : Contro
             dto.Completed));
     }
 
+    [HttpGet("course/{courseId:int}/certificate")]
+    public async Task<IActionResult> GetCertificate(int courseId) =>
+        Ok(await enrollmentService.GetCertificateAsync(User.GetUserId(), courseId));
+
     [HttpDelete("course/{courseId:int}")]
     public async Task<IActionResult> Unenroll(int courseId)
     {
