@@ -41,6 +41,8 @@ public sealed class RegisterViewModel
     [Display(Name = "تأكيد كلمة المرور")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
+    public string? ReturnUrl { get; set; }
+
     public RegisterDto ToDto() => new() { FullName = FullName, Email = Email, Password = Password };
 }
 
@@ -110,6 +112,7 @@ public sealed class CourseDetailsViewModel
     public CourseAssetUploadViewModel Upload { get; init; } = new();
     public bool CanAccessAssets { get; init; }
     public CourseAssetDto? PreviewAsset { get; init; }
+    public IReadOnlyList<CourseCurriculumItemDto> Curriculum { get; init; } = [];
     public int PreviewSeconds { get; init; } = 60;
 }
 
