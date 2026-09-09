@@ -106,7 +106,7 @@
 
                     <p class="hf-auth-create">
                         ليس لديك حساب؟
-                        <a asp-action="Register" class="text-decoration-none">أنشئ حسابًا الآن <i class="bi bi-arrow-left"></i></a>
+                        <a asp-action="Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">أنشئ حسابًا الآن <i class="bi bi-arrow-left"></i></a>
                     </p>
                 </section>
             </div>
