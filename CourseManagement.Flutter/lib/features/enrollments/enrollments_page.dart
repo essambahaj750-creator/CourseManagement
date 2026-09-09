@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_client.dart';
@@ -101,6 +102,15 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
                 );
               }
 
+              final averageProgress = items.isEmpty
+                  ? 0
+                  : items
+                          .map((item) => item.progressPercent)
+                          .reduce((a, b) => a + b) /
+                      items.length;
+              final completedCourses =
+                  items.where((item) => item.isComplete).length;
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -114,11 +124,17 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
                           label: 'كورسات مسجلة',
                           color: AppTheme.blue,
                         ),
-                        const _SummaryCard(
-                          icon: Icons.bolt_rounded,
-                          value: 'نشط',
-                          label: 'حالة المسار',
+                        _SummaryCard(
+                          icon: Icons.insights_rounded,
+                          value: '${averageProgress.toStringAsFixed(0)}%',
+                          label: 'متوسط التقدّم',
                           color: AppTheme.cyan,
+                        ),
+                        _SummaryCard(
+                          icon: Icons.workspace_premium_rounded,
+                          value: '$completedCourses',
+                          label: 'كورسات مكتملة',
+                          color: AppTheme.success,
                         ),
                       ];
                       if (compact) {
@@ -127,6 +143,8 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
                             cards[0],
                             const SizedBox(height: 10),
                             cards[1],
+                            const SizedBox(height: 10),
+                            cards[2],
                           ],
                         );
                       }
@@ -135,6 +153,8 @@ class _EnrollmentsPageState extends State<EnrollmentsPage> {
                           Expanded(child: cards[0]),
                           const SizedBox(width: 12),
                           Expanded(child: cards[1]),
+                          const SizedBox(width: 12),
+                          Expanded(child: cards[2]),
                         ],
                       );
                     },
@@ -211,24 +231,108 @@ class _EnrollmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
+    final progressLabel = item.totalLessons == 0
+        ? 'المحتوى قيد التجهيز'
+        : item.isComplete
+            ? 'مكتمل'
+            : item.hasStarted
+                ? 'تابعت ${item.completedLessons} من ${item.totalLessons} دروس'
+                : 'جاهز للبدء';
+
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          item.courseTitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: AppTheme.ink, fontWeight: FontWeight.w900, fontSize: 14),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.courseTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: item.isComplete
+                    ? AppTheme.success.withValues(alpha: .08)
+                    : AppTheme.blue.withValues(alpha: .07),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: item.isComplete
+                      ? AppTheme.success.withValues(alpha: .14)
+                      : AppTheme.blue.withValues(alpha: .10),
+                ),
+              ),
+              child: Text(
+                item.totalLessons == 0
+                    ? '—'
+                    : '${item.progressPercent.toStringAsFixed(0)}%',
+                style: TextStyle(
+                  color: item.isComplete ? AppTheme.success : AppTheme.blue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: LinearProgressIndicator(
+            value: item.totalLessons == 0
+                ? 0
+                : (item.progressPercent / 100).clamp(0, 1),
+            minHeight: 7,
+            backgroundColor: AppTheme.border,
+          ),
         ),
         const SizedBox(height: 6),
         Row(
           children: [
-            const Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.muted),
+            Icon(
+              item.isComplete
+                  ? Icons.check_circle_rounded
+                  : Icons.play_circle_outline_rounded,
+              size: 14,
+              color: item.isComplete ? AppTheme.success : AppTheme.muted,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                progressLabel,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            const Icon(
+              Icons.calendar_today_outlined,
+              size: 13,
+              color: AppTheme.subtle,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 'سجّلت في ${item.enrolledDate.day}/${item.enrolledDate.month}/${item.enrolledDate.year}',
-                style: const TextStyle(color: AppTheme.muted, fontSize: 11),
+                style: const TextStyle(
+                  color: AppTheme.subtle,
+                  fontSize: 9,
+                ),
               ),
             ),
           ],
@@ -251,8 +355,22 @@ class _EnrollmentCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(foregroundColor: AppTheme.danger),
+                  FilledButton.icon(
+                    onPressed: () => context.go('/courses/${item.courseId}'),
+                    icon: Icon(
+                      item.hasStarted
+                          ? Icons.play_arrow_rounded
+                          : Icons.rocket_launch_rounded,
+                    ),
+                    label: Text(
+                      item.hasStarted ? 'متابعة التعلّم' : 'ابدأ التعلّم',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.danger,
+                    ),
                     onPressed: onRemove,
                     icon: const Icon(Icons.delete_outline_rounded),
                     label: const Text('إلغاء التسجيل'),
@@ -264,11 +382,22 @@ class _EnrollmentCard extends StatelessWidget {
                   const _CourseIcon(),
                   const SizedBox(width: 14),
                   Expanded(child: details),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
+                    onPressed: () => context.go('/courses/${item.courseId}'),
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: Text(
+                      item.hasStarted ? 'متابعة' : 'ابدأ',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   IconButton.outlined(
                     onPressed: onRemove,
                     tooltip: 'إلغاء التسجيل',
-                    icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.danger),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppTheme.danger,
+                    ),
                   ),
                 ],
               ),
