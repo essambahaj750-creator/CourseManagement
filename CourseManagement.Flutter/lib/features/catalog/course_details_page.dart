@@ -899,27 +899,10 @@ class _PublicPreviewPlayerState extends State<_PublicPreviewPlayer> {
     );
     _controller = controller;
     await controller.initialize();
-    controller.addListener(_handlePlayback);
-  }
-
-  void _handlePlayback() {
-    final controller = _controller;
-    if (controller == null || _reportedEnded || !controller.value.isInitialized) {
-      return;
-    }
-
-    final duration = controller.value.duration;
-    if (duration <= Duration.zero) return;
-
-    if (controller.value.position >= duration - const Duration(milliseconds: 500)) {
-      _reportedEnded = true;
-      widget.onEnded?.call();
-    }
   }
 
   @override
   void dispose() {
-    _controller?.removeListener(_handlePlayback);
     _controller?.dispose();
     super.dispose();
   }
@@ -1655,10 +1638,27 @@ class _ProtectedVideoPlayerState extends State<_ProtectedVideoPlayer> {
     );
     _controller = controller;
     await controller.initialize();
+    controller.addListener(_handlePlayback);
+  }
+
+  void _handlePlayback() {
+    final controller = _controller;
+    if (controller == null || _reportedEnded || !controller.value.isInitialized) {
+      return;
+    }
+
+    final duration = controller.value.duration;
+    if (duration <= Duration.zero) return;
+
+    if (controller.value.position >= duration - const Duration(milliseconds: 500)) {
+      _reportedEnded = true;
+      widget.onEnded?.call();
+    }
   }
 
   @override
   void dispose() {
+    _controller?.removeListener(_handlePlayback);
     _controller?.dispose();
     super.dispose();
   }
