@@ -21,6 +21,7 @@ class CourseDetailsPage extends StatefulWidget {
 
 class _CourseDetailsPageState extends State<CourseDetailsPage> {
   late Future<_CourseDetailsData> _future;
+  final _contentKey = GlobalKey();
   bool _actionBusy = false;
 
   @override
@@ -149,6 +150,17 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     }
   }
 
+  Future<void> _startLearning() async {
+    final target = _contentKey.currentContext;
+    if (target == null) return;
+    await Scrollable.ensureVisible(
+      target,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      alignment: .06,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<_CourseDetailsData>(
@@ -203,6 +215,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                     data: data,
                     actionBusy: _actionBusy,
                     onToggle: () => _toggleEnrollment(data),
+                    onStartLearning: _startLearning,
                     wide: wide,
                   );
                   if (wide) {
@@ -230,7 +243,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               _CurriculumSection(data: data),
               if (!data.assetsForbidden) ...[
                 const SizedBox(height: 18),
-                _CourseAssetsSection(data: data),
+                KeyedSubtree(
+                  key: _contentKey,
+                  child: _CourseAssetsSection(data: data),
+                ),
               ],
             ],
           ),
@@ -245,12 +261,14 @@ class _CourseInformation extends StatelessWidget {
     required this.data,
     required this.actionBusy,
     required this.onToggle,
+    required this.onStartLearning,
     required this.wide,
   });
 
   final _CourseDetailsData data;
   final bool actionBusy;
   final VoidCallback onToggle;
+  final VoidCallback onStartLearning;
   final bool wide;
 
   @override
@@ -362,38 +380,71 @@ class _CourseInformation extends StatelessWidget {
                   ],
                 );
 
-                final action = data.isOwner
-                    ? FilledButton.tonalIcon(
-                        onPressed: null,
-                        icon: const Icon(Icons.admin_panel_settings_outlined),
-                        label: const Text('إدارة الكورس'),
-                      )
-                    : FilledButton.icon(
+                final Widget action;
+                if (data.isOwner) {
+                  action = FilledButton.tonalIcon(
+                    onPressed: null,
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    label: const Text('إدارة الكورس'),
+                  );
+                } else if (!data.isAuthenticated) {
+                  action = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.icon(
                         onPressed: actionBusy ? null : onToggle,
-                        icon: actionBusy
-                            ? const SizedBox(
-                                width: 17,
-                                height: 17,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Icon(
-                                !data.isAuthenticated
-                                    ? Icons.person_add_alt_1_rounded
-                                    : data.enrolled
-                                    ? Icons.remove_circle_outline_rounded
-                                    : Icons.add_task_rounded,
-                              ),
-                        label: Text(
-                          !data.isAuthenticated
-                              ? 'أنشئ حسابًا للتسجيل'
-                              : data.enrolled
-                              ? 'إلغاء التسجيل'
-                              : 'ابدأ التسجيل',
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        label: const Text('أنشئ حسابًا للتسجيل'),
+                      ),
+                      const SizedBox(height: 6),
+                      TextButton(
+                        onPressed: () => context.go(
+                          Uri(
+                            path: '/login',
+                            queryParameters: {
+                              'return': '/courses/${course.id}',
+                            },
+                          ).toString(),
                         ),
-                      );
+                        child: const Text('لدي حساب بالفعل'),
+                      ),
+                    ],
+                  );
+                } else if (data.enrolled) {
+                  action = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: onStartLearning,
+                        icon: const Icon(Icons.play_circle_fill_rounded),
+                        label: const Text('ابدأ التعلّم'),
+                      ),
+                      const SizedBox(height: 6),
+                      TextButton(
+                        onPressed: actionBusy ? null : onToggle,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppTheme.danger,
+                        ),
+                        child: const Text('إلغاء التسجيل'),
+                      ),
+                    ],
+                  );
+                } else {
+                  action = FilledButton.icon(
+                    onPressed: actionBusy ? null : onToggle,
+                    icon: actionBusy
+                        ? const SizedBox(
+                            width: 17,
+                            height: 17,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.add_task_rounded),
+                    label: const Text('ابدأ التسجيل'),
+                  );
+                }
 
                 if (compactAction) {
                   return Column(
