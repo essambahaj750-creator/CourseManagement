@@ -7,7 +7,9 @@ import 'auth_controller.dart';
 import 'auth_shell.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({this.returnPath, super.key});
+
+  final String? returnPath;
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -37,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _email.text,
       _password.text,
     );
-    if (success && mounted) context.go('/');
+    if (success && mounted) context.go(widget.returnPath ?? '/');
   }
 
   @override
@@ -167,7 +169,17 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(color: AppTheme.muted),
                   ),
                   TextButton(
-                    onPressed: auth.isBusy ? null : () => context.go('/login'),
+                    onPressed: auth.isBusy
+                        ? null
+                        : () => context.go(
+                            Uri(
+                              path: '/login',
+                              queryParameters: {
+                                if (widget.returnPath != null)
+                                  'return': widget.returnPath!,
+                              },
+                            ).toString(),
+                          ),
                     child: const Text('سجّل الدخول'),
                   ),
                 ],
