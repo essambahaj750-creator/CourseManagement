@@ -171,7 +171,8 @@ public class EnrollmentService(
             await enrollmentRepository.UpdateAsync(fullEnrollment);
         }
 
-        var course = fullEnrollment.Course ?? await courseRepository.GetByIdAsync(courseId)
+        var course = await courseRepository.GetByIdAsync(courseId)
+            ?? fullEnrollment.Course
             ?? throw new KeyNotFoundException("Course not found.");
 
         return new CourseCertificateDto
