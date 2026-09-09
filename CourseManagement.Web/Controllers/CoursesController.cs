@@ -56,6 +56,15 @@ public sealed class CoursesController(
         foreach (var item in related)
             UseMvcCoverUrl(item);
 
+        var instructorProfile = await discoveryService.GetInstructorProfileAsync(
+            course.InstructorId,
+            cancellationToken);
+        if (instructorProfile is not null)
+        {
+            foreach (var item in instructorProfile.Courses)
+                UseMvcCoverUrl(item);
+        }
+
         var preview = await assetService.GetPreviewAsync(id, cancellationToken);
         var curriculum = await assetService.GetPublicCurriculumAsync(id, cancellationToken);
         var reviews = await reviewService.GetSummaryAsync(id, cancellationToken);
@@ -100,6 +109,7 @@ public sealed class CoursesController(
             Progress = progress,
             Reviews = reviews,
             RelatedCourses = related,
+            InstructorProfile = instructorProfile,
             PreviewSeconds = 60
         });
     }
