@@ -286,6 +286,49 @@
                 }
             </section>
 
+            @if (Model.RelatedCourses.Count > 0)
+            {
+                <section class="surface-card related-courses-section">
+                    <div class="course-section-head">
+                        <div>
+                            <span class="section-kicker">اكتشف أكثر</span>
+                            <h2>قد يناسبك أيضًا</h2>
+                            <p>اقتراحات مرتبطة بالمدرّس والسعر مع أولوية للكورسات الأعلى تقييمًا والأكثر تسجيلًا.</p>
+                        </div>
+                    </div>
+
+                    <div class="related-course-grid">
+                        @foreach (var related in Model.RelatedCourses)
+                        {
+                            <a class="related-course-card text-decoration-none" asp-action="Details" asp-route-id="@related.Id">
+                                <div class="related-course-cover">
+                                    @if (!string.IsNullOrWhiteSpace(related.ImageUrl))
+                                    {
+                                        <img src="@related.ImageUrl" alt="غلاف @related.Title" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span><i class="bi bi-mortarboard-fill"></i></span>
+                                    }
+                                </div>
+                                <div class="related-course-body">
+                                    <strong>@related.Title</strong>
+                                    <small>@related.InstructorName</small>
+                                    <div class="related-course-meta">
+                                        @if (related.ReviewCount > 0)
+                                        {
+                                            <span><i class="bi bi-star-fill"></i>@related.AverageRating.ToString("0.0")</span>
+                                        }
+                                        <span><i class="bi bi-people"></i>@related.EnrolledStudents</span>
+                                        <b>@(related.Price <= 0 ? "مجاني" : $"{related.Price:N0} ر.س")</b>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </section>
+            }
+
             @if (canSeeAssets)
             {
                 <section id="course-content" class="surface-card course-content-section">
