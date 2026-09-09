@@ -477,6 +477,15 @@
                     <a class="btn btn-primary w-100" href="@(continueLessonId.HasValue ? $"#lesson-{continueLessonId}" : "#course-content")">
                         <i class="bi bi-play-circle ms-2"></i>@(progress?.CompletedCount > 0 ? "متابعة التعلّم" : "ابدأ التعلّم")
                     </a>
+                    @if (progress is not null && progress.TotalLessons > 0 && progress.CompletedCount >= progress.TotalLessons)
+                    {
+                        <a class="btn btn-outline-success w-100 mt-2"
+                           asp-controller="Enrollments"
+                           asp-action="Certificate"
+                           asp-route-courseId="@course.Id">
+                            <i class="bi bi-award ms-2"></i>عرض شهادة الإكمال
+                        </a>
+                    }
                 }
                 else if (User.Identity?.IsAuthenticated == true && !isOwner)
                 {
