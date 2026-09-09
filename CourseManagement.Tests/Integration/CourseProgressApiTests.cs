@@ -86,5 +86,20 @@ public sealed class CourseProgressApiTests(ApiFactory factory) : IClassFixture<A
         Assert.Equal(1, after.TotalLessons);
         Assert.Equal(100d, after.ProgressPercent);
         Assert.NotNull(after.LastAccessedAtUtc);
+
+        var certificate = await student.GetFromJsonAsync<CourseCertificateDto>(
+            $"/api/enrollment/course/{course.Id}/certificate");
+
+        Assert.NotNull(certificate);
+        Assert.Equal(course.Id, certificate.CourseId);
+        Assert.Equal("Progress course", certificate.CourseTitle);
+        Assert.False(string.IsNullOrWhiteSpace(certificate.StudentName));
+        Assert.StartsWith($"CM-{course.Id:D5}-", certificate.CertificateCode);
+        Assert.True(certificate.CompletedAtUtc <= DateTime.UtcNow.AddMinutes(1));
+
+        var certificateAgain = await student.GetFromJsonAsync<CourseCertificateDto>(
+            $"/api/enrollment/course/{course.Id}/certificate");
+        Assert.Equal(certificate.CertificateCode, certificateAgain!.CertificateCode);
+        Assert.Equal(certificate.CompletedAtUtc, certificateAgain.CompletedAtUtc);
     }
 }
