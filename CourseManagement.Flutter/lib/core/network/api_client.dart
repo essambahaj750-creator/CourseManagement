@@ -267,6 +267,33 @@ class ApiClient {
     return Course.fromJson(json);
   }
 
+  Future<CourseReviewSummary> getCourseReviews(int id) async {
+    final json = await _jsonRequest('GET', '/api/course/$id/reviews');
+    return CourseReviewSummary.fromJson(json);
+  }
+
+  Future<CourseReview> saveCourseReview({
+    required int courseId,
+    required int rating,
+    required String comment,
+  }) async {
+    final json = await _jsonRequest(
+      'PUT',
+      '/api/course/$courseId/reviews',
+      authenticated: true,
+      body: {'rating': rating, 'comment': comment.trim()},
+    );
+    return CourseReview.fromJson(json);
+  }
+
+  Future<void> deleteCourseReview(int courseId) async {
+    await _jsonRequest(
+      'DELETE',
+      '/api/course/$courseId/reviews',
+      authenticated: true,
+    );
+  }
+
   Future<List<CourseCurriculumItem>> getCourseCurriculum(int id) async {
     final list = await _jsonListRequest('GET', '/api/course/$id/curriculum');
     return list
