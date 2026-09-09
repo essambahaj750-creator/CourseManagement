@@ -12,17 +12,28 @@ public class CourseController(
     ICourseService courseService,
     ICourseAssetService assetService,
     IUserService userService,
-    ICourseReviewService reviewService) : ControllerBase
+    ICourseReviewService reviewService,
+    ICourseDiscoveryService discoveryService) : ControllerBase
 {
     /// <summary>كتالوج الكورسات — عام</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll() =>
-        Ok(await courseService.GetAllCoursesAsync());
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        var courses = (await courseService.GetAllCoursesAsync()).ToList();
+        await discoveryService.EnrichSocialProofAsync(courses, cancellationToken);
+        return Ok(courses);
+    }
 
     /// <summary>بحث الكتالوج مع الفلاتر والترتيب والتقسيم الصفحي</summary>
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] CourseFilterDto filter) =>
-        Ok(await courseService.SearchCoursesAsync(filter));
+    public async Task<IActionResult> Search(
+        [FromQuery] CourseFilterDto filter,
+        CancellationToken cancellationToken)
+    {
+        var catalog = await courseService.SearchCoursesAsync(filter);
+        await discoveryService.EnrichSocialProofAsync(catalog.Items, cancellationToken);
+        return Ok(catalog);
+    }
 
     /// <summary>قائمة المدرّسين المتاحين للفلاتر والإسناد</summary>
     [HttpGet("instructors")]
@@ -35,8 +46,18 @@ public class CourseController(
         var course = await courseService.GetCourseByIdAsync(id);
         if (course == null)
             return NotFound(new { message = "Course not found" });
+
+        await discoveryService.EnrichSocialProofAsync([course]);
         return Ok(course);
     }
+
+    [HttpGet("{id:int}/related")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRelated(
+        int id,
+        [FromQuery] int limit = 4,
+        CancellationToken cancellationToken = default) =>
+        Ok(await discoveryService.GetRelatedCoursesAsync(id, limit, cancellationToken));
 
     /// <summary>عناوين دروس الكورس العامة بدون كشف روابط أو ملفات المحتوى المحمي.</summary>
     [HttpGet("{id:int}/curriculum")]
