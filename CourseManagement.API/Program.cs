@@ -35,6 +35,7 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICourseAssetService, CourseAssetService>();
 builder.Services.AddScoped<ICourseReviewService, CourseReviewService>();
+builder.Services.AddScoped<ICourseDiscoveryService, CourseDiscoveryService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 
 var fileUploadSection = builder.Configuration.GetSection("FileUploads");
