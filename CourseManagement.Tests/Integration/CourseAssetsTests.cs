@@ -255,6 +255,69 @@ public sealed class CourseAssetsTests
     }
 
     [Fact]
+    public async Task PublicCurriculum_ShowsLessonTitlesWithoutRequiringEnrollment()
+    {
+        var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
+        var assets = new FakeAssetRepository();
+        assets.Items.AddRange(
+        [
+            new CourseAsset
+            {
+                Id = 1,
+                CourseId = course.Id,
+                Course = course,
+                OriginalFileName = "01-introduction.mp4",
+                StoredFileName = "lesson.mp4",
+                ContentType = "video/mp4",
+                SizeBytes = 10,
+                Type = CourseAssetType.Video,
+                CreatedAtUtc = DateTime.UtcNow.AddMinutes(-3)
+            },
+            new CourseAsset
+            {
+                Id = 2,
+                CourseId = course.Id,
+                Course = course,
+                OriginalFileName = "private-notes.pdf",
+                StoredFileName = "notes.pdf",
+                ContentType = "application/pdf",
+                SizeBytes = 10,
+                Type = CourseAssetType.Attachment,
+                CreatedAtUtc = DateTime.UtcNow.AddMinutes(-2)
+            },
+            new CourseAsset
+            {
+                Id = 3,
+                CourseId = course.Id,
+                Course = course,
+                OriginalFileName = "02-next-step.mp4",
+                StoredFileName = "lesson-2.mp4",
+                ContentType = "video/mp4",
+                SizeBytes = 10,
+                Type = CourseAssetType.Video,
+                CreatedAtUtc = DateTime.UtcNow.AddMinutes(-1)
+            }
+        ]);
+        var service = CreateService(course, assets, new FakeFileStorage(), enrolled: false);
+
+        var curriculum = await service.GetPublicCurriculumAsync(course.Id);
+
+        Assert.Collection(
+            curriculum,
+            first =>
+            {
+                Assert.Equal(1, first.Position);
+                Assert.Equal("01-introduction", first.Title);
+            },
+            second =>
+            {
+                Assert.Equal(2, second.Position);
+                Assert.Equal("02-next-step", second.Title);
+            });
+        Assert.DoesNotContain(curriculum, item => item.Title.Contains("private-notes", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task EnrolledStudentCanListAndOpenAsset()
     {
         var course = new Course { Id = 7, InstructorId = 9, Title = "Testing" };
