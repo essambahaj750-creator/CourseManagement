@@ -135,6 +135,9 @@ namespace CourseManagement.Infrastructure.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CompletedLessonAssetIds")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
