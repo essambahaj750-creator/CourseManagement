@@ -44,6 +44,173 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    document.querySelectorAll('[data-instructor-picker]').forEach((picker) => {
+        const input = picker.querySelector('[data-instructor-search]');
+        const hidden = picker.querySelector('[data-instructor-id]');
+        const menu = picker.querySelector('[data-instructor-menu]');
+        const clear = picker.querySelector('[data-instructor-clear]');
+        const empty = picker.querySelector('[data-instructor-empty]');
+        const options = [...picker.querySelectorAll('[data-instructor-option]')];
+        let activeIndex = -1;
+
+        if (!input || !hidden || !menu) return;
+
+        const normalize = (value) =>
+            (value || '')
+                .toLocaleLowerCase('ar')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+        const visibleOptions = () =>
+            options.filter((option) => !option.classList.contains('d-none'));
+
+        const updateActive = (nextIndex) => {
+            const visible = visibleOptions();
+            visible.forEach((option) => option.classList.remove('is-active'));
+            if (!visible.length) {
+                activeIndex = -1;
+                return;
+            }
+
+            activeIndex = Math.max(0, Math.min(nextIndex, visible.length - 1));
+            const active = visible[activeIndex];
+            active.classList.add('is-active');
+            active.scrollIntoView({ block: 'nearest' });
+        };
+
+        const openMenu = () => {
+            menu.classList.add('is-open');
+            input.setAttribute('aria-expanded', 'true');
+        };
+
+        const closeMenu = () => {
+            menu.classList.remove('is-open');
+            input.setAttribute('aria-expanded', 'false');
+            options.forEach((option) => option.classList.remove('is-active'));
+            activeIndex = -1;
+        };
+
+        const filterOptions = () => {
+            const query = normalize(input.value);
+            let shown = 0;
+
+            options.forEach((option) => {
+                const search = normalize(option.dataset.search);
+                const matches = !query || search.includes(query);
+                option.classList.toggle('d-none', !matches);
+                if (matches) shown += 1;
+            });
+
+            empty?.classList.toggle('d-none', shown > 0);
+            activeIndex = -1;
+            openMenu();
+        };
+
+        const selectOption = (option) => {
+            if (!option) return;
+            hidden.value = option.dataset.id || '';
+            input.value = option.dataset.label || '';
+            input.setCustomValidity('');
+            options.forEach((item) => {
+                const selected = item === option;
+                item.classList.toggle('is-selected', selected);
+                item.setAttribute('aria-selected', String(selected));
+            });
+            clear?.classList.toggle('d-none', !hidden.value);
+            closeMenu();
+        };
+
+        input.addEventListener('focus', filterOptions);
+
+        input.addEventListener('input', () => {
+            hidden.value = '';
+            input.setCustomValidity('');
+            options.forEach((item) => {
+                item.classList.remove('is-selected');
+                item.setAttribute('aria-selected', 'false');
+            });
+            clear?.classList.toggle('d-none', !input.value);
+            filterOptions();
+        });
+
+        input.addEventListener('keydown', (event) => {
+            const visible = visibleOptions();
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                openMenu();
+                updateActive(activeIndex + 1);
+                return;
+            }
+
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                openMenu();
+                updateActive(activeIndex <= 0 ? visible.length - 1 : activeIndex - 1);
+                return;
+            }
+
+            if (event.key === 'Enter' && menu.classList.contains('is-open')) {
+                const active = visible[activeIndex] || (visible.length === 1 ? visible[0] : null);
+                if (active) {
+                    event.preventDefault();
+                    selectOption(active);
+                }
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                closeMenu();
+            }
+        });
+
+        options.forEach((option) => {
+            option.addEventListener('mousedown', (event) => {
+                event.preventDefault();
+                selectOption(option);
+                input.focus({ preventScroll: true });
+            });
+        });
+
+        clear?.addEventListener('click', () => {
+            hidden.value = '';
+            input.value = '';
+            input.setCustomValidity('');
+            clear.classList.add('d-none');
+            options.forEach((item) => {
+                item.classList.remove('is-selected');
+                item.setAttribute('aria-selected', 'false');
+                item.classList.remove('d-none');
+            });
+            empty?.classList.add('d-none');
+            input.focus();
+            openMenu();
+        });
+
+        input.addEventListener('blur', () => {
+            window.setTimeout(() => {
+                closeMenu();
+                if (input.value.trim() && !hidden.value) {
+                    input.setCustomValidity(
+                        picker.dataset.requiredMessage || 'اختر قيمة صحيحة من النتائج.'
+                    );
+                } else {
+                    input.setCustomValidity('');
+                }
+            }, 120);
+        });
+
+        picker.closest('form')?.addEventListener('submit', (event) => {
+            if (input.value.trim() && !hidden.value) {
+                input.setCustomValidity(
+                    picker.dataset.requiredMessage || 'اختر قيمة صحيحة من النتائج.'
+                );
+                input.reportValidity();
+                event.preventDefault();
+            }
+        });
+    });
+
     const filterToggle = document.querySelector('[data-filter-toggle]');
     const filterPanel = document.querySelector('#courseFilters');
     if (filterToggle && filterPanel) {
