@@ -70,6 +70,28 @@ class Course {
   );
 }
 
+class CourseCurriculumItem {
+  const CourseCurriculumItem({
+    required this.id,
+    required this.position,
+    required this.title,
+    required this.type,
+  });
+
+  final int id;
+  final int position;
+  final String title;
+  final String type;
+
+  factory CourseCurriculumItem.fromJson(Map<String, dynamic> json) =>
+      CourseCurriculumItem(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        position: (json['position'] as num?)?.toInt() ?? 0,
+        title: json['title'] as String? ?? 'درس',
+        type: json['type'] as String? ?? 'Video',
+      );
+}
+
 class InstructorOption {
   const InstructorOption({required this.id, required this.name});
 
