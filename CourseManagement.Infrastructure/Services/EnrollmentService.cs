@@ -16,7 +16,7 @@ public class EnrollmentService(
     public async Task<IEnumerable<EnrollmentDto>> GetAllEnrollmentsAsync()
     {
         var enrollments = await enrollmentRepository.GetAllAsync();
-        return enrollments.Select(MapToDto);
+        return await MapManyAsync(enrollments);
     }
 
     public async Task<PagedResultDto<EnrollmentDto>> GetEnrollmentsPageAsync(
@@ -29,7 +29,7 @@ public class EnrollmentService(
         var result = await enrollmentRepository.GetPageAsync(page, pageSize, cancellationToken);
         return new PagedResultDto<EnrollmentDto>
         {
-            Items = result.Items.Select(MapToDto).ToList(),
+            Items = (await MapManyAsync(result.Items)).ToList(),
             TotalCount = result.TotalCount,
             Page = page,
             PageSize = pageSize
@@ -39,13 +39,13 @@ public class EnrollmentService(
     public async Task<EnrollmentDto?> GetEnrollmentByIdAsync(int id)
     {
         var enrollment = await enrollmentRepository.GetByIdAsync(id);
-        return enrollment == null ? null : MapToDto(enrollment);
+        return enrollment == null ? null : await MapToDtoAsync(enrollment);
     }
 
     public async Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByUserAsync(int userId)
     {
         var enrollments = await enrollmentRepository.GetByUserIdAsync(userId);
-        return enrollments.Select(MapToDto);
+        return await MapManyAsync(enrollments);
     }
 
     public async Task<IEnumerable<EnrollmentDto>> GetEnrollmentsByCourseAsync(int courseId, int requesterId, bool isAdmin)
@@ -57,7 +57,7 @@ public class EnrollmentService(
             throw new ForbiddenAccessException("Only the course instructor or an admin can view course enrollments.");
 
         var enrollments = await enrollmentRepository.GetByCourseIdAsync(courseId);
-        return enrollments.Select(MapToDto);
+        return await MapManyAsync(enrollments);
     }
 
     public async Task<EnrollmentDto> EnrollUserAsync(int userId, int courseId)
@@ -80,7 +80,7 @@ public class EnrollmentService(
 
         await enrollmentRepository.AddAsync(enrollment);
         var created = await enrollmentRepository.GetByIdAsync(enrollment.Id);
-        return MapToDto(created ?? enrollment);
+        return await MapToDtoAsync(created ?? enrollment);
     }
 
     public async Task<EnrollmentDto> UpdateEnrollmentAsync(int enrollmentId, int newCourseId)
@@ -99,7 +99,7 @@ public class EnrollmentService(
         enrollment.CourseId = newCourseId;
         await enrollmentRepository.UpdateAsync(enrollment);
         var updated = await enrollmentRepository.GetByIdAsync(enrollment.Id);
-        return MapToDto(updated ?? enrollment);
+        return await MapToDtoAsync(updated ?? enrollment);
     }
 
     public async Task<CourseProgressDto> GetCourseProgressAsync(int userId, int courseId)
@@ -196,13 +196,32 @@ public class EnrollmentService(
         }
     }
 
-    private static EnrollmentDto MapToDto(Enrollment enrollment) => new()
+    private async Task<IReadOnlyList<EnrollmentDto>> MapManyAsync(IEnumerable<Enrollment> enrollments)
     {
-        Id = enrollment.Id,
-        UserId = enrollment.UserId,
-        UserName = enrollment.User?.FullName ?? string.Empty,
-        CourseId = enrollment.CourseId,
-        CourseTitle = enrollment.Course?.Title ?? string.Empty,
-        EnrolledDate = enrollment.EnrolledDate
-    };
+        var items = new List<EnrollmentDto>();
+        foreach (var enrollment in enrollments)
+            items.Add(await MapToDtoAsync(enrollment));
+        return items;
+    }
+
+    private async Task<EnrollmentDto> MapToDtoAsync(Enrollment enrollment)
+    {
+        var assets = await assetRepository.GetByCourseIdAsync(enrollment.CourseId);
+        var progress = BuildProgress(enrollment, assets);
+
+        return new EnrollmentDto
+        {
+            Id = enrollment.Id,
+            UserId = enrollment.UserId,
+            UserName = enrollment.User?.FullName ?? string.Empty,
+            CourseId = enrollment.CourseId,
+            CourseTitle = enrollment.Course?.Title ?? string.Empty,
+            EnrolledDate = enrollment.EnrolledDate,
+            LastLessonAssetId = progress.LastLessonAssetId,
+            CompletedLessons = progress.CompletedCount,
+            TotalLessons = progress.TotalLessons,
+            ProgressPercent = progress.ProgressPercent,
+            LastAccessedAtUtc = progress.LastAccessedAtUtc
+        };
+    }
 }
