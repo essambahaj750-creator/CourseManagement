@@ -37,10 +37,26 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
       const guestOnlyPaths = {'/login', '/register'};
       final publicCatalog = path == '/courses' || path.startsWith('/courses/');
       final publicPath = path == '/' || publicCatalog || guestOnlyPaths.contains(path);
+      final requestedReturn = state.uri.queryParameters['return'];
+      final safeReturn = requestedReturn != null &&
+              requestedReturn.startsWith('/') &&
+              !requestedReturn.startsWith('//') &&
+              !requestedReturn.startsWith('/login') &&
+              !requestedReturn.startsWith('/register')
+          ? requestedReturn
+          : null;
 
       if (widget.auth.isRestoring) return path == '/splash' ? null : '/splash';
-      if (!widget.auth.isAuthenticated && !publicPath) return '/login';
-      if (widget.auth.isAuthenticated && (guestOnlyPaths.contains(path) || path == '/splash')) return '/';
+      if (!widget.auth.isAuthenticated && !publicPath) {
+        return Uri(
+          path: '/login',
+          queryParameters: {'return': state.uri.toString()},
+        ).toString();
+      }
+      if (widget.auth.isAuthenticated && guestOnlyPaths.contains(path)) {
+        return safeReturn ?? '/';
+      }
+      if (widget.auth.isAuthenticated && path == '/splash') return '/';
       if (!widget.auth.isAuthenticated && path == '/splash') return '/';
       if (path.startsWith('/admin') && !widget.auth.isAdmin) return '/';
       if (path.startsWith('/manage') && !widget.auth.isInstructor) return '/';
@@ -49,8 +65,16 @@ class _CourseManagementAppState extends State<CourseManagementApp> {
     errorBuilder: (context, state) => _RouteErrorPage(message: state.error?.toString()),
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-      GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) =>
+            LoginPage(returnPath: state.uri.queryParameters['return']),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) =>
+            RegisterPage(returnPath: state.uri.queryParameters['return']),
+      ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
