@@ -49,6 +49,7 @@ public sealed class CoursesController(
         UseMvcCoverUrl(course);
 
         var preview = await assetService.GetPreviewAsync(id, cancellationToken);
+        var curriculum = await assetService.GetPublicCurriculumAsync(id, cancellationToken);
         var canAccessAssets = false;
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -72,6 +73,7 @@ public sealed class CoursesController(
             Course = course,
             CanAccessAssets = canAccessAssets,
             PreviewAsset = preview,
+            Curriculum = curriculum,
             PreviewSeconds = 60
         });
     }
