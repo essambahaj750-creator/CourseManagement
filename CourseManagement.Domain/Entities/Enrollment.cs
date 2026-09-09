@@ -16,4 +16,5 @@ public class Enrollment
     public int? LastLessonAssetId { get; set; }
     public string CompletedLessonAssetIds { get; set; } = "[]";
     public DateTime? LastAccessedAtUtc { get; set; }
+    public DateTime? CompletedAtUtc { get; set; }
 }
