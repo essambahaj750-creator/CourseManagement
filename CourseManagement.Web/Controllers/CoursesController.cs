@@ -16,7 +16,8 @@ public sealed class CoursesController(
     ICourseService courseService,
     ICourseAssetService assetService,
     IUserService userService,
-    IEnrollmentService enrollmentService) : Controller
+    IEnrollmentService enrollmentService,
+    ICourseReviewService reviewService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
@@ -51,6 +52,7 @@ public sealed class CoursesController(
 
         var preview = await assetService.GetPreviewAsync(id, cancellationToken);
         var curriculum = await assetService.GetPublicCurriculumAsync(id, cancellationToken);
+        var reviews = await reviewService.GetSummaryAsync(id, cancellationToken);
         var canAccessAssets = false;
         CourseProgressDto? progress = null;
         if (User.Identity?.IsAuthenticated == true)
@@ -90,8 +92,56 @@ public sealed class CoursesController(
             PreviewAsset = preview,
             Curriculum = curriculum,
             Progress = progress,
+            Reviews = reviews,
             PreviewSeconds = 60
         });
+    }
+
+    [HttpPost("Details/{id:int}/Review")]
+    [Authorize(AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveReview(
+        int id,
+        int rating,
+        string? comment,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await reviewService.UpsertAsync(
+                GetUserId(),
+                id,
+                rating,
+                comment ?? string.Empty,
+                cancellationToken);
+            TempData["Success"] = "تم حفظ تقييمك للكورس.";
+        }
+        catch (Exception ex) when (ex.IsUserFacing())
+        {
+            TempData["Error"] = ex.Message;
+        }
+
+        return Redirect($"{Url.Action(nameof(Details), new { id })}#course-reviews");
+    }
+
+    [HttpPost("Details/{id:int}/Review/Delete")]
+    [Authorize(AuthenticationSchemes = MvcAuthenticationDefaults.Scheme)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteReview(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await reviewService.DeleteOwnAsync(GetUserId(), id, cancellationToken);
+            TempData["Success"] = "تم حذف تقييمك.";
+        }
+        catch (Exception ex) when (ex.IsUserFacing())
+        {
+            TempData["Error"] = ex.Message;
+        }
+
+        return Redirect($"{Url.Action(nameof(Details), new { id })}#course-reviews");
     }
 
     [HttpGet("Details/{id:int}/Preview")]
