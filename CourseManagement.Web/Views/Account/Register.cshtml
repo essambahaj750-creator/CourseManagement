@@ -47,6 +47,7 @@
                     <p class="text-muted mb-4">ابدأ التعلم في دقائق، واحتفظ بمسارك دائمًا.</p>
 
                     <form asp-action="Register" method="post" novalidate>
+                        <input asp-for="ReturnUrl" type="hidden" />
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger small mb-3" role="alert"></div>
 
                         <div class="hf-auth-field">
@@ -132,7 +133,7 @@
                     <div class="hf-auth-divider"><span>لديك حساب؟</span></div>
 
                     <p class="hf-auth-create">
-                        <a asp-action="Login" class="text-decoration-none">سجّل الدخول <i class="bi bi-arrow-left"></i></a>
+                        <a asp-action="Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">سجّل الدخول <i class="bi bi-arrow-left"></i></a>
                     </p>
                 </section>
             </div>
