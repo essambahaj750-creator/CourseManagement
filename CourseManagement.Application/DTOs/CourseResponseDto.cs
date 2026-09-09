@@ -9,5 +9,8 @@ public class CourseResponseDto
     public string? ImageUrl { get; set; }
     public int InstructorId { get; set; }
     public string InstructorName { get; set; } = string.Empty;
+    public double AverageRating { get; set; }
+    public int ReviewCount { get; set; }
+    public int EnrolledStudents { get; set; }
     public IReadOnlyList<CourseAssetDto> Assets { get; set; } = [];
 }
