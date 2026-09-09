@@ -908,6 +908,188 @@ class _ConfirmationRow extends StatelessWidget {
       );
 }
 
+class _CertificateSheet extends StatelessWidget {
+  const _CertificateSheet({required this.certificate});
+
+  final CourseCertificate certificate;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = certificate.completedAtUtc.toLocal();
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        8,
+        18,
+        20 + MediaQuery.viewPaddingOf(context).bottom,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.blue.withValues(alpha: .06),
+              AppTheme.success.withValues(alpha: .05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.accentGradient,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'شهادة إكمال',
+                        style: TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'تم إصدارها بعد إكمال 100% من دروس الكورس.',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'تشهد منصة المعرفة بأن',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.muted,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              certificate.studentName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.blue,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 7),
+            const Text(
+              'قد أتم بنجاح الكورس',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.muted,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              certificate.courseTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppTheme.ink,
+                fontSize: 17,
+                height: 1.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 22),
+            const Divider(),
+            const SizedBox(height: 12),
+            _CertificateInfo(
+              label: 'المدرّس',
+              value: certificate.instructorName.isEmpty
+                  ? 'فريق المنصة'
+                  : certificate.instructorName,
+            ),
+            _CertificateInfo(
+              label: 'تاريخ الإكمال',
+              value:
+                  '${completed.day}/${completed.month}/${completed.year}',
+            ),
+            _CertificateInfo(
+              label: 'رقم الشهادة',
+              value: certificate.certificateCode,
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('تم'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CertificateInfo extends StatelessWidget {
+  const _CertificateInfo({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 11),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 class _RelatedCoursesSection extends StatelessWidget {
   const _RelatedCoursesSection({required this.courses});
 
@@ -1717,6 +1899,26 @@ class _LearningWorkspaceState extends State<_LearningWorkspace> {
     }
   }
 
+  Future<void> _showCertificate() async {
+    try {
+      final certificate = await context
+          .read<ApiClient>()
+          .getCourseCertificate(widget.data.course.id);
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => _CertificateSheet(certificate: certificate),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
   Future<void> _selectLesson(CourseAsset asset) async {
     if (_selectedAssetId == asset.id) return;
     setState(() => _selectedAssetId = asset.id);
@@ -2012,6 +2214,18 @@ class _LearningWorkspaceState extends State<_LearningWorkspace> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (_progress.totalLessons > 0 &&
+                _progress.completedCount >= _progress.totalLessons) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _showCertificate,
+                icon: const Icon(Icons.workspace_premium_rounded),
+                label: const Text('عرض شهادة الإكمال'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.success,
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             LayoutBuilder(
               builder: (context, constraints) {
