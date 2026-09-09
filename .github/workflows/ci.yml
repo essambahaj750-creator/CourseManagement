@@ -2,17 +2,23 @@ name: CI
 
 on:
   push:
-    branches: [ main, mvc-implementation, professional-refactor, redesign/ux-ui-v2 ]
+    branches:
+      - main
+      - mvc-implementation
+      - professional-refactor
+      - redesign/ux-ui-v2
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  dotnet:
+    name: .NET build and test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +26,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: 10.0.x
 
       - name: Restore
         run: dotnet restore CourseManagement.API.slnx
@@ -31,7 +37,8 @@ jobs:
       - name: Test
         run: dotnet test CourseManagement.API.slnx --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
 
-  flutter-build-and-test:
+  flutter:
+    name: Flutter analyze test and builds
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,7 +51,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.7'
+          flutter-version: 3.35.7
           channel: stable
           cache: true
 
