@@ -267,6 +267,16 @@ class ApiClient {
     return Course.fromJson(json);
   }
 
+  Future<InstructorPublicProfile> getInstructorProfile(
+    int instructorId,
+  ) async {
+    final json = await _jsonRequest(
+      'GET',
+      '/api/course/instructors/$instructorId/profile',
+    );
+    return InstructorPublicProfile.fromJson(json);
+  }
+
   Future<List<Course>> getRelatedCourses(int id, {int limit = 4}) async {
     final list = await _jsonListRequest(
       'GET',
