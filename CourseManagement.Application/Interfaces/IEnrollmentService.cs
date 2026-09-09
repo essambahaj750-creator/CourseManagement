@@ -20,5 +20,6 @@ public interface IEnrollmentService
         int courseId,
         int assetId,
         bool completed);
+    Task<CourseCertificateDto> GetCertificateAsync(int userId, int courseId);
     Task UnenrollUserAsync(int userId, int courseId);
 }
