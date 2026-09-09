@@ -1053,3 +1053,164 @@ a {
   color: var(--hf-success);
   background: #eefaf6;
 }
+
+
+/* Ratings and reviews */
+.review-badge {
+  color: #8a5a00 !important;
+  background: #fff7df !important;
+  border: 1px solid #f7e5a7;
+}
+
+.course-reviews-section {
+  padding: clamp(1.1rem, 2vw, 1.45rem);
+}
+
+.review-score-card {
+  min-width: 132px;
+  padding: .75rem .85rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 15px;
+  background: var(--hf-surface-soft);
+  text-align: center;
+}
+
+.review-score-card strong {
+  display: block;
+  color: var(--hf-ink);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.review-score-card small {
+  display: block;
+  margin-top: .2rem;
+  color: var(--hf-muted);
+  font-size: .66rem;
+}
+
+.review-stars {
+  display: inline-flex;
+  gap: .12rem;
+  color: #e9a51d;
+}
+
+.review-stars.small {
+  font-size: .72rem;
+}
+
+.review-form-v4 {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 17px;
+  background: linear-gradient(145deg, #fafcff, #f8fcfb);
+}
+
+.review-form-v4 textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.review-signin-note {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  margin-top: 1rem;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(36, 99, 235, .10);
+  border-radius: 14px;
+  color: #506783;
+  background: rgba(36, 99, 235, .045);
+  font-size: .75rem;
+  line-height: 1.7;
+}
+
+.review-signin-note i {
+  color: var(--hf-blue-600);
+  margin-top: .08rem;
+}
+
+.review-list-v4 {
+  display: grid;
+  gap: .75rem;
+}
+
+.review-card-v4 {
+  display: flex;
+  gap: .8rem;
+  padding: .9rem;
+  border: 1px solid var(--hf-border);
+  border-radius: 15px;
+  background: #fff;
+}
+
+.review-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--hf-blue-600);
+  background: #eef4ff;
+  border: 1px solid #dbe7fb;
+  font-weight: 900;
+}
+
+.review-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+}
+
+.review-card-head strong {
+  display: block;
+  color: var(--hf-ink);
+  font-size: .8rem;
+}
+
+.review-card-head small {
+  flex: 0 0 auto;
+  color: var(--hf-subtle);
+  font-size: .66rem;
+}
+
+.review-card-v4 p {
+  margin: .55rem 0 0;
+  color: #4b617e;
+  font-size: .76rem;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.enrollment-progress-cell {
+  min-width: 180px;
+}
+
+.enrollment-progress-cell span {
+  color: var(--hf-muted);
+  font-size: .68rem;
+}
+
+.enrollment-progress-cell strong {
+  color: var(--hf-blue-600);
+  font-size: .72rem;
+}
+
+@media (max-width: 575.98px) {
+  .course-reviews-section .course-section-head {
+    align-items: stretch;
+  }
+
+  .review-score-card {
+    width: 100%;
+  }
+
+  .review-card-head {
+    flex-direction: column;
+    gap: .25rem;
+  }
+}
