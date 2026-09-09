@@ -11,13 +11,15 @@ namespace CourseManagement.Web.Controllers;
 public sealed class HomeController(
     ICourseService courseService,
     IEnrollmentService enrollmentService,
-    IUserService userService) : Controller
+    IUserService userService,
+    ICourseDiscoveryService discoveryService) : Controller
 {
     [HttpGet("")]
     [AllowAnonymous]
     public async Task<IActionResult> Index()
     {
         var courses = (await courseService.GetAllCoursesAsync()).ToList();
+        await discoveryService.EnrichSocialProofAsync(courses);
         foreach (var course in courses)
         {
             if (!string.IsNullOrWhiteSpace(course.ImageUrl))
