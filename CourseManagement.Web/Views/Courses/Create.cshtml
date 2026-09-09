@@ -33,22 +33,7 @@
 
                 @if (User.IsInRole("Admin"))
                 {
-                    <div class="mb-3">
-                        <label asp-for="InstructorId" class="form-label"></label>
-                        <select asp-for="InstructorId" class="form-select">
-                            <option value="">اختر المدرّس المسؤول عن الكورس</option>
-                            @foreach (var instructor in Model.Instructors)
-                            {
-                                <option value="@instructor.Id">@instructor.FullName (@instructor.Email)</option>
-                            }
-                        </select>
-                        <div class="input-hint"><i class="bi bi-person-video3 ms-1"></i>الكورس سيظهر باسم هذا المدرّس، وليس باسم الأدمن الذي أنشأه.</div>
-                        <span asp-validation-for="InstructorId" class="text-danger small"></span>
-                        @if (Model.Instructors.Count == 0)
-                        {
-                            <div class="alert alert-warning small mt-2 mb-0">لا يوجد حساب بدور «مدرّس». غيّر دور أحد المستخدمين إلى Instructor من لوحة الإدارة أولًا.</div>
-                        }
-                    </div>
+                    <partial name="_InstructorPicker" model="Model" />
                 }
 
                 <div class="mb-3">
