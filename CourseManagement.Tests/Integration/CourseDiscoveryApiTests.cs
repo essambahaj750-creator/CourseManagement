@@ -73,5 +73,19 @@ public sealed class CourseDiscoveryApiTests(ApiFactory factory) : IClassFixture<
 
         Assert.NotNull(recommendations);
         Assert.Contains(recommendations, course => course.Id == related.Id);
+
+        var profile = await factory.CreateClient()
+            .GetFromJsonAsync<InstructorPublicProfileDto>(
+                $"/api/course/instructors/{instructor.UserId}/profile");
+
+        Assert.NotNull(profile);
+        Assert.Equal(instructor.UserId, profile.InstructorId);
+        Assert.Equal("Discovery Instructor", profile.FullName);
+        Assert.Equal(2, profile.CourseCount);
+        Assert.Equal(1, profile.TotalStudents);
+        Assert.Equal(1, profile.ReviewCount);
+        Assert.Equal(4d, profile.AverageRating);
+        Assert.Contains(profile.Courses, course => course.Id == primary.Id);
+        Assert.Contains(profile.Courses, course => course.Id == related.Id);
     }
 }
