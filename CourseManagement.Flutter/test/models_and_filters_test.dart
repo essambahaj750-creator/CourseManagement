@@ -120,6 +120,37 @@ void main() {
     expect(summary.reviews.single.comment, 'ممتاز');
   });
 
+  test('InstructorPublicProfile parses instructor metrics', () {
+    final profile = InstructorPublicProfile.fromJson({
+      'instructorId': 9,
+      'fullName': 'مدرّس تجريبي',
+      'courseCount': 2,
+      'totalStudents': 18,
+      'averageRating': 4.7,
+      'reviewCount': 11,
+      'courses': [
+        {
+          'id': 7,
+          'title': 'Flutter',
+          'description': 'Course',
+          'price': 0,
+          'imageUrl': null,
+          'instructorId': 9,
+          'instructorName': 'مدرّس تجريبي',
+          'averageRating': 4.7,
+          'reviewCount': 11,
+          'enrolledStudents': 18,
+        },
+      ],
+    });
+
+    expect(profile.instructorId, 9);
+    expect(profile.courseCount, 2);
+    expect(profile.totalStudents, 18);
+    expect(profile.averageRating, 4.7);
+    expect(profile.courses.single.title, 'Flutter');
+  });
+
   test('AuthSession detects expired token timestamps', () {
     final session = AuthSession.fromJson({
       'token': 'token',
