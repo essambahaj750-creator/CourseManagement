@@ -33,6 +33,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     final api = context.read<ApiClient>();
     final auth = context.read<AuthController>();
     final course = await api.getCourse(widget.courseId);
+    final curriculum = await api.getCourseCurriculum(widget.courseId);
     final session = auth.session;
     final isAuthenticated = auth.isAuthenticated;
     final isOwner = session?.role == 'Admin' ||
@@ -62,6 +63,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     return _CourseDetailsData(
       course: course,
       enrolled: enrolled,
+      curriculum: curriculum,
       assets: assets,
       assetsForbidden: assetsForbidden,
       isAuthenticated: isAuthenticated,
@@ -71,10 +73,52 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
 
   Future<void> _toggleEnrollment(_CourseDetailsData data) async {
     if (!data.isAuthenticated) {
-      context.go('/login');
+      context.go(
+        Uri(
+          path: '/register',
+          queryParameters: {'return': '/courses/${widget.courseId}'},
+        ).toString(),
+      );
       return;
     }
     if (data.isOwner) return;
+
+    if (!data.enrolled) {
+      final session = context.read<AuthController>().session;
+      if (session == null) return;
+      final confirmed = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => _EnrollmentConfirmationSheet(
+          course: data.course,
+          fullName: session.fullName,
+          email: session.email,
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    } else {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('إلغاء التسجيل؟'),
+          content: const Text(
+            'سيتم إلغاء تسجيلك من هذا الكورس وإزالة الوصول إلى محتواه المحمي.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('رجوع'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('إلغاء التسجيل'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
 
     setState(() => _actionBusy = true);
     try {
@@ -91,7 +135,9 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            data.enrolled ? 'تم إلغاء التسجيل.' : 'تم تسجيلك في الكورس بنجاح.',
+            data.enrolled
+                ? 'تم إلغاء التسجيل.'
+                : 'تم تسجيلك في الكورس. يمكنك البدء بالتعلّم الآن.',
           ),
         ),
       );
@@ -179,7 +225,13 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                 _PublicPreviewPlayer(courseId: course.id),
                 const SizedBox(height: 18),
               ],
-              _CourseAssetsSection(data: data),
+              _CourseHighlights(data: data),
+              const SizedBox(height: 18),
+              _CurriculumSection(data: data),
+              if (!data.assetsForbidden) ...[
+                const SizedBox(height: 18),
+                _CourseAssetsSection(data: data),
+              ],
             ],
           ),
         );
@@ -331,17 +383,17 @@ class _CourseInformation extends StatelessWidget {
                                 )
                               : Icon(
                                   !data.isAuthenticated
-                                      ? Icons.login_rounded
+                                      ? Icons.person_add_alt_1_rounded
                                       : data.enrolled
                                       ? Icons.remove_circle_outline_rounded
                                       : Icons.add_task_rounded,
                                 ),
                           label: Text(
                             !data.isAuthenticated
-                                ? 'سجّل الدخول'
+                                ? 'أنشئ حسابًا للتسجيل'
                                 : data.enrolled
                                 ? 'إلغاء التسجيل'
-                                : 'سجّل الآن',
+                                : 'ابدأ التسجيل',
                           ),
                         ),
                 ),
@@ -352,6 +404,390 @@ class _CourseInformation extends StatelessWidget {
       ],
     );
   }
+}
+
+class _CourseHighlights extends StatelessWidget {
+  const _CourseHighlights({required this.data});
+
+  final _CourseDetailsData data;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'ماذا يشمل التسجيل؟',
+                style: TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const _CourseBenefit(
+                icon: Icons.ondemand_video_rounded,
+                title: 'دروس فيديو منظمة',
+                subtitle: 'تظهر الدروس الكاملة بعد التسجيل في الكورس.',
+              ),
+              const _CourseBenefit(
+                icon: Icons.folder_zip_outlined,
+                title: 'مرفقات ومواد مساعدة',
+                subtitle: 'حمّل الملفات التي يضيفها المدرّس من حسابك.',
+              ),
+              _CourseBenefit(
+                icon: data.enrolled
+                    ? Icons.verified_rounded
+                    : Icons.lock_outline_rounded,
+                title: data.enrolled ? 'وصولك مفعّل' : 'وصول مرتبط بحسابك',
+                subtitle: data.enrolled
+                    ? 'أنت مسجل ويمكنك الوصول إلى المحتوى المحمي.'
+                    : 'سجّل بإيميلك لتبقى الكورسات مرتبطة بحسابك على كل جهاز.',
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _CourseBenefit extends StatelessWidget {
+  const _CourseBenefit({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 13),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.blue.withValues(alpha: .07),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .08),
+                ),
+              ),
+              child: Icon(icon, color: AppTheme.blue, size: 20),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppTheme.ink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 11,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _CurriculumSection extends StatelessWidget {
+  const _CurriculumSection({required this.data});
+
+  final _CourseDetailsData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = data.curriculum;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'محتوى الكورس',
+                        style: TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'يمكنك الاطلاع على عناوين الدروس قبل التسجيل، بينما التشغيل الكامل محمي.',
+                        style: TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 11,
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Text(
+                    '${items.length} درس',
+                    style: const TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (items.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'المدرّس لم يضف دروسًا إلى المنهج بعد.',
+                  style: TextStyle(color: AppTheme.muted),
+                ),
+              )
+            else
+              ...items.map(
+                (item) => Container(
+                  margin: const EdgeInsets.only(bottom: 9),
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: Text(
+                          '${item.position}',
+                          style: const TextStyle(
+                            color: AppTheme.blue,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.ink,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        data.assetsForbidden
+                            ? Icons.lock_outline_rounded
+                            : Icons.play_circle_outline_rounded,
+                        color: data.assetsForbidden
+                            ? AppTheme.subtle
+                            : AppTheme.success,
+                        size: 19,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EnrollmentConfirmationSheet extends StatelessWidget {
+  const _EnrollmentConfirmationSheet({
+    required this.course,
+    required this.fullName,
+    required this.email,
+  });
+
+  final Course course;
+  final String fullName;
+  final String email;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          8,
+          20,
+          20 + MediaQuery.viewPaddingOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'تأكيد التسجيل',
+              style: TextStyle(
+                color: AppTheme.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'راجع الحساب والكورس قبل إتمام التسجيل.',
+              style: TextStyle(
+                color: AppTheme.muted,
+                fontSize: 11,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 18),
+            _ConfirmationRow(
+              icon: Icons.person_outline_rounded,
+              label: 'الحساب',
+              value: fullName.isEmpty ? 'حساب الطالب' : fullName,
+            ),
+            _ConfirmationRow(
+              icon: Icons.alternate_email_rounded,
+              label: 'البريد الإلكتروني',
+              value: email,
+            ),
+            _ConfirmationRow(
+              icon: Icons.menu_book_rounded,
+              label: 'الكورس',
+              value: course.title,
+            ),
+            _ConfirmationRow(
+              icon: Icons.payments_outlined,
+              label: 'القيمة',
+              value: course.price == 0
+                  ? 'مجاني'
+                  : '${course.price.toStringAsFixed(2)} ر.س',
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.blue.withValues(alpha: .05),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .09),
+                ),
+              ),
+              child: const Text(
+                'بعد التأكيد سيُربط الكورس بهذا الحساب، ويمكنك الوصول إليه من قسم «كورساتي».',
+                style: TextStyle(
+                  color: AppTheme.text,
+                  fontSize: 10,
+                  height: 1.7,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: const Icon(Icons.verified_rounded),
+              label: const Text('تأكيد التسجيل في الكورس'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('ليس الآن'),
+            ),
+          ],
+        ),
+      );
+}
+
+class _ConfirmationRow extends StatelessWidget {
+  const _ConfirmationRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: AppTheme.blue, size: 20),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 105,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  color: AppTheme.ink,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _PublicPreviewPlayer extends StatefulWidget {
@@ -754,6 +1190,7 @@ class _CourseDetailsData {
   const _CourseDetailsData({
     required this.course,
     required this.enrolled,
+    required this.curriculum,
     required this.assets,
     required this.assetsForbidden,
     required this.isAuthenticated,
@@ -762,6 +1199,7 @@ class _CourseDetailsData {
 
   final Course course;
   final bool enrolled;
+  final List<CourseCurriculumItem> curriculum;
   final List<CourseAsset> assets;
   final bool assetsForbidden;
   final bool isAuthenticated;
