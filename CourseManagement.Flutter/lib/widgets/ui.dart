@@ -13,13 +13,11 @@ class PageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final horizontal = width < 600 ? 16.0 : width < 1024 ? 24.0 : 32.0;
-    final vertical = width < 600 ? 20.0 : 28.0;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(horizontal, vertical, horizontal, 48),
+          padding: AppSpacing.page(width),
           child: child,
         ),
       ),
@@ -57,18 +55,21 @@ class AdaptivePageHeader extends StatelessWidget {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: AppTheme.cyan.withValues(alpha: .10),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.blue.withValues(alpha: .07),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  border: Border.all(
+                    color: AppTheme.blue.withValues(alpha: .08),
+                  ),
                 ),
-                child: Icon(icon, size: 16, color: AppTheme.cyan),
+                child: Icon(icon, size: 16, color: AppTheme.blue),
               ),
               const SizedBox(width: 9),
             ],
             Text(
               eyebrow,
               style: const TextStyle(
-                color: AppTheme.cyan,
-                fontSize: 11,
+                color: AppTheme.blue,
+                fontSize: 10,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -77,13 +78,9 @@ class AdaptivePageHeader extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           title,
-          style: TextStyle(
-            color: AppTheme.ink,
-            fontSize: compact ? 25 : 30,
-            height: 1.25,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -.35,
-          ),
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                fontSize: compact ? 25 : 30,
+              ),
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 7),
