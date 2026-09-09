@@ -3,6 +3,7 @@ using CourseManagement.Application.Common;
 using CourseManagement.Application.DTOs;
 using CourseManagement.Application.Interfaces;
 using CourseManagement.Domain.Entities;
+using CourseManagement.Domain.Enums;
 using CourseManagement.Domain.Interfaces;
 
 namespace CourseManagement.Infrastructure.Services;
