@@ -289,7 +289,7 @@ class _EnrollmentCard extends StatelessWidget {
           child: LinearProgressIndicator(
             value: item.totalLessons == 0
                 ? 0
-                : (item.progressPercent / 100).clamp(0, 1),
+                : (item.progressPercent / 100).clamp(0.0, 1.0).toDouble(),
             minHeight: 7,
             backgroundColor: AppTheme.border,
           ),
