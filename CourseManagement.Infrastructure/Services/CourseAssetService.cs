@@ -37,6 +37,28 @@ public sealed class CourseAssetService(
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<CourseCurriculumItemDto>> GetPublicCurriculumAsync(
+        int courseId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await courseRepository.ExistsAsync(courseId))
+            throw new KeyNotFoundException("Course not found.");
+
+        var assets = await assetRepository.GetByCourseIdAsync(courseId, cancellationToken);
+        return assets
+            .Where(asset => asset.Type == CourseAssetType.Video)
+            .OrderBy(asset => asset.CreatedAtUtc)
+            .ThenBy(asset => asset.Id)
+            .Select((asset, index) => new CourseCurriculumItemDto
+            {
+                Id = asset.Id,
+                Position = index + 1,
+                Title = BuildPublicLessonTitle(asset.OriginalFileName, index + 1),
+                Type = "Video"
+            })
+            .ToArray();
+    }
+
     public async Task<CourseAssetDto?> GetPreviewAsync(
         int courseId,
         CancellationToken cancellationToken = default)
@@ -362,6 +384,12 @@ public sealed class CourseAssetService(
     {
         if (!isAdmin && course.InstructorId != requesterId)
             throw new ForbiddenAccessException("Only the course owner or an Admin can manage course files.");
+    }
+
+    private static string BuildPublicLessonTitle(string originalFileName, int position)
+    {
+        var title = Path.GetFileNameWithoutExtension(originalFileName ?? string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(title) ? $"الدرس {position}" : title;
     }
 
     private static CourseAssetDto Map(CourseAsset asset) => new()
