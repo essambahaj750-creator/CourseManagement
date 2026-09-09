@@ -99,8 +99,20 @@ namespace CourseManagement.Infrastructure.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CompletedLessonAssetIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("[]");
+
                     b.Property<DateTime>("EnrolledDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastAccessedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("LastLessonAssetId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
