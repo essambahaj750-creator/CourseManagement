@@ -611,8 +611,8 @@ class _FloatingBottomNavigation extends StatelessWidget {
       top: false,
       minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Container(
-        height: 70,
-        padding: const EdgeInsets.all(7),
+        height: 74,
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0xFCFFFFFF),
           borderRadius: BorderRadius.circular(24),
@@ -668,7 +668,7 @@ class _BottomNavItem extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 190),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
             decoration: BoxDecoration(
               color: selected
                   ? AppTheme.blue.withValues(alpha: .09)
@@ -702,6 +702,7 @@ class _BottomNavItem extends StatelessWidget {
                   style: TextStyle(
                     color: selected ? AppTheme.blue : AppTheme.muted,
                     fontSize: 9,
+                    height: 1.05,
                     fontWeight:
                         selected ? FontWeight.w900 : FontWeight.w700,
                   ),
