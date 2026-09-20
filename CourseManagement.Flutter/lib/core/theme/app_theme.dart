@@ -72,6 +72,18 @@ class AppTheme {
     colors: [blue, Color(0xFF3E82F8), cyan],
   );
 
+  static const LinearGradient surfaceGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0xFFFFFFFF), Color(0xFFF8FBFF)],
+  );
+
+  static const LinearGradient softAccentGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0x142463EB), Color(0x0F12B8A0)],
+  );
+
   static List<BoxShadow> get softShadow => const [
         BoxShadow(
           color: Color(0x1007182F),
@@ -104,6 +116,16 @@ class AppTheme {
       scaffoldBackgroundColor: background,
       fontFamily: 'Cairo',
       visualDensity: VisualDensity.standard,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _PremiumPageTransitionsBuilder(),
+          TargetPlatform.iOS: _PremiumPageTransitionsBuilder(),
+          TargetPlatform.macOS: _PremiumPageTransitionsBuilder(),
+          TargetPlatform.windows: _PremiumPageTransitionsBuilder(),
+          TargetPlatform.linux: _PremiumPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: _PremiumPageTransitionsBuilder(),
+        },
+      ),
     );
 
     return base.copyWith(
@@ -307,11 +329,46 @@ class AppTheme {
         color: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shadowColor: const Color(0x1007182F),
+        shadowColor: const Color(0x1207182F),
         margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           side: const BorderSide(color: border),
+        ),
+      ),
+      listTileTheme: const ListTileThemeData(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        iconColor: muted,
+        textColor: text,
+        titleTextStyle: TextStyle(
+          color: ink,
+          fontFamily: 'Cairo',
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+        ),
+        subtitleTextStyle: TextStyle(
+          color: muted,
+          fontFamily: 'Cairo',
+          fontSize: 11,
+          height: 1.55,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: const Color(0x1807182F),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: const BorderSide(color: border),
+        ),
+        textStyle: const TextStyle(
+          color: ink,
+          fontFamily: 'Cairo',
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -416,6 +473,36 @@ class AppTheme {
           fontWeight: FontWeight.w700,
         ),
         waitDuration: const Duration(milliseconds: 350),
+      ),
+    );
+  }
+}
+
+
+class _PremiumPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _PremiumPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: Tween<double>(begin: .72, end: 1).animate(curved),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, .018),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
       ),
     );
   }
