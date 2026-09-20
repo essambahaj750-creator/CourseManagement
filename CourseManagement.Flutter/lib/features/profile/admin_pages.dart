@@ -51,16 +51,45 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             const SizedBox(height: 3),
             Text(user.email, style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
             const SizedBox(height: 18),
+            const Text(
+              'الدور الجديد',
+              style: TextStyle(
+                color: AppTheme.ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 9),
             StatefulBuilder(
-              builder: (context, setDialogState) => DropdownButtonFormField<String>(
-                initialValue: role,
-                decoration: const InputDecoration(labelText: 'الدور الجديد'),
-                items: const [
-                  DropdownMenuItem(value: 'Student', child: Text('Student — طالب')),
-                  DropdownMenuItem(value: 'Instructor', child: Text('Instructor — مدرّس')),
-                  DropdownMenuItem(value: 'Admin', child: Text('Admin — مدير')),
+              builder: (context, setDialogState) => Column(
+                children: [
+                  _RoleChoice(
+                    value: 'Student',
+                    title: 'طالب',
+                    subtitle: 'استكشاف الكورسات والتسجيل والتعلّم',
+                    icon: Icons.school_outlined,
+                    selected: role == 'Student',
+                    onTap: () => setDialogState(() => role = 'Student'),
+                  ),
+                  const SizedBox(height: 8),
+                  _RoleChoice(
+                    value: 'Instructor',
+                    title: 'مدرّس',
+                    subtitle: 'إنشاء الكورسات وإدارة المحتوى',
+                    icon: Icons.co_present_rounded,
+                    selected: role == 'Instructor',
+                    onTap: () => setDialogState(() => role = 'Instructor'),
+                  ),
+                  const SizedBox(height: 8),
+                  _RoleChoice(
+                    value: 'Admin',
+                    title: 'مدير',
+                    subtitle: 'صلاحيات الإدارة والتحكم الكامل',
+                    icon: Icons.admin_panel_settings_outlined,
+                    selected: role == 'Admin',
+                    onTap: () => setDialogState(() => role = 'Admin'),
+                  ),
                 ],
-                onChanged: (value) => setDialogState(() => role = value ?? role),
               ),
             ),
           ],
@@ -207,6 +236,117 @@ class _UserRow extends StatelessWidget {
       trailing: OutlinedButton.icon(onPressed: onRole, icon: const Icon(Icons.manage_accounts_rounded), label: const Text('تغيير الدور')),
     );
   }
+}
+
+class _RoleChoice extends StatelessWidget {
+  const _RoleChoice({
+    required this.value,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String value;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: selected
+            ? AppTheme.blue.withValues(alpha: .07)
+            : AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? AppTheme.blue.withValues(alpha: .28)
+                    : AppTheme.border,
+                width: selected ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppTheme.blue.withValues(alpha: .11)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? AppTheme.blue : AppTheme.muted,
+                    size: 19,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: selected ? AppTheme.blue : AppTheme.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            value,
+                            style: const TextStyle(
+                              color: AppTheme.subtle,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 9.5,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    key: ValueKey(selected),
+                    color: selected ? AppTheme.blue : AppTheme.borderStrong,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 class AdminEnrollmentsPage extends StatefulWidget {
