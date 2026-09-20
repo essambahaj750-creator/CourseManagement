@@ -171,53 +171,225 @@ class _CatalogHero extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(compact ? 20 : 28),
-        decoration: BoxDecoration(
-          gradient: AppTheme.brandGradient,
-          borderRadius: BorderRadius.circular(compact ? 24 : 30),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'استكشف وتعلّم',
+  Widget build(BuildContext context) {
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .10),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: Colors.white.withValues(alpha: .10)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: Color(0xFFB9FFF2), size: 14),
+              SizedBox(width: 6),
+              Text(
+                'مكتبة تعلّم مختارة بعناية',
                 style: TextStyle(
-                  color: Color(0xFFB9FFF2),
+                  color: Color(0xFFD8FFF7),
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'اعثر على الكورس\nالذي ينقلك للخطوة التالية',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: compact ? 25 : 32,
+            height: 1.3,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.35,
+          ),
+        ),
+        const SizedBox(height: 9),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 610),
+          child: Text(
+            'ابحث بسرعة، صفِّ النتائج بدقة، واختر المسار الأنسب لهدفك وميزانيتك.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .74),
+              fontSize: compact ? 11 : 13,
+              height: 1.75,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'اختر الكورس المناسب لك',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: compact ? 24 : 30,
-                height: 1.3,
-                fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: const [
+            _HeroFeature(icon: Icons.search_rounded, label: 'بحث سريع'),
+            _HeroFeature(icon: Icons.tune_rounded, label: 'فلاتر دقيقة'),
+            _HeroFeature(icon: Icons.verified_rounded, label: 'محتوى موثوق'),
+          ],
+        ),
+      ],
+    );
+
+    final artwork = Container(
+      width: compact ? 96 : 150,
+      height: compact ? 96 : 150,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(compact ? 26 : 36),
+        border: Border.all(color: Colors.white.withValues(alpha: .10)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: compact ? 58 : 82,
+            height: compact ? 58 : 82,
+            decoration: BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              borderRadius: BorderRadius.circular(compact ? 19 : 25),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x3312B8A0),
+                  blurRadius: 30,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.school_rounded,
+              color: Colors.white,
+              size: compact ? 30 : 42,
+            ),
+          ),
+          const PositionedDirectional(
+            top: 16,
+            start: 14,
+            child: _HeroOrb(
+              icon: Icons.play_arrow_rounded,
+              color: Color(0xFFB9FFF2),
+            ),
+          ),
+          const PositionedDirectional(
+            bottom: 14,
+            end: 14,
+            child: _HeroOrb(
+              icon: Icons.workspace_premium_rounded,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: EdgeInsets.all(compact ? 20 : 30),
+      decoration: BoxDecoration(
+        gradient: AppTheme.brandGradient,
+        borderRadius: BorderRadius.circular(compact ? 26 : 32),
+        boxShadow: AppTheme.elevatedShadow,
+      ),
+      child: Stack(
+        children: [
+          PositionedDirectional(
+            top: -90,
+            end: -60,
+            child: Container(
+              width: 230,
+              height: 230,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.cyan.withValues(alpha: .10),
               ),
             ),
-            const SizedBox(height: 8),
+          ),
+          PositionedDirectional(
+            bottom: -110,
+            start: -70,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.blue.withValues(alpha: .12),
+              ),
+            ),
+          ),
+          if (compact)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                copy,
+                const SizedBox(height: 20),
+                Align(alignment: Alignment.centerLeft, child: artwork),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: copy),
+                const SizedBox(width: 28),
+                artwork,
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroFeature extends StatelessWidget {
+  const _HeroFeature({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: Colors.white.withValues(alpha: .08)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFFB9FFF2)),
+            const SizedBox(width: 5),
             Text(
-              'ابحث بالاسم، ثم صفِّ النتائج حسب المدرّس والسعر والترتيب.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: .76),
-                fontSize: compact ? 11 : 13,
-                height: 1.7,
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
         ),
+      );
+}
+
+class _HeroOrb extends StatelessWidget {
+  const _HeroOrb({required this.icon, required this.color});
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .10),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withValues(alpha: .12)),
+        ),
+        child: Icon(icon, color: color, size: 17),
       );
 }
 
@@ -243,7 +415,8 @@ class _SearchBar extends StatelessWidget {
       textInputAction: TextInputAction.search,
       onSubmitted: (_) => onSearch(),
       decoration: InputDecoration(
-        hintText: 'ابحث عن كورس...',
+        hintText: 'ابحث باسم الكورس أو المهارة...',
+        fillColor: AppTheme.surfaceMuted,
         prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: IconButton(
           tooltip: 'بحث',
@@ -253,63 +426,76 @@ class _SearchBar extends StatelessWidget {
       ),
     );
 
-    final desktopFilterButton = OutlinedButton.icon(
-      onPressed: onFilter,
-      icon: Badge(
-        isLabelVisible: activeCount > 0,
-        label: Text('$activeCount'),
-        child: const Icon(Icons.filter_list_rounded),
-      ),
-      label: Text(activeCount > 0 ? 'الفلاتر ($activeCount)' : 'الفلاتر'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(126, 54),
-      ),
-    );
-
-    final compactFilterButton = Tooltip(
-      message: activeCount > 0 ? 'الفلاتر ($activeCount)' : 'الفلاتر',
-      child: Material(
-        color: AppTheme.blue.withValues(alpha: .10),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onFilter,
-          child: SizedBox(
-            width: 54,
-            height: 54,
-            child: Center(
-              child: Badge(
-                isLabelVisible: activeCount > 0,
-                label: Text('$activeCount'),
-                child: const Icon(
-                  Icons.filter_list_rounded,
-                  color: AppTheme.ink,
-                  size: 27,
+    final filterControl = compact
+        ? Tooltip(
+            message: activeCount > 0 ? 'الفلاتر ($activeCount)' : 'الفلاتر',
+            child: Material(
+              color: activeCount > 0
+                  ? AppTheme.blue.withValues(alpha: .10)
+                  : AppTheme.surfaceMuted,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: onFilter,
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: activeCount > 0
+                          ? AppTheme.blue.withValues(alpha: .18)
+                          : AppTheme.border,
+                    ),
+                  ),
+                  child: Center(
+                    child: Badge(
+                      isLabelVisible: activeCount > 0,
+                      label: Text('$activeCount'),
+                      child: Icon(
+                        Icons.tune_rounded,
+                        color: activeCount > 0 ? AppTheme.blue : AppTheme.ink,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
+          )
+        : OutlinedButton.icon(
+            onPressed: onFilter,
+            icon: Badge(
+              isLabelVisible: activeCount > 0,
+              label: Text('$activeCount'),
+              child: const Icon(Icons.tune_rounded),
+            ),
+            label: Text(
+              activeCount > 0 ? 'الفلاتر ($activeCount)' : 'تصفية النتائج',
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(146, 54),
+              backgroundColor: AppTheme.surfaceMuted,
+            ),
+          );
 
-    if (compact) {
-      return Row(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(child: searchField),
-          const SizedBox(width: 10),
-          compactFilterButton,
+          const SizedBox(width: 9),
+          filterControl,
         ],
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(child: searchField),
-        const SizedBox(width: 10),
-        desktopFilterButton,
-      ],
+      ),
     );
   }
 }
@@ -861,34 +1047,71 @@ class _ResultsSummary extends StatelessWidget {
   final CourseCatalog catalog;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          const Expanded(
-            child: Text(
-              'الكورسات المتاحة',
-              style: TextStyle(
-                color: AppTheme.ink,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppTheme.blue.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .08),
+                ),
               ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.blue.withValues(alpha: .07),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '${catalog.totalCount} كورس',
-              style: const TextStyle(
+              child: const Icon(
+                Icons.view_module_rounded,
                 color: AppTheme.blue,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
+                size: 20,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 11),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'الكورسات المتاحة',
+                    style: TextStyle(
+                      color: AppTheme.ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'اختر الكورس الذي يناسب هدفك وابدأ التعلّم',
+                    style: TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppTheme.blue.withValues(alpha: .07),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .10),
+                ),
+              ),
+              child: Text(
+                '${catalog.totalCount} كورس',
+                style: const TextStyle(
+                  color: AppTheme.blue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
 }
 
@@ -930,32 +1153,9 @@ class _CourseCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                children: [
-                  CourseCover(course: course, height: 180),
-                  PositionedDirectional(
-                    top: 10,
-                    end: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .96),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        course.price == 0 ? 'مجاني' : '${course.price.toStringAsFixed(0)} ر.س',
-                        style: const TextStyle(
-                          color: AppTheme.ink,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              CourseCover(course: course, height: 184),
               Padding(
-                padding: const EdgeInsets.all(15),
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -968,76 +1168,55 @@ class _CourseCard extends StatelessWidget {
                         fontSize: 15,
                         height: 1.45,
                         fontWeight: FontWeight.w900,
+                        letterSpacing: -.1,
                       ),
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      course.description.isEmpty ? 'مسار عملي لتطوير مهاراتك.' : course.description,
+                      course.description.isEmpty
+                          ? 'مسار عملي مصمم لتطوير مهاراتك بخطوات واضحة.'
+                          : course.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppTheme.muted, fontSize: 11, height: 1.6),
+                      style: const TextStyle(
+                        color: AppTheme.muted,
+                        fontSize: 10.5,
+                        height: 1.65,
+                      ),
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 12),
                     Wrap(
-                      spacing: 10,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 7,
+                      runSpacing: 7,
                       children: [
                         if (course.reviewCount > 0)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Color(0xFFE9A51D),
-                                size: 17,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                course.averageRating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  color: AppTheme.ink,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '(${course.reviewCount})',
-                                style: const TextStyle(
-                                  color: AppTheme.subtle,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ],
+                          _CourseMetric(
+                            icon: Icons.star_rounded,
+                            label:
+                                '${course.averageRating.toStringAsFixed(1)} (${course.reviewCount})',
+                            accent: const Color(0xFFE9A51D),
                           ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.people_alt_outlined,
-                              color: AppTheme.muted,
-                              size: 15,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${course.enrolledStudents} طالب',
-                              style: const TextStyle(
-                                color: AppTheme.muted,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                        _CourseMetric(
+                          icon: Icons.people_alt_outlined,
+                          label: '${course.enrolledStudents} طالب',
+                          accent: AppTheme.blue,
+                        ),
+                        const _CourseMetric(
+                          icon: Icons.smart_display_outlined,
+                          label: 'تعلّم مرن',
+                          accent: AppTheme.cyan,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 13,
-                          backgroundColor: AppTheme.blue.withValues(alpha: .1),
+                          radius: 15,
+                          backgroundColor:
+                              AppTheme.blue.withValues(alpha: .09),
                           child: Text(
                             course.instructorName.isEmpty
                                 ? 'م'
@@ -1049,22 +1228,60 @@ class _CourseCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 7),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            course.instructorName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppTheme.muted,
-                              fontSize: 11,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'المدرّس',
+                                style: TextStyle(
+                                  color: AppTheme.subtle,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                course.instructorName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppTheme.ink,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_back_rounded,
-                          color: AppTheme.blue,
-                          size: 18,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.blue.withValues(alpha: .08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'عرض الكورس',
+                                style: TextStyle(
+                                  color: AppTheme.blue,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_back_rounded,
+                                color: AppTheme.blue,
+                                size: 16,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1073,6 +1290,43 @@ class _CourseCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      );
+}
+
+class _CourseMetric extends StatelessWidget {
+  const _CourseMetric({
+    required this.icon,
+    required this.label,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: .065),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: accent.withValues(alpha: .10)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: accent, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.text,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       );
 }
