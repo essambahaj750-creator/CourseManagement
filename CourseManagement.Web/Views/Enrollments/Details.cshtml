@@ -1,0 +1,12 @@
+@model EnrollmentDto
+@{
+    ViewData["Title"] = "تفاصيل التسجيل";
+}
+<div class="page-heading"><div><h1>تفاصيل التسجيل</h1><p>معلومات تسجيلك في الكورس.</p></div><a class="btn btn-outline-secondary" asp-action="Index">العودة لتسجيلاتي</a></div>
+<div class="surface-card p-4">
+    <div class="row g-4">
+        <div class="col-md-4"><div class="text-muted small">الكورس</div><h2 class="h4 fw-bold mt-2">@Model.CourseTitle</h2></div>
+        <div class="col-md-4"><div class="text-muted small">المستخدم</div><h2 class="h5 fw-bold mt-2">@Model.UserName</h2></div>
+        <div class="col-md-4"><div class="text-muted small">تاريخ التسجيل</div><h2 class="h5 fw-bold mt-2">@Model.EnrolledDate.ToString("yyyy/MM/dd HH:mm")</h2></div>
+    </div>
+</div>

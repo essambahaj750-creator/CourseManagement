@@ -1,0 +1,94 @@
+@model IEnumerable<EnrollmentDto>
+
+@{
+    ViewData["Title"] = "تسجيلاتي";
+    var enrollments = Model.OrderByDescending(x => x.EnrolledDate).ToList();
+    var latest = enrollments.FirstOrDefault();
+    var averageProgress = enrollments.Count == 0 ? 0 : enrollments.Average(x => x.ProgressPercent);
+    var completedCourses = enrollments.Count(x => x.TotalLessons > 0 && x.CompletedLessons >= x.TotalLessons);
+}
+
+<div class="hf-page">
+    <div class="breadcrumbs"><a asp-controller="Home" asp-action="Index">الرئيسية</a><i class="bi bi-chevron-left mx-2"></i>تسجيلاتي</div>
+    <div class="page-heading">
+        <div><span class="hf-eyebrow">مساري التعليمي</span><h1 class="mt-2">تسجيلاتي</h1><p class="hf-subtitle">تابع الكورسات التي بدأت بها وواصل التقدم نحو أهدافك.</p></div>
+        <a class="btn btn-primary" asp-controller="Courses" asp-action="Index"><i class="bi bi-compass ms-2"></i>اكتشف كورسات</a>
+    </div>
+
+    <div class="stats-grid mb-4">
+        <div class="stat-card hf-stat-card"><div><div class="label">كورساتي</div><div class="value">@enrollments.Count</div><div class="stat-context"><i class="bi bi-journal-check"></i>تسجيلات محفوظة</div></div><span class="stat-icon"><i class="bi bi-journal-check"></i></span></div>
+        <div class="stat-card hf-stat-card"><div><div class="label">متوسط التقدّم</div><div class="value">@averageProgress.ToString("0")%</div><div class="stat-context"><i class="bi bi-graph-up-arrow"></i>عبر جميع كورساتك</div></div><span class="stat-icon"><i class="bi bi-bar-chart-line"></i></span></div>
+        <div class="stat-card hf-stat-card"><div><div class="label">مكتملة</div><div class="value">@completedCourses</div><div class="stat-context"><i class="bi bi-award"></i>كورسات أنهيتها</div></div><span class="stat-icon"><i class="bi bi-patch-check-fill"></i></span></div>
+    </div>
+
+    <section class="surface-card hf-panel hf-table-shell">
+        <div class="hf-panel-header">
+            <div><span class="hf-eyebrow">مساراتك المحفوظة</span><h2>الكورسات المسجلة</h2><p>افتح التفاصيل أو أدر تسجيلك في أي وقت.</p></div>
+            <span class="hf-panel-icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+        </div>
+        @if (enrollments.Count == 0)
+        {
+            <div class="hf-empty empty-state py-5"><div class="empty-orb"><i class="bi bi-journal-x"></i></div><h3 class="mt-3">لم تسجل في أي كورس بعد</h3><p>ابدأ رحلة التعلم باختيار كورس مناسب لأهدافك.</p><a class="btn btn-primary" asp-controller="Courses" asp-action="Index">استكشاف الكورسات</a></div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle" data-datatable>
+                    <thead><tr><th>الكورس</th><th>التقدّم</th><th>آخر نشاط</th><th>الإجراء</th></tr></thead>
+                    <tbody>
+                    @foreach (var enrollment in enrollments)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="table-icon"><i class="bi bi-play-btn-fill"></i></span>
+                                    <div>
+                                        <a class="fw-bold text-decoration-none" asp-controller="Courses" asp-action="Details" asp-route-id="@enrollment.CourseId">@enrollment.CourseTitle</a>
+                                        <div class="small text-muted">بدأت @enrollment.EnrolledDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="enrollment-progress-cell">
+                                    <div class="d-flex justify-content-between gap-2 mb-1">
+                                        <span>@(enrollment.TotalLessons == 0 ? "قيد التجهيز" : $"{enrollment.CompletedLessons} من {enrollment.TotalLessons} دروس")</span>
+                                        <strong>@enrollment.ProgressPercent.ToString("0")%</strong>
+                                    </div>
+                                    <div class="learning-progress-track">
+                                        <span style="width:@enrollment.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @(enrollment.LastAccessedAtUtc.HasValue
+                                    ? enrollment.LastAccessedAtUtc.Value.ToLocalTime().ToString("dd MMM yyyy")
+                                    : "لم تبدأ بعد")
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a class="btn btn-sm btn-primary" asp-controller="Courses" asp-action="Details" asp-route-id="@enrollment.CourseId">
+                                        <i class="bi bi-play-circle ms-1"></i>@(enrollment.LastLessonAssetId.HasValue ? "متابعة" : "ابدأ")
+                                    </a>
+                                    @if (enrollment.TotalLessons > 0 && enrollment.CompletedLessons >= enrollment.TotalLessons)
+                                    {
+                                        <a class="btn btn-sm btn-outline-success"
+                                           asp-action="Certificate"
+                                           asp-route-courseId="@enrollment.CourseId">
+                                            <i class="bi bi-award ms-1"></i>الشهادة
+                                        </a>
+                                    }
+                                    <form asp-action="Unenroll" asp-route-courseId="@enrollment.CourseId" method="post" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" data-confirm="هل تريد إلغاء التسجيل من كورس @enrollment.CourseTitle؟">
+                                            <i class="bi bi-x-circle ms-1"></i>إلغاء
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

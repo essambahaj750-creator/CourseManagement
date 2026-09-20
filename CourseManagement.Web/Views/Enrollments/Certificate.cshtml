@@ -1,0 +1,60 @@
+@model CourseCertificateDto
+
+@{
+    ViewData["Title"] = "شهادة إكمال الكورس";
+    var completed = Model.CompletedAtUtc.ToLocalTime();
+}
+
+<div class="certificate-page">
+    <div class="certificate-toolbar no-print">
+        <a class="btn btn-outline-primary" asp-controller="Courses" asp-action="Details" asp-route-id="@Model.CourseId">
+            <i class="bi bi-arrow-right ms-1"></i>العودة للكورس
+        </a>
+        <button class="btn btn-primary" type="button" onclick="window.print()">
+            <i class="bi bi-printer ms-1"></i>طباعة الشهادة
+        </button>
+    </div>
+
+    <section class="course-certificate">
+        <div class="certificate-border">
+            <div class="certificate-brand">
+                <span class="certificate-mark"><i class="bi bi-mortarboard-fill"></i></span>
+                <div>
+                    <strong>منصة المعرفة</strong>
+                    <small>شهادة إكمال موثقة من المنصة</small>
+                </div>
+            </div>
+
+            <div class="certificate-content">
+                <span class="certificate-kicker">شهادة إكمال</span>
+                <h1>Certificate of Completion</h1>
+                <p class="certificate-intro">تشهد منصة المعرفة بأن</p>
+                <h2>@Model.StudentName</h2>
+                <p class="certificate-copy">قد أتم بنجاح جميع متطلبات الكورس</p>
+                <h3>@Model.CourseTitle</h3>
+
+                <div class="certificate-divider"><span></span><i class="bi bi-award-fill"></i><span></span></div>
+
+                <div class="certificate-meta-grid">
+                    <div>
+                        <small>المدرّس</small>
+                        <strong>@(string.IsNullOrWhiteSpace(Model.InstructorName) ? "فريق المنصة" : Model.InstructorName)</strong>
+                    </div>
+                    <div>
+                        <small>تاريخ الإكمال</small>
+                        <strong>@completed.ToString("dd MMMM yyyy")</strong>
+                    </div>
+                    <div>
+                        <small>رقم الشهادة</small>
+                        <strong dir="ltr">@Model.CertificateCode</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="certificate-footer">
+                <span><i class="bi bi-shield-check"></i>تم إصدار هذه الشهادة بعد إكمال 100% من دروس الكورس.</span>
+                <span dir="ltr">@Model.CertificateCode</span>
+            </div>
+        </div>
+    </section>
+</div>

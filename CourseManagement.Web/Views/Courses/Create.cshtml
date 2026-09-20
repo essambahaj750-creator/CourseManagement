@@ -1,0 +1,139 @@
+@model CourseManagement.Web.ViewModels.CourseFormViewModel
+
+@{
+    ViewData["Title"] = "إضافة كورس";
+}
+
+<div class="breadcrumbs">
+    <a asp-controller="Home" asp-action="Index">الرئيسية</a>
+    <i class="bi bi-chevron-left mx-2"></i>
+    <a asp-action="Index">الكورسات</a>
+    <i class="bi bi-chevron-left mx-2"></i>إضافة
+</div>
+
+<div class="page-heading">
+    <div>
+        <div class="section-kicker">إدارة المحتوى</div>
+        <h1>إضافة كورس جديد</h1>
+        <p>أنشئ الكورس وحدد المدرّس المسؤول، ثم أضف الفيديوهات والمرفقات من صفحة التفاصيل.</p>
+    </div>
+    <a class="btn btn-light" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>
+</div>
+
+<div class="hf-form-grid">
+    <div class="col-lg-8">
+        <div class="surface-card hf-form-shell form-card">
+            <div class="card-header-soft mb-4">
+                <h2 class="section-title mb-1">معلومات الكورس</h2>
+                <p class="text-muted small mb-0">أدخل معلومات واضحة كما ستظهر للطالب قبل التسجيل.</p>
+            </div>
+
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <partial name="_InstructorPicker" model="Model" />
+                }
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" placeholder="مثال: أساسيات تطوير الويب" autofocus />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="7" placeholder="اشرح ما الذي سيتعلمه الطالب وما الفائدة العملية..."></textarea>
+                    <div class="input-hint"><i class="bi bi-lightbulb ms-1"></i>اذكر المهارات والمخرجات العملية التي سيحصل عليها الطالب.</div>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label asp-for="CoverImage" class="form-label"></label>
+                        <input asp-for="CoverImage" class="form-control" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+                        <div class="input-hint"><i class="bi bi-image ms-1"></i>JPG أو PNG أو WebP حتى 5MB.</div>
+                        <span asp-validation-for="CoverImage" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Price" class="form-label"></label>
+                        <div class="input-group"><span class="input-group-text">ر.س</span><input asp-for="Price" class="form-control" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+                        <span asp-validation-for="Price" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle ms-2"></i>حفظ الكورس</button>
+                    <a class="btn btn-light" asp-action="Index">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="course-preview-card" aria-live="polite">
+            <div class="course-preview-head">
+                <div><div class="section-kicker mb-1">تجربة الطالب</div><strong>معاينة مباشرة</strong></div>
+                <span class="course-preview-badge"><i class="bi bi-stars"></i> مسودة</span>
+            </div>
+            <div class="course-preview-cover">
+                <img id="previewImage" class="d-none" alt="معاينة صورة الغلاف" />
+                <div id="previewPlaceholder" class="course-preview-placeholder"><i class="bi bi-image"></i></div>
+                <div class="course-preview-cover-label"><strong id="previewTitle">عنوان الكورس</strong><span id="previewPrice">مجاني</span></div>
+            </div>
+            <div class="course-preview-body">
+                <h3 id="previewTitleText">عنوان الكورس</h3>
+                <p id="previewDescription">سيظهر وصف الكورس هنا أثناء الكتابة، ليعرف الطالب قيمة المحتوى قبل التسجيل.</p>
+                <div class="course-preview-meta"><small><i class="bi bi-person-check ms-1"></i>مسار تعليمي عملي</small><strong id="previewPriceMeta">مجاني</strong></div>
+                <div class="course-preview-note"><i class="bi bi-info-circle ms-1"></i>بعد الحفظ ارفع «فيديو معاينة قصير» مستقلًا؛ دروس الفيديو الكاملة تبقى محمية للمسجلين.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const title = document.getElementById('Title');
+            const description = document.getElementById('Description');
+            const price = document.getElementById('Price');
+            const cover = document.getElementById('CoverImage');
+            const titleOverlay = document.getElementById('previewTitle');
+            const titleText = document.getElementById('previewTitleText');
+            const descriptionText = document.getElementById('previewDescription');
+            const priceOverlay = document.getElementById('previewPrice');
+            const priceMeta = document.getElementById('previewPriceMeta');
+            const image = document.getElementById('previewImage');
+            const placeholder = document.getElementById('previewPlaceholder');
+            const formatPrice = () => {
+                const value = Number(price?.value ?? 0);
+                return Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} ر.س` : 'مجاني';
+            };
+            const sync = () => {
+                const nextTitle = title?.value.trim() || 'عنوان الكورس';
+                const nextDescription = description?.value.trim() || 'سيظهر وصف الكورس هنا أثناء الكتابة، ليعرف الطالب قيمة المحتوى قبل التسجيل.';
+                const nextPrice = formatPrice();
+                titleOverlay.textContent = nextTitle;
+                titleText.textContent = nextTitle;
+                descriptionText.textContent = nextDescription;
+                priceOverlay.textContent = nextPrice;
+                priceMeta.textContent = nextPrice;
+            };
+            [title, description, price].forEach((field) => field?.addEventListener('input', sync));
+            cover?.addEventListener('change', () => {
+                const file = cover.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    image.src = event.target.result;
+                    image.classList.remove('d-none');
+                    placeholder.classList.add('d-none');
+                };
+                reader.readAsDataURL(file);
+            });
+            sync();
+        })();
+    </script>
+}

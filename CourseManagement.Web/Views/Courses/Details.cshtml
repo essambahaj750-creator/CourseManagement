@@ -1,0 +1,612 @@
+@model CourseDetailsViewModel
+@using System.Security.Claims
+@using CourseManagement.Domain.Enums
+@{
+    ViewData["Title"] = Model.Course.Title;
+    var course = Model.Course;
+    var isAdmin = User.IsInRole("Admin");
+    var viewerId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedViewerId) ? parsedViewerId : 0;
+    var isOwner = isAdmin || (User.IsInRole("Instructor") && viewerId == course.InstructorId);
+    var canSeeAssets = Model.CanAccessAssets;
+    var videos = course.Assets.Where(asset => asset.Type == CourseAssetType.Video).ToList();
+    var attachments = course.Assets.Where(asset => asset.Type == CourseAssetType.Attachment).ToList();
+    var isEnrolledStudent = User.Identity?.IsAuthenticated == true && !isOwner && canSeeAssets;
+    var accountEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+    var accountName = User.FindFirstValue(ClaimTypes.Name) ?? "حساب الطالب";
+    var curriculumAccessClass = canSeeAssets ? "is-open" : string.Empty;
+    var curriculumIconClass = canSeeAssets ? "bi-play-circle" : "bi-lock";
+    var curriculumAccessLabel = canSeeAssets ? "متاح" : "بعد التسجيل";
+    var progress = Model.Progress;
+    var reviewSummary = Model.Reviews;
+    var instructorProfile = Model.InstructorProfile;
+    var ownReview = viewerId > 0 ? reviewSummary.Reviews.FirstOrDefault(review => review.UserId == viewerId) : null;
+    var completedLessonIds = progress?.CompletedLessonAssetIds.ToHashSet() ?? new HashSet<int>();
+    var continueLessonId = progress?.LastLessonAssetId ?? videos.FirstOrDefault()?.Id;
+    string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024d):N0} KB" : $"{bytes / (1024d * 1024d):N1} MB";
+}
+
+<div class="course-detail-page">
+    <div class="breadcrumbs">
+        <a asp-controller="Home" asp-action="Index">الرئيسية</a>
+        <i class="bi bi-chevron-left mx-2"></i>
+        <a asp-action="Index">الكورسات</a>
+        <i class="bi bi-chevron-left mx-2"></i>
+        @course.Title
+    </div>
+
+    <div class="course-detail-actions mb-3">
+        <a class="text-decoration-none text-muted" asp-action="Index"><i class="bi bi-arrow-right ms-2"></i>العودة للكورسات</a>
+        @if (isOwner)
+        {
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@course.Id"><i class="bi bi-pencil ms-1"></i>تعديل الكورس</a>
+                <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@course.Id"><i class="bi bi-trash ms-1"></i>حذف</a>
+            </div>
+        }
+    </div>
+
+    <section class="course-hero-v3">
+        <div class="course-hero-media">
+            @if (!string.IsNullOrWhiteSpace(course.ImageUrl))
+            {
+                <img src="@Url.Action("Cover", "Courses", new { id = course.Id })" alt="غلاف @course.Title" />
+            }
+            else
+            {
+                <div class="course-hero-placeholder"><i class="bi bi-mortarboard-fill"></i></div>
+            }
+            <div class="course-hero-shade"></div>
+        </div>
+        <div class="course-hero-copy">
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <span class="badge bg-light text-primary"><i class="bi bi-stars ms-1"></i>كورس تعليمي</span>
+                @if (reviewSummary.ReviewCount > 0)
+                {
+                    <span class="badge review-badge">
+                        <i class="bi bi-star-fill ms-1"></i>
+                        @reviewSummary.AverageRating.ToString("0.0") من 5 · @reviewSummary.ReviewCount تقييم
+                    </span>
+                }
+                @if (Model.PreviewAsset is not null)
+                {
+                    <span class="badge preview-badge"><i class="bi bi-play-circle ms-1"></i>معاينة متاحة</span>
+                }
+            </div>
+            <h1>@course.Title</h1>
+            <p class="course-hero-description">@course.Description</p>
+            <div class="course-instructor-line">
+                <span class="course-instructor-avatar">@(string.IsNullOrWhiteSpace(course.InstructorName) ? "م" : course.InstructorName[..1])</span>
+                <div><small>يقدمه المدرّس</small><strong>@course.InstructorName</strong></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="course-detail-grid mt-4">
+        <main class="course-learning-column">
+            @if (isOwner && Model.PreviewAsset is not null)
+            {
+                <section class="surface-card course-preview-section">
+                    <div class="course-section-head">
+                        <div><span class="section-kicker">واجهة الزائر</span><h2>فيديو المعاينة الحالي</h2><p>هذا هو المقطع العام الذي يراه الزائر قبل التسجيل. دروس الفيديو الكاملة تبقى محمية.</p></div>
+                        <span class="preview-time-chip"><i class="bi bi-eye"></i> عام</span>
+                    </div>
+                    <div class="video-shell preview-video-shell">
+                        <video controls preload="metadata" playsinline>
+                            <source src="@Url.Action("Preview", "Courses", new { id = course.Id })" type="@Model.PreviewAsset.ContentType" />
+                            متصفحك لا يدعم تشغيل الفيديو.
+                        </video>
+                    </div>
+                    <div class="lesson-card-actions mt-3">
+                        <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@Model.PreviewAsset.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('هل تريد حذف فيديو المعاينة؟');"><i class="bi bi-trash ms-1"></i>حذف المعاينة</button>
+                        </form>
+                    </div>
+                </section>
+            }
+            else if (!canSeeAssets && Model.PreviewAsset is not null)
+            {
+                <section class="surface-card course-preview-section">
+                    <div class="course-section-head">
+                        <div><span class="section-kicker">قبل التسجيل</span><h2>شاهد مقطعًا من الكورس</h2><p>معاينة مستقلة يختارها المدرّس لتتعرف على أسلوب الشرح قبل التسجيل.</p></div>
+                        <span class="preview-time-chip"><i class="bi bi-play-circle"></i> معاينة مجانية</span>
+                    </div>
+                    <div class="video-shell preview-video-shell">
+                        <video controls preload="metadata" playsinline>
+                            <source src="@Url.Action("Preview", "Courses", new { id = course.Id })" type="@Model.PreviewAsset.ContentType" />
+                            متصفحك لا يدعم تشغيل الفيديو.
+                        </video>
+                        <div class="preview-limit-note"><i class="bi bi-shield-lock"></i> هذا مقطع معاينة مخصص للزوار؛ فيديوهات الدروس الكاملة لا تُعرض إلا بعد التسجيل.</div>
+                    </div>
+                </section>
+            }
+            else if (!canSeeAssets)
+            {
+                <section class="surface-card course-preview-section preview-empty">
+                    <div class="empty-orb"><i class="bi bi-play-circle"></i></div>
+                    <div><h2>المعاينة قيد التجهيز</h2><p>لم يرفع المدرّس فيديو معاينة بعد. يمكنك قراءة وصف الكورس والتسجيل للوصول إلى المحتوى عند توفره.</p></div>
+                </section>
+            }
+
+            <section class="surface-card course-about-section">
+                <div class="course-section-head compact">
+                    <div><span class="section-kicker">نظرة عامة</span><h2>ماذا ستجد في هذا الكورس؟</h2></div>
+                </div>
+                <p class="course-about-copy">@course.Description</p>
+                <div class="course-facts-grid">
+                    <div class="course-fact-v3"><span><i class="bi bi-person-video3"></i></span><div><small>المدرّس</small><strong>@course.InstructorName</strong></div></div>
+                    <div class="course-fact-v3"><span><i class="bi bi-collection-play"></i></span><div><small>الدروس</small><strong>@(canSeeAssets ? $"{videos.Count} فيديو" : "بعد التسجيل")</strong></div></div>
+                    <div class="course-fact-v3"><span><i class="bi bi-patch-check"></i></span><div><small>الحالة</small><strong>متاح للتسجيل</strong></div></div>
+                </div>
+            </section>
+
+            @if (instructorProfile is not null)
+            {
+                <section class="surface-card instructor-profile-section">
+                    <div class="instructor-profile-main">
+                        <div class="instructor-profile-avatar">
+                            @(string.IsNullOrWhiteSpace(instructorProfile.FullName) ? "م" : instructorProfile.FullName[..1])
+                        </div>
+                        <div class="instructor-profile-copy">
+                            <span class="section-kicker">عن المدرّس</span>
+                            <h2>@instructorProfile.FullName</h2>
+                            <p>مدرّس على منصة المعرفة ويقدّم محتوى تعليميًا مرتبطًا بهذا المسار.</p>
+                            <div class="instructor-profile-stats">
+                                <span><i class="bi bi-journals"></i><strong>@instructorProfile.CourseCount</strong><small>كورس</small></span>
+                                <span><i class="bi bi-people"></i><strong>@instructorProfile.TotalStudents</strong><small>طالب</small></span>
+                                <span><i class="bi bi-star-fill"></i><strong>@(instructorProfile.ReviewCount == 0 ? "—" : instructorProfile.AverageRating.ToString("0.0"))</strong><small>@instructorProfile.ReviewCount تقييم</small></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @{
+                        var otherInstructorCourses = instructorProfile.Courses
+                            .Where(item => item.Id != course.Id)
+                            .Take(3)
+                            .ToList();
+                    }
+                    @if (otherInstructorCourses.Count > 0)
+                    {
+                        <div class="instructor-other-courses">
+                            <div class="instructor-other-head">
+                                <strong>كورسات أخرى لهذا المدرّس</strong>
+                                <span>@otherInstructorCourses.Count</span>
+                            </div>
+                            <div class="instructor-mini-grid">
+                                @foreach (var item in otherInstructorCourses)
+                                {
+                                    <a class="instructor-mini-course text-decoration-none" asp-action="Details" asp-route-id="@item.Id">
+                                        <div>
+                                            <strong>@item.Title</strong>
+                                            <small>@(item.Price <= 0 ? "مجاني" : $"{item.Price:N0} ر.س")</small>
+                                        </div>
+                                        <i class="bi bi-arrow-left"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </section>
+            }
+
+            <section class="surface-card course-curriculum-section">
+                <div class="course-section-head">
+                    <div>
+                        <span class="section-kicker">المنهج</span>
+                        <h2>محتوى الكورس</h2>
+                        <p>يمكنك الاطلاع على عناوين الدروس قبل التسجيل. تشغيل الفيديوهات والملفات الكاملة يبقى محميًا.</p>
+                    </div>
+                    <span class="content-count-chip">@Model.Curriculum.Count درس</span>
+                </div>
+
+                @if (Model.Curriculum.Count == 0)
+                {
+                    <div class="inline-empty"><i class="bi bi-journal"></i><span>المدرّس لم يضف دروسًا إلى المنهج بعد.</span></div>
+                }
+                else
+                {
+                    <div class="curriculum-list-v4">
+                        @foreach (var lesson in Model.Curriculum)
+                        {
+                            <div class="curriculum-row-v4">
+                                <span class="curriculum-index">@lesson.Position</span>
+                                <div class="flex-grow-1 min-width-0">
+                                    <small>الدرس @lesson.Position</small>
+                                    <strong class="d-block text-truncate">@lesson.Title</strong>
+                                </div>
+                                @if (completedLessonIds.Contains(lesson.Id))
+                                {
+                                    <span class="curriculum-access is-complete">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        مكتمل
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="curriculum-access @curriculumAccessClass">
+                                        <i class="bi @curriculumIconClass"></i>
+                                        @curriculumAccessLabel
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section id="course-reviews" class="surface-card course-reviews-section">
+                <div class="course-section-head">
+                    <div>
+                        <span class="section-kicker">تجارب الطلاب</span>
+                        <h2>التقييمات والمراجعات</h2>
+                        <p>آراء طلاب مسجلين فعليًا في هذا الكورس.</p>
+                    </div>
+                    <div class="review-score-card">
+                        <strong>@(reviewSummary.ReviewCount == 0 ? "—" : reviewSummary.AverageRating.ToString("0.0"))</strong>
+                        <span class="review-stars" aria-label="متوسط التقييم">
+                            @for (var star = 1; star <= 5; star++)
+                            {
+                                <i class="bi @(reviewSummary.AverageRating >= star - 0.4 ? "bi-star-fill" : "bi-star")"></i>
+                            }
+                        </span>
+                        <small>@reviewSummary.ReviewCount مراجعة</small>
+                    </div>
+                </div>
+
+                @if (isEnrolledStudent)
+                {
+                    <form asp-action="SaveReview" asp-route-id="@course.Id" method="post" class="review-form-v4">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="rating">تقييمك</label>
+                                <select class="form-select" id="rating" name="rating" required>
+                                    <option value="5" selected="@(ownReview?.Rating == 5)">★★★★★ — ممتاز</option>
+                                    <option value="4" selected="@(ownReview?.Rating == 4)">★★★★☆ — جيد جدًا</option>
+                                    <option value="3" selected="@(ownReview?.Rating == 3)">★★★☆☆ — جيد</option>
+                                    <option value="2" selected="@(ownReview?.Rating == 2)">★★☆☆☆ — مقبول</option>
+                                    <option value="1" selected="@(ownReview?.Rating == 1)">★☆☆☆☆ — ضعيف</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label" for="comment">رأيك في الكورس</label>
+                                <textarea class="form-control" id="comment" name="comment" maxlength="1000" rows="3" placeholder="ما الذي أعجبك؟ وما الذي يمكن تحسينه؟">@ownReview?.Comment</textarea>
+                            </div>
+                            <div class="col-12 d-flex flex-wrap gap-2">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-star ms-2"></i>@(ownReview is null ? "إرسال التقييم" : "تحديث التقييم")
+                                </button>
+                                @if (ownReview is not null)
+                                {
+                                    <button class="btn btn-outline-danger"
+                                            type="submit"
+                                            formaction="@Url.Action("DeleteReview", "Courses", new { id = course.Id })"
+                                            formmethod="post"
+                                            data-confirm="هل تريد حذف تقييمك؟">
+                                        حذف تقييمي
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </form>
+                }
+                else if (User.Identity?.IsAuthenticated != true)
+                {
+                    <div class="review-signin-note">
+                        <i class="bi bi-shield-check"></i>
+                        <span>يمكنك قراءة جميع المراجعات الآن. بعد التسجيل في الكورس ستتمكن من إضافة تقييمك.</span>
+                    </div>
+                }
+
+                @if (reviewSummary.ReviewCount == 0)
+                {
+                    <div class="inline-empty mt-3">
+                        <i class="bi bi-chat-square-heart"></i>
+                        <span>لا توجد مراجعات بعد. كن أول طالب يشارك تجربته بعد التسجيل.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="review-list-v4 mt-3">
+                        @foreach (var review in reviewSummary.Reviews.Take(12))
+                        {
+                            <article class="review-card-v4">
+                                <div class="review-avatar">@(string.IsNullOrWhiteSpace(review.UserName) ? "ط" : review.UserName[..1])</div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <div class="review-card-head">
+                                        <div>
+                                            <strong>@review.UserName</strong>
+                                            <div class="review-stars small" aria-label="@review.Rating من 5">
+                                                @for (var star = 1; star <= 5; star++)
+                                                {
+                                                    <i class="bi @(review.Rating >= star ? "bi-star-fill" : "bi-star")"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        <small>@review.UpdatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")</small>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(review.Comment))
+                                    {
+                                        <p>@review.Comment</p>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (Model.RelatedCourses.Count > 0)
+            {
+                <section class="surface-card related-courses-section">
+                    <div class="course-section-head">
+                        <div>
+                            <span class="section-kicker">اكتشف أكثر</span>
+                            <h2>قد يناسبك أيضًا</h2>
+                            <p>اقتراحات مرتبطة بالمدرّس والسعر مع أولوية للكورسات الأعلى تقييمًا والأكثر تسجيلًا.</p>
+                        </div>
+                    </div>
+
+                    <div class="related-course-grid">
+                        @foreach (var related in Model.RelatedCourses)
+                        {
+                            <a class="related-course-card text-decoration-none" asp-action="Details" asp-route-id="@related.Id">
+                                <div class="related-course-cover">
+                                    @if (!string.IsNullOrWhiteSpace(related.ImageUrl))
+                                    {
+                                        <img src="@related.ImageUrl" alt="غلاف @related.Title" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <span><i class="bi bi-mortarboard-fill"></i></span>
+                                    }
+                                </div>
+                                <div class="related-course-body">
+                                    <strong>@related.Title</strong>
+                                    <small>@related.InstructorName</small>
+                                    <div class="related-course-meta">
+                                        @if (related.ReviewCount > 0)
+                                        {
+                                            <span><i class="bi bi-star-fill"></i>@related.AverageRating.ToString("0.0")</span>
+                                        }
+                                        <span><i class="bi bi-people"></i>@related.EnrolledStudents</span>
+                                        <b>@(related.Price <= 0 ? "مجاني" : $"{related.Price:N0} ر.س")</b>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (canSeeAssets)
+            {
+                <section id="course-content" class="surface-card course-content-section">
+                    <div class="course-section-head">
+                        <div>
+                            <span class="section-kicker">منطقة التعلّم</span>
+                            <h2>دروس الفيديو</h2>
+                            <p>شاهد الدروس مباشرة من الصفحة؛ الوصول الكامل للمسجلين والمالك فقط.</p>
+                        </div>
+                        <span class="content-count-chip">@videos.Count فيديو</span>
+                    </div>
+
+                    @if (videos.Count == 0)
+                    {
+                        <div class="inline-empty"><i class="bi bi-camera-video-off"></i><span>لم يضف المدرّس فيديوهات دروس بعد.</span></div>
+                    }
+                    else
+                    {
+                        @if (isEnrolledStudent && progress is not null)
+                        {
+                            <div class="learning-progress-panel mb-3">
+                                <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                                    <div>
+                                        <small>تقدّمك في الكورس</small>
+                                        <strong>@progress.CompletedCount من @progress.TotalLessons دروس مكتملة</strong>
+                                    </div>
+                                    <span>@progress.ProgressPercent.ToString("0.#")%</span>
+                                </div>
+                                <div class="learning-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@progress.ProgressPercent">
+                                    <span style="width:@progress.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="lesson-list">
+                            @for (var index = 0; index < videos.Count; index++)
+                            {
+                                var video = videos[index];
+                                var isCompleted = completedLessonIds.Contains(video.Id);
+                                <article class="lesson-card @(isCompleted ? "is-complete" : string.Empty)" id="lesson-@video.Id">
+                                    <div class="lesson-card-head">
+                                        <div class="lesson-number">@(index + 1)</div>
+                                        <div class="flex-grow-1 min-width-0"><small>الدرس @(index + 1)</small><strong class="d-block text-truncate">@video.OriginalFileName</strong></div>
+                                        <span class="lesson-size">@FormatSize(video.SizeBytes)</span>
+                                    </div>
+                                    <div class="video-shell">
+                                        <video controls preload="metadata" playsinline>
+                                            <source src="@Url.Action("StreamAsset", "Courses", new { id = course.Id, assetId = video.Id })" type="@video.ContentType" />
+                                            متصفحك لا يدعم تشغيل الفيديو.
+                                        </video>
+                                    </div>
+                                    <div class="lesson-card-actions">
+                                        @if (isEnrolledStudent)
+                                        {
+                                            <form asp-controller="Enrollments" asp-action="UpdateProgress" asp-route-courseId="@course.Id" asp-route-assetId="@video.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="completed" value="@(!isCompleted ? "true" : "false")" />
+                                                <button class="btn btn-sm @(isCompleted ? "btn-outline-secondary" : "btn-outline-success")" type="submit">
+                                                    <i class="bi @(isCompleted ? "bi-arrow-counterclockwise" : "bi-check2-circle") ms-1"></i>
+                                                    @(isCompleted ? "إعادة كغير مكتمل" : "تم إكمال الدرس")
+                                                </button>
+                                            </form>
+                                        }
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="DownloadAsset" asp-route-id="@course.Id" asp-route-assetId="@video.Id"><i class="bi bi-download ms-1"></i>تنزيل الفيديو</a>
+                                        @if (isOwner)
+                                        {
+                                            <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@video.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('هل تريد حذف هذا الفيديو؟');"><i class="bi bi-trash ms-1"></i>حذف</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+
+                <section class="surface-card course-attachments-section">
+                    <div class="course-section-head compact">
+                        <div><span class="section-kicker">مواد مساعدة</span><h2>المرفقات</h2></div>
+                        <span class="content-count-chip">@attachments.Count ملف</span>
+                    </div>
+                    @if (attachments.Count == 0)
+                    {
+                        <div class="inline-empty"><i class="bi bi-folder2-open"></i><span>لا توجد مرفقات إضافية.</span></div>
+                    }
+                    else
+                    {
+                        <div class="attachment-list">
+                            @foreach (var asset in attachments)
+                            {
+                                <div class="attachment-row">
+                                    <span class="attachment-icon"><i class="bi bi-file-earmark-text"></i></span>
+                                    <div class="flex-grow-1 min-width-0"><strong class="d-block text-truncate">@asset.OriginalFileName</strong><small>@FormatSize(asset.SizeBytes)</small></div>
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="DownloadAsset" asp-route-id="@course.Id" asp-route-assetId="@asset.Id"><i class="bi bi-download ms-1"></i>تنزيل</a>
+                                    @if (isOwner)
+                                    {
+                                        <form asp-action="DeleteAsset" asp-route-id="@course.Id" asp-route-assetId="@asset.Id" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('هل تريد حذف هذا الملف؟');"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (isOwner)
+            {
+                <section class="surface-card course-upload-section">
+                    <div class="course-section-head compact">
+                        <div><span class="section-kicker">إدارة المحتوى</span><h2>أضف محتوى للكورس</h2><p>اختر «فيديو معاينة» للمقطع العام فقط، و«درس فيديو» للمحتوى الكامل المحمي. رفع معاينة جديدة يستبدل السابقة تلقائيًا.</p></div>
+                    </div>
+                    <form asp-action="UploadAsset" asp-route-id="@course.Id" method="post" enctype="multipart/form-data" class="row g-3">
+                        @Html.AntiForgeryToken()
+                        <div class="col-md-7"><label for="file" class="form-label">الملف</label><input id="file" name="file" class="form-control" type="file" accept="video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt" /></div>
+                        <div class="col-md-5"><label for="type" class="form-label">نوع الملف</label><select id="type" name="type" class="form-select"><option value="1">درس فيديو — محمي</option><option value="4">فيديو معاينة — عام</option><option value="2">ملف مرفق — محمي</option></select></div>
+                        <div class="col-12"><button class="btn btn-primary" type="submit"><i class="bi bi-cloud-arrow-up ms-2"></i>رفع وربط الملف</button></div>
+                    </form>
+                </section>
+            }
+        </main>
+
+        <aside class="course-purchase-column">
+            <div class="surface-card purchase-card-v3">
+                <span class="purchase-label">الاستثمار في الكورس</span>
+                <div class="purchase-price">@(course.Price <= 0 ? "مجاني" : $"{course.Price:N2} ر.س")</div>
+                <p>وصول كامل إلى الدروس والمرفقات بعد التسجيل.</p>
+
+                @if (isEnrolledStudent)
+                {
+                    <div class="enrolled-state"><i class="bi bi-check-circle-fill"></i><div><strong>أنت مسجل في الكورس</strong><span>يمكنك مشاهدة جميع الدروس الآن.</span></div></div>
+                    @if (progress is not null)
+                    {
+                        <div class="purchase-progress-v4">
+                            <div><span>تقدّمك</span><strong>@progress.ProgressPercent.ToString("0.#")%</strong></div>
+                            <div class="learning-progress-track">
+                                <span style="width:@progress.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                            </div>
+                            <small>@progress.CompletedCount من @progress.TotalLessons دروس مكتملة</small>
+                        </div>
+                    }
+                    <a class="btn btn-primary w-100" href="@(continueLessonId.HasValue ? $"#lesson-{continueLessonId}" : "#course-content")">
+                        <i class="bi bi-play-circle ms-2"></i>@(progress?.CompletedCount > 0 ? "متابعة التعلّم" : "ابدأ التعلّم")
+                    </a>
+                    @if (progress is not null && progress.TotalLessons > 0 && progress.CompletedCount >= progress.TotalLessons)
+                    {
+                        <a class="btn btn-outline-success w-100 mt-2"
+                           asp-controller="Enrollments"
+                           asp-action="Certificate"
+                           asp-route-courseId="@course.Id">
+                            <i class="bi bi-award ms-2"></i>عرض شهادة الإكمال
+                        </a>
+                    }
+                }
+                else if (User.Identity?.IsAuthenticated == true && !isOwner)
+                {
+                    <button class="btn btn-primary w-100" type="button" data-bs-toggle="modal" data-bs-target="#enrollConfirmModal">
+                        <i class="bi bi-person-check ms-2"></i>ابدأ التسجيل
+                    </button>
+                    <div class="small text-muted text-center mt-2">سيظهر لك تأكيد الحساب والبريد قبل إتمام التسجيل.</div>
+                }
+                else if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a class="btn btn-primary w-100" asp-controller="Account" asp-action="Register" asp-route-returnUrl="@Context.Request.Path">
+                        <i class="bi bi-person-plus ms-2"></i>أنشئ حسابًا للتسجيل
+                    </a>
+                    <a class="btn btn-outline-primary w-100 mt-2" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">
+                        لدي حساب بالفعل
+                    </a>
+                }
+                else
+                {
+                    <div class="owner-state"><i class="bi bi-shield-check"></i><div><strong>وضع الإدارة</strong><span>يمكنك إدارة هذا الكورس ومحتواه.</span></div></div>
+                }
+
+                <div class="purchase-benefits">
+                    <span><i class="bi bi-check-circle-fill"></i>مشاهدة الفيديو داخل المنصة</span>
+                    <span><i class="bi bi-check-circle-fill"></i>تنزيل المرفقات</span>
+                    <span><i class="bi bi-check-circle-fill"></i>وصول منظم وآمن</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@if (User.Identity?.IsAuthenticated == true && !isOwner && !isEnrolledStudent)
+{
+    <div class="modal fade" id="enrollConfirmModal" tabindex="-1" aria-labelledby="enrollConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content enroll-confirm-modal">
+                <div class="modal-header">
+                    <div>
+                        <span class="section-kicker">خطوة أخيرة</span>
+                        <h2 class="modal-title h5 mb-0 mt-1" id="enrollConfirmModalLabel">تأكيد التسجيل</h2>
+                    </div>
+                    <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-4">راجع بيانات حسابك والكورس قبل إتمام التسجيل.</p>
+
+                    <div class="enroll-confirm-summary">
+                        <div><span><i class="bi bi-person"></i> الحساب</span><strong>@accountName</strong></div>
+                        <div><span><i class="bi bi-envelope"></i> البريد الإلكتروني</span><strong dir="ltr">@accountEmail</strong></div>
+                        <div><span><i class="bi bi-book"></i> الكورس</span><strong>@course.Title</strong></div>
+                        <div><span><i class="bi bi-cash-stack"></i> القيمة</span><strong>@(course.Price <= 0 ? "مجاني" : $"{course.Price:N2} ر.س")</strong></div>
+                    </div>
+
+                    <div class="enroll-confirm-note">
+                        <i class="bi bi-shield-check"></i>
+                        <span>بعد التأكيد سيُربط الكورس بهذا الحساب ويظهر في «تسجيلاتي» على الويب والموبايل.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">ليس الآن</button>
+                    <form asp-controller="Enrollments" asp-action="Enroll" asp-route-courseId="@course.Id" method="post" class="m-0 flex-grow-1">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="bi bi-check2-circle ms-2"></i>تأكيد التسجيل في الكورس
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

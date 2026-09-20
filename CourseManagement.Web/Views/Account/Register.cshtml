@@ -1,0 +1,146 @@
+@model RegisterViewModel
+
+@{
+    ViewData["Title"] = "إنشاء حساب";
+    ViewData["AuthPage"] = true;
+}
+
+<div class="auth-shell hf-auth">
+    <div class="hf-auth-frame">
+        <div class="row g-0">
+            <div class="col-lg-6 order-lg-2">
+                <section class="hf-auth-visual h-100" aria-label="مزايا إنشاء الحساب">
+                    <div class="hf-auth-visual-content d-flex flex-column h-100">
+                        <a class="brand text-white text-decoration-none align-self-start" asp-controller="Home" asp-action="Index">
+                            <span class="brand-mark" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
+                            <span>
+                                <strong>منصة المعرفة</strong>
+                                <small>تعلّم بوضوح</small>
+                            </span>
+                        </a>
+
+                        <div class="mt-auto mb-auto">
+                            <span class="hero-kicker"><i class="bi bi-rocket-takeoff"></i> خطوتك الأولى تبدأ الآن</span>
+                            <h1>ابنِ عادتك التعليمية من أول يوم.</h1>
+                            <p>حساب واحد يمنحك مساحة مرتبة لاكتشاف الكورسات، حفظ التسجيلات، ومتابعة ما يهمك.</p>
+
+                            <div class="hf-auth-points">
+                                <div><i class="bi bi-check-circle-fill"></i><span>تصفح محتوى منظم وواضح</span></div>
+                                <div><i class="bi bi-check-circle-fill"></i><span>احتفظ بتسجيلاتك في مكان واحد</span></div>
+                                <div><i class="bi bi-check-circle-fill"></i><span>ابدأ بخطوات بسيطة وواضحة</span></div>
+                            </div>
+                        </div>
+
+                        <div class="small text-white-50">
+                            <i class="bi bi-stars ms-1"></i>
+                            كل رحلة كبيرة تبدأ بخطوة صغيرة.
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-6 order-lg-1">
+                <section class="hf-auth-form">
+                    <div class="auth-icon" aria-hidden="true"><i class="bi bi-person-plus-fill"></i></div>
+                    <span class="hf-eyebrow">حساب جديد</span>
+                    <h2>أنشئ حسابك</h2>
+                    <p class="text-muted mb-4">ابدأ التعلم في دقائق، واحتفظ بمسارك دائمًا.</p>
+
+                    <form asp-action="Register" method="post" novalidate>
+                        <input asp-for="ReturnUrl" type="hidden" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger small mb-3" role="alert"></div>
+
+                        <div class="hf-auth-field">
+                            <div class="hf-auth-field-head">
+                                <label asp-for="FullName" class="form-label"></label>
+                            </div>
+                            <div class="hf-input">
+                                <span class="hf-input-icon" aria-hidden="true"><i class="bi bi-person"></i></span>
+                                <input asp-for="FullName"
+                                       class="form-control"
+                                       autocomplete="name"
+                                       placeholder="اكتب اسمك الكامل" />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <div class="hf-auth-field">
+                            <div class="hf-auth-field-head">
+                                <label asp-for="Email" class="form-label"></label>
+                            </div>
+                            <div class="hf-input">
+                                <span class="hf-input-icon" aria-hidden="true"><i class="bi bi-envelope"></i></span>
+                                <input asp-for="Email"
+                                       class="form-control"
+                                       autocomplete="email"
+                                       inputmode="email"
+                                       spellcheck="false"
+                                       placeholder="name@example.com" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <div class="hf-auth-field">
+                            <div class="hf-auth-field-head">
+                                <label asp-for="Password" class="form-label"></label>
+                                <span class="hf-muted-label">8 أحرف على الأقل</span>
+                            </div>
+                            <div class="hf-input hf-password">
+                                <span class="hf-input-icon" aria-hidden="true"><i class="bi bi-key"></i></span>
+                                <input asp-for="Password"
+                                       class="form-control"
+                                       autocomplete="new-password"
+                                       placeholder="أنشئ كلمة مرور قوية" />
+                                <button type="button"
+                                        class="hf-password-toggle"
+                                        data-password-toggle
+                                        aria-label="إظهار كلمة المرور"
+                                        aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div class="input-hint mt-2"><i class="bi bi-shield-check ms-1"></i>استخدم مزيجًا من الحروف والأرقام والرموز.</div>
+                            <span asp-validation-for="Password" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <div class="hf-auth-field">
+                            <div class="hf-auth-field-head">
+                                <label asp-for="ConfirmPassword" class="form-label"></label>
+                            </div>
+                            <div class="hf-input hf-password">
+                                <span class="hf-input-icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
+                                <input asp-for="ConfirmPassword"
+                                       class="form-control"
+                                       autocomplete="new-password"
+                                       placeholder="أعد كتابة كلمة المرور" />
+                                <button type="button"
+                                        class="hf-password-toggle"
+                                        data-password-toggle
+                                        aria-label="إظهار كلمة المرور"
+                                        aria-pressed="false">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small d-block mt-1"></span>
+                        </div>
+
+                        <button class="btn btn-primary w-100" type="submit">
+                            إنشاء الحساب
+                            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>
+                        </button>
+                    </form>
+
+                    <div class="hf-auth-divider"><span>لديك حساب؟</span></div>
+
+                    <p class="hf-auth-create">
+                        <a asp-action="Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">سجّل الدخول <i class="bi bi-arrow-left"></i></a>
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

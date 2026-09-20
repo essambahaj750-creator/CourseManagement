@@ -1,0 +1,20 @@
+@{
+    ViewData["Title"] = "غير مسموح";
+    ViewData["AuthPage"] = true;
+}
+
+<div class="error-page">
+    <div class="error-orbit error-orbit-one"></div>
+    <div class="error-orbit error-orbit-two"></div>
+    <div class="error-card">
+        <div class="error-brand"><span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span><span><strong>منصة المعرفة</strong><small>تعلّم بوضوح</small></span></div>
+        <div class="error-icon error-icon-warning"><i class="bi bi-shield-lock"></i></div>
+        <span class="hf-eyebrow">مساحة محمية</span>
+        <h1>هذه الصفحة ليست ضمن صلاحياتك</h1>
+        <p>يمكنك العودة إلى لوحة التحكم أو متابعة الكورسات المتاحة لحسابك. إذا كنت تعتقد أن هذا غير صحيح، تواصل مع مسؤول المنصة.</p>
+        <div class="error-actions">
+            <a class="btn btn-primary" asp-controller="Home" asp-action="Index"><i class="bi bi-house ms-2"></i>العودة للرئيسية</a>
+            <a class="btn btn-light" asp-controller="Courses" asp-action="Index"><i class="bi bi-compass ms-2"></i>استكشاف الكورسات</a>
+        </div>
+    </div>
+</div>

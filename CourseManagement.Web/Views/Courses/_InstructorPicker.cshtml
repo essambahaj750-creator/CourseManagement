@@ -1,0 +1,104 @@
+@model CourseManagement.Web.ViewModels.CourseFormViewModel
+
+@{
+    var selectedInstructor = Model.InstructorId.HasValue
+        ? Model.Instructors.FirstOrDefault(item => item.Id == Model.InstructorId.Value)
+        : null;
+    var selectedLabel = selectedInstructor is null
+        ? string.Empty
+        : $"{selectedInstructor.FullName} ({selectedInstructor.Email})";
+}
+
+<div class="mb-3">
+    <label asp-for="InstructorId" class="form-label"></label>
+
+    @if (Model.Instructors.Count > 0)
+    {
+        <div class="hf-search-combobox"
+             data-instructor-picker
+             data-required-message="اختر مدرسًا من النتائج الظاهرة.">
+            <input asp-for="InstructorId" type="hidden" data-instructor-id />
+
+            <div class="hf-search-combobox-input">
+                <i class="bi bi-search"></i>
+                <input type="text"
+                       class="form-control"
+                       value="@selectedLabel"
+                       placeholder="اكتب اسم المدرّس أو البريد الإلكتروني..."
+                       autocomplete="off"
+                       role="combobox"
+                       aria-autocomplete="list"
+                       aria-expanded="false"
+                       aria-haspopup="listbox"
+                       data-instructor-search />
+                <button type="button"
+                        class="hf-combobox-clear @(string.IsNullOrWhiteSpace(selectedLabel) ? "d-none" : string.Empty)"
+                        aria-label="مسح المدرّس المختار"
+                        data-instructor-clear>
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="hf-search-combobox-menu" role="listbox" data-instructor-menu>
+                @foreach (var instructor in Model.Instructors)
+                {
+                    var label = $"{instructor.FullName} ({instructor.Email})";
+                    <button type="button"
+                            class="hf-search-combobox-option @(Model.InstructorId == instructor.Id ? "is-selected" : string.Empty)"
+                            role="option"
+                            aria-selected="@(Model.InstructorId == instructor.Id ? "true" : "false")"
+                            data-instructor-option
+                            data-id="@instructor.Id"
+                            data-label="@label"
+                            data-search="@($"{instructor.FullName} {instructor.Email}".ToLowerInvariant())">
+                        <span class="hf-combobox-avatar">
+                            @(string.IsNullOrWhiteSpace(instructor.FullName) ? "م" : instructor.FullName[..1])
+                        </span>
+                        <span class="hf-combobox-option-copy">
+                            <strong>@instructor.FullName</strong>
+                            <small dir="ltr">@instructor.Email</small>
+                        </span>
+                        <i class="bi bi-check2 hf-combobox-check"></i>
+                    </button>
+                }
+
+                <div class="hf-search-combobox-empty d-none" data-instructor-empty>
+                    <i class="bi bi-search"></i>
+                    <strong>لا توجد نتيجة مطابقة</strong>
+                    <span>جرّب كتابة جزء من الاسم أو البريد.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-hint mt-2">
+            <i class="bi bi-person-video3 ms-1"></i>
+            اكتب للبحث ثم اختر مدرسًا من النتائج؛ سيتم حفظ حساب المدرّس الحقيقي مع الكورس.
+        </div>
+        <span asp-validation-for="InstructorId" class="text-danger small"></span>
+    }
+    else
+    {
+        <div class="hf-empty-instructor-state">
+            <span class="hf-empty-instructor-icon"><i class="bi bi-person-video3"></i></span>
+            <div>
+                <strong>لا يوجد حساب مدرّس متاح حاليًا</strong>
+                <p>الكورس يجب أن يرتبط بحساب بدور Instructor، وليس باسم مكتوب يدويًا.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-primary"
+                       asp-controller="Admin"
+                       asp-action="Users">
+                        <i class="bi bi-person-gear ms-1"></i>
+                        تعيين مستخدم كمدرّس
+                    </a>
+                    <a class="btn btn-sm btn-light"
+                       asp-controller="Admin"
+                       asp-action="CreateUser">
+                        <i class="bi bi-person-plus ms-1"></i>
+                        إنشاء حساب جديد
+                    </a>
+                </div>
+            </div>
+        </div>
+        <span asp-validation-for="InstructorId" class="text-danger small"></span>
+    }
+</div>
