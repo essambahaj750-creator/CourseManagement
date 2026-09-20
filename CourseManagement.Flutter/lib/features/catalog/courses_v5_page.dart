@@ -643,7 +643,38 @@ class _PremiumFiltersSheetState extends State<_PremiumFiltersSheet> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _min.addListener(_onPriceChanged);
+    _max.addListener(_onPriceChanged);
+  }
+
+  void _onPriceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  double? get _parsedMin => double.tryParse(_min.text.trim());
+  double? get _parsedMax => double.tryParse(_max.text.trim());
+
+  bool get _invalidPriceRange {
+    final min = _parsedMin;
+    final max = _parsedMax;
+    return min != null && max != null && max > 0 && min > max;
+  }
+
+  int get _localActiveCount {
+    var count = 0;
+    if (_filter.instructorId != null) count++;
+    if (_min.text.trim().isNotEmpty) count++;
+    if (_max.text.trim().isNotEmpty) count++;
+    if (_filter.sort != 'featured') count++;
+    return count;
+  }
+
+  @override
   void dispose() {
+    _min.removeListener(_onPriceChanged);
+    _max.removeListener(_onPriceChanged);
     _min.dispose();
     _max.dispose();
     super.dispose();
@@ -738,28 +769,37 @@ class _PremiumFiltersSheetState extends State<_PremiumFiltersSheet> {
                     title: 'المدرّس',
                     subtitle: 'اعرض كورسات مدرّس محدد',
                     icon: Icons.school_outlined,
-                    child: DropdownButtonFormField<int>(
-                      isExpanded: true,
-                      initialValue: _filter.instructorId ?? 0,
-                      decoration: const InputDecoration(
-                        hintText: 'اختر المدرّس',
-                      ),
-                      items: [
-                        const DropdownMenuItem(
-                          value: 0,
-                          child: Text('كل المدرّسين'),
-                        ),
-                        ...widget.instructors.map(
-                          (item) => DropdownMenuItem(
-                            value: item.id,
-                            child: Text(item.name, overflow: TextOverflow.ellipsis),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => DropdownMenu<int>(
+                        width: constraints.maxWidth,
+                        initialSelection: _filter.instructorId ?? 0,
+                        enableFilter: true,
+                        enableSearch: true,
+                        requestFocusOnTap: true,
+                        leadingIcon: const Icon(Icons.search_rounded),
+                        label: const Text('ابحث عن المدرّس'),
+                        hintText: 'اكتب الاسم ثم اختر',
+                        dropdownMenuEntries: [
+                          const DropdownMenuEntry(
+                            value: 0,
+                            label: 'كل المدرّسين',
+                            leadingIcon: Icon(Icons.groups_2_outlined),
                           ),
-                        ),
-                      ],
-                      onChanged: (value) => setState(
-                        () => _filter = _filter.copyWith(
-                          instructorId: value == 0 ? null : value,
-                          clearInstructor: value == 0,
+                          ...widget.instructors.map(
+                            (item) => DropdownMenuEntry(
+                              value: item.id,
+                              label: item.name,
+                              leadingIcon: const Icon(
+                                Icons.person_outline_rounded,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onSelected: (value) => setState(
+                          () => _filter = _filter.copyWith(
+                            instructorId: value == 0 ? null : value,
+                            clearInstructor: value == 0,
+                          ),
                         ),
                       ),
                     ),
@@ -803,6 +843,49 @@ class _PremiumFiltersSheetState extends State<_PremiumFiltersSheet> {
                               ],
                             );
                           },
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: _invalidPriceRange
+                              ? Container(
+                                  key: const ValueKey('price-error'),
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(top: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 9,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.danger.withValues(alpha: .055),
+                                    borderRadius: BorderRadius.circular(11),
+                                    border: Border.all(
+                                      color: AppTheme.danger.withValues(alpha: .14),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 16,
+                                        color: AppTheme.danger,
+                                      ),
+                                      SizedBox(width: 7),
+                                      Expanded(
+                                        child: Text(
+                                          'الحد الأدنى يجب ألا يكون أكبر من الحد الأعلى.',
+                                          style: TextStyle(
+                                            color: AppTheme.danger,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox.shrink(
+                                  key: ValueKey('price-ok'),
+                                ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -899,12 +982,18 @@ class _PremiumFiltersSheetState extends State<_PremiumFiltersSheet> {
                     Expanded(
                       flex: 2,
                       child: FilledButton.icon(
-                        onPressed: () => Navigator.pop(context, _value()),
+                        onPressed: _invalidPriceRange
+                            ? null
+                            : () => Navigator.pop(context, _value()),
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(52),
                         ),
                         icon: const Icon(Icons.check_rounded),
-                        label: const Text('عرض النتائج'),
+                        label: Text(
+                          _localActiveCount == 0
+                              ? 'عرض كل النتائج'
+                              : 'تطبيق الفلاتر ($_localActiveCount)',
+                        ),
                       ),
                     ),
                   ],
