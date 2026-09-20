@@ -52,6 +52,10 @@ class _LoginPageState extends State<LoginPage> {
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              autocorrect: false,
+              enableSuggestions: false,
+              textCapitalization: TextCapitalization.none,
               decoration: const InputDecoration(
                 labelText: 'البريد الإلكتروني',
                 prefixIcon: Icon(Icons.alternate_email_rounded),
@@ -69,6 +73,9 @@ class _LoginPageState extends State<LoginPage> {
               controller: _password,
               obscureText: _obscure,
               textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              autocorrect: false,
+              enableSuggestions: false,
               onFieldSubmitted: (_) => _submit(),
               decoration: InputDecoration(
                 labelText: 'كلمة المرور',
