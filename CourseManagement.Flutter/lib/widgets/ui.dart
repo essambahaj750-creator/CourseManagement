@@ -13,16 +13,68 @@ class PageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: SingleChildScrollView(
-          padding: AppSpacing.page(width),
-          child: child,
+    final mobile = AppBreakpoints.isMobile(width);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(
+          child: Stack(
+            children: [
+              PositionedDirectional(
+                top: -120,
+                end: -90,
+                child: _AmbientOrb(
+                  size: mobile ? 220 : 320,
+                  color: AppTheme.blue.withValues(alpha: .055),
+                ),
+              ),
+              PositionedDirectional(
+                top: mobile ? 360 : 460,
+                start: -130,
+                child: _AmbientOrb(
+                  size: mobile ? 240 : 360,
+                  color: AppTheme.cyan.withValues(alpha: .045),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              padding: AppSpacing.page(width),
+              child: RepaintBoundary(child: child),
+            ),
+          ),
+        ),
+      ],
     );
   }
+}
+
+class _AmbientOrb extends StatelessWidget {
+  const _AmbientOrb({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+      );
 }
 
 class AdaptivePageHeader extends StatelessWidget {
@@ -44,54 +96,69 @@ class AdaptivePageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
+
     final text = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: AppTheme.blue.withValues(alpha: .07),
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                  border: Border.all(
-                    color: AppTheme.blue.withValues(alpha: .08),
-                  ),
+            Container(
+              width: compact ? 34 : 38,
+              height: compact ? 34 : 38,
+              decoration: BoxDecoration(
+                gradient: AppTheme.softAccentGradient,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .10),
                 ),
-                child: Icon(icon, size: 16, color: AppTheme.blue),
               ),
-              const SizedBox(width: 9),
-            ],
-            Text(
-              eyebrow,
-              style: const TextStyle(
+              child: Icon(
+                icon ?? Icons.auto_awesome_rounded,
+                size: compact ? 17 : 19,
                 color: AppTheme.blue,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppTheme.blue.withValues(alpha: .055),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: AppTheme.blue.withValues(alpha: .08),
+                ),
+              ),
+              child: Text(
+                eyebrow,
+                style: const TextStyle(
+                  color: AppTheme.blue,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 13),
         Text(
           title,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontSize: compact ? 25 : 30,
+                fontSize: compact ? 25 : 31,
+                letterSpacing: -.35,
               ),
         ),
         if (subtitle != null) ...[
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
+            constraints: const BoxConstraints(maxWidth: 720),
             child: Text(
               subtitle!,
               style: const TextStyle(
                 color: AppTheme.muted,
                 fontSize: 12,
-                height: 1.7,
+                height: 1.8,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -99,24 +166,67 @@ class AdaptivePageHeader extends StatelessWidget {
       ],
     );
 
-    if (action == null) return text;
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final content = action == null
+        ? text
+        : compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  text,
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: action!,
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: text),
+                  const SizedBox(width: 22),
+                  action!,
+                ],
+              );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 18 : 24),
+      decoration: BoxDecoration(
+        gradient: AppTheme.surfaceGradient,
+        borderRadius: BorderRadius.circular(compact ? 22 : 28),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Stack(
         children: [
-          text,
-          const SizedBox(height: 14),
-          Align(alignment: Alignment.centerRight, child: action!),
+          PositionedDirectional(
+            top: -54,
+            end: -38,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.blue.withValues(alpha: .035),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            bottom: -70,
+            start: -55,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.cyan.withValues(alpha: .035),
+              ),
+            ),
+          ),
+          content,
         ],
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(child: text),
-        const SizedBox(width: 20),
-        action!,
-      ],
+      ),
     );
   }
 }
@@ -206,16 +316,23 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 520;
+
     final heading = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 5,
-          height: 38,
-          margin: const EdgeInsets.only(left: 11),
+          height: subtitle == null ? 30 : 44,
+          margin: const EdgeInsetsDirectional.only(end: 12),
           decoration: BoxDecoration(
             gradient: AppTheme.accentGradient,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.blue.withValues(alpha: .16),
+                blurRadius: 12,
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -224,8 +341,8 @@ class SectionTitle extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 21,
+                style: TextStyle(
+                  fontSize: compact ? 19 : 21,
                   fontWeight: FontWeight.w900,
                   color: AppTheme.ink,
                   letterSpacing: -.2,
@@ -237,8 +354,8 @@ class SectionTitle extends StatelessWidget {
                   subtitle!,
                   style: const TextStyle(
                     color: AppTheme.muted,
-                    fontSize: 12,
-                    height: 1.6,
+                    fontSize: 11.5,
+                    height: 1.65,
                   ),
                 ),
               ],
@@ -247,6 +364,7 @@ class SectionTitle extends StatelessWidget {
         ),
       ],
     );
+
     if (action == null) return heading;
     if (compact) {
       return Column(
@@ -258,10 +376,12 @@ class SectionTitle extends StatelessWidget {
         ],
       );
     }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(child: heading),
+        const SizedBox(width: 16),
         action!,
       ],
     );
