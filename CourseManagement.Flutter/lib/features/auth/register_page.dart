@@ -86,6 +86,8 @@ class _RegisterPageState extends State<RegisterPage> {
             TextFormField(
               controller: _name,
               textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'الاسم الكامل',
                 prefixIcon: Icon(Icons.person_outline_rounded),
@@ -99,6 +101,10 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              autocorrect: false,
+              enableSuggestions: false,
+              textCapitalization: TextCapitalization.none,
               decoration: const InputDecoration(
                 labelText: 'البريد الإلكتروني',
                 prefixIcon: Icon(Icons.alternate_email_rounded),
@@ -112,6 +118,9 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _password,
               obscureText: _obscure,
               textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
+              autocorrect: false,
+              enableSuggestions: false,
               decoration: InputDecoration(
                 labelText: 'كلمة المرور',
                 hintText: '8 أحرف على الأقل',
@@ -134,6 +143,9 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _confirm,
               obscureText: _obscure,
               textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.newPassword],
+              autocorrect: false,
+              enableSuggestions: false,
               onFieldSubmitted: (_) => _submit(),
               decoration: const InputDecoration(
                 labelText: 'تأكيد كلمة المرور',
