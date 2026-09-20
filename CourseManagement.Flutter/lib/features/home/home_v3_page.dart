@@ -312,7 +312,8 @@ class _Hero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstName = (auth.session?.fullName.trim().split(' ').firstOrNull ?? '').trim();
+    final firstName =
+        (auth.session?.fullName.trim().split(' ').firstOrNull ?? '').trim();
     final headline = auth.isAdmin
         ? 'أدر المنصة من مكان واحد'
         : auth.isInstructor
@@ -326,70 +327,286 @@ class _Hero extends StatelessWidget {
             ? 'أنشئ كورساتك، ارفع الدروس، وراجع المحتوى قبل نشره.'
             : 'استكشف الكورسات، شاهد المعاينة، ثم سجّل وابدأ التعلّم.';
 
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .1),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: .08)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFFB9FFF2),
+                size: 14,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                auth.isAdmin
+                    ? 'لوحة الإدارة'
+                    : auth.isInstructor
+                        ? 'مساحة المدرّس'
+                        : 'منصة المعرفة',
+                style: const TextStyle(
+                  color: Color(0xFFB9FFF2),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          headline,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: mobile ? 25 : 34,
+            height: 1.35,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.35,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 650),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .74),
+              fontSize: mobile ? 12 : 14,
+              height: 1.8,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            FilledButton.icon(
+              onPressed: () => context.go(
+                auth.isAdmin
+                    ? '/admin/users'
+                    : auth.isInstructor
+                        ? '/manage/courses'
+                        : '/courses',
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppTheme.blue,
+              ),
+              icon: Icon(
+                auth.isAdmin
+                    ? Icons.admin_panel_settings_rounded
+                    : auth.isInstructor
+                        ? Icons.dashboard_customize_rounded
+                        : Icons.explore_rounded,
+              ),
+              label: Text(
+                auth.isAdmin
+                    ? 'إدارة المستخدمين'
+                    : auth.isInstructor
+                        ? 'إدارة كورساتي'
+                        : 'استكشف الكورسات',
+              ),
+            ),
+            if (!auth.isAuthenticated)
+              OutlinedButton.icon(
+                onPressed: () => context.go('/register'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: .35),
+                  ),
+                ),
+                icon: const Icon(Icons.person_add_alt_1_rounded),
+                label: const Text('إنشاء حساب'),
+              ),
+          ],
+        ),
+      ],
+    );
+
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       padding: EdgeInsets.all(mobile ? 20 : 30),
       decoration: BoxDecoration(
         gradient: AppTheme.brandGradient,
         borderRadius: BorderRadius.circular(mobile ? 24 : 32),
         boxShadow: AppTheme.elevatedShadow,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          PositionedDirectional(
+            top: -95,
+            end: -70,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.cyan.withValues(alpha: .09),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            bottom: -120,
+            start: -80,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.blue.withValues(alpha: .11),
+              ),
+            ),
+          ),
+          if (mobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                copy,
+                const SizedBox(height: 22),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _HeroArtwork(auth: auth, compact: true),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(flex: 3, child: copy),
+                const SizedBox(width: 34),
+                _HeroArtwork(auth: auth, compact: false),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroArtwork extends StatelessWidget {
+  const _HeroArtwork({required this.auth, required this.compact});
+
+  final AuthController auth;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = auth.isAdmin
+        ? Icons.dashboard_rounded
+        : auth.isInstructor
+            ? Icons.cast_for_education_rounded
+            : Icons.school_rounded;
+    final primaryLabel = auth.isAdmin
+        ? 'تحكم واضح'
+        : auth.isInstructor
+            ? 'محتوى منظم'
+            : 'تعلّم مستمر';
+    final secondaryLabel = auth.isAdmin
+        ? 'صلاحيات آمنة'
+        : auth.isInstructor
+            ? 'إدارة أسرع'
+            : 'تقدّم محفوظ';
+
+    return SizedBox(
+      width: compact ? 190 : 250,
+      height: compact ? 150 : 200,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            width: compact ? 116 : 150,
+            height: compact ? 116 : 150,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              auth.isAdmin ? 'لوحة الإدارة' : auth.isInstructor ? 'مساحة المدرّس' : 'منصة المعرفة',
-              style: const TextStyle(color: Color(0xFFB9FFF2), fontSize: 10, fontWeight: FontWeight.w900),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            headline,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: mobile ? 25 : 34,
-              height: 1.35,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 650),
-            child: Text(
-              subtitle,
-              style: TextStyle(color: Colors.white.withValues(alpha: .74), fontSize: mobile ? 12 : 14, height: 1.8),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              FilledButton.icon(
-                onPressed: () => context.go(auth.isAdmin ? '/admin/users' : auth.isInstructor ? '/manage/courses' : '/courses'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppTheme.blue),
-                icon: Icon(auth.isAdmin ? Icons.admin_panel_settings_rounded : auth.isInstructor ? Icons.dashboard_customize_rounded : Icons.explore_rounded),
-                label: Text(auth.isAdmin ? 'إدارة المستخدمين' : auth.isInstructor ? 'إدارة كورساتي' : 'استكشف الكورسات'),
+              color: Colors.white.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(compact ? 32 : 42),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: .12),
               ),
-              if (!auth.isAuthenticated)
-                OutlinedButton.icon(
-                  onPressed: () => context.go('/register'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withValues(alpha: .35))),
-                  icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: const Text('إنشاء حساب'),
+            ),
+          ),
+          Container(
+            width: compact ? 72 : 92,
+            height: compact ? 72 : 92,
+            decoration: BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              borderRadius: BorderRadius.circular(compact ? 23 : 28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x4012B8A0),
+                  blurRadius: 34,
+                  offset: Offset(0, 14),
                 ),
-            ],
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: compact ? 34 : 44,
+            ),
+          ),
+          PositionedDirectional(
+            top: compact ? 4 : 8,
+            start: 0,
+            child: _HeroMiniBadge(
+              icon: Icons.verified_rounded,
+              label: primaryLabel,
+            ),
+          ),
+          PositionedDirectional(
+            bottom: compact ? 3 : 7,
+            end: 0,
+            child: _HeroMiniBadge(
+              icon: Icons.trending_up_rounded,
+              label: secondaryLabel,
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _HeroMiniBadge extends StatelessWidget {
+  const _HeroMiniBadge({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: Colors.white.withValues(alpha: .12)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFFB9FFF2), size: 14),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _QuickActions extends StatelessWidget {
