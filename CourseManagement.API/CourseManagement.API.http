@@ -1,0 +1,67 @@
+@host = http://localhost:5205
+@token = PASTE_TOKEN_HERE
+
+### تسجيل حساب جديد (Student دائماً)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Anas Sadeq",
+  "email": "anas@example.com",
+  "password": "REPLACE_WITH_A_STRONG_LOCAL_PASSWORD"
+}
+
+### تسجيل الدخول — استخدم بيانات Admin الموجودة في User Secrets أو بيئة التشغيل
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "REPLACE_WITH_YOUR_LOCAL_ADMIN_PASSWORD"
+}
+
+### ترقية مستخدم إلى Instructor — يتطلب توكن Admin
+PUT {{host}}/api/users/2/role
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "role": "Instructor"
+}
+
+### إنشاء كورس — يتطلب توكن Instructor أو Admin
+POST {{host}}/api/course
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "ASP.NET Core من الصفر",
+  "description": "بناء Web APIs احترافية",
+  "price": 49.99
+}
+
+### كل الكورسات — عام
+GET {{host}}/api/course
+
+### التسجيل في كورس — أي مستخدم مسجّل دخول
+POST {{host}}/api/enrollment
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "courseId": 1
+}
+
+### تسجيلاتي
+GET {{host}}/api/enrollment/my
+Authorization: Bearer {{token}}
+
+### إلغاء تسجيلي من كورس
+DELETE {{host}}/api/enrollment/course/1
+Authorization: Bearer {{token}}
+
+### بحث الكتالوج — فلاتر وترتيب وتقسيم صفحات (عام)
+GET {{host}}/api/course/search?q=flutter&minPrice=10&maxPrice=500&sort=price-low&page=1&pageSize=6
+
+### خيارات المدرّسين للفلتر (عام)
+GET {{host}}/api/course/instructors

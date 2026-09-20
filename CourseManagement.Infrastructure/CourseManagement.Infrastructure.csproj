@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\CourseManagement.Application\CourseManagement.Application.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+					<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+			<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
+
+			<!-- Override the transitive SQLite native bundle to receive SQLite >= 3.50.2 security fixes. -->
+			<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+		<PackageReference Include="BCrypt.Net-Next" Version="4.2.1" />
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.22.0" />
+	</ItemGroup>
+</Project>
