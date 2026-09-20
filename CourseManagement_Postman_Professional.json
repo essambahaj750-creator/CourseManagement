@@ -1,0 +1,1041 @@
+{
+  "info": {
+    "_postman_id": "d28dd9e4-4cf6-4c58-bb89-60494bf4f3a2",
+    "name": "CourseManagement API",
+    "description": "Postman collection for validating the main CourseManagement API flows: authentication, course catalog, course management, enrollments, authorization, user roles, and cleanup.\n\nLocal setup:\n- Run CourseManagement.API.\n- Confirm JwtSettings:IssueToken is enabled and JwtSettings:Secret is configured.\n- Run the collection in order so generated IDs and tokens are reused automatically.\n- If the local HTTPS development certificate is not trusted, disable SSL certificate verification in Postman only for the local development environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7026"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@local.test"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Admin-Local-2026!"
+    },
+    {
+      "key": "studentEmail",
+      "value": "student@example.com"
+    },
+    {
+      "key": "studentPassword",
+      "value": "Student_Postman_2026!"
+    },
+    {
+      "key": "searchText",
+      "value": "Postman"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "studentToken",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "courseId",
+      "value": ""
+    },
+    {
+      "key": "deleteCourseId",
+      "value": ""
+    },
+    {
+      "key": "enrollmentId",
+      "value": ""
+    },
+    {
+      "key": "adminExpiresAtUtc",
+      "value": ""
+    },
+    {
+      "key": "studentExpiresAtUtc",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Authentication",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Confirms that the API is running and reporting a healthy status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"returns 200 OK\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"reports a healthy status\",()=>pm.expect(pm.response.text()).to.include(\"Healthy\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile Without Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/me",
+            "description": "Verifies that protected profile data cannot be accessed anonymously."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"rejects requests without authentication\",()=>pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Authenticates the seeded administrator and stores the JWT for later requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin can sign in\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"adminToken\",j.token||\"\");",
+                  "pm.collectionVariables.set(\"adminId\",String(j.userId||\"\"));",
+                  "pm.collectionVariables.set(\"adminExpiresAtUtc\",j.expiresAtUtc||\"\");",
+                  "pm.test(\"admin token is returned\",()=>pm.expect(j.token).to.be.ok);",
+                  "pm.test(\"admin role is returned\",()=>pm.expect(pm.response.json().role).eql(\"Admin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/me",
+            "description": "Returns the profile associated with the current admin token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin profile is available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"profile belongs to an admin\",()=>pm.expect(pm.response.json().role).eql(\"Admin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fullName\":\"Postman Test Student\",\"email\":\"{{studentEmail}}\",\"password\":\"{{studentPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a unique student account for this collection run and stores its token and id."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"studentEmail\",\"student.\"+Date.now()+\"@example.com\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student registration succeeds\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"studentToken\",j.token||\"\");",
+                  "pm.collectionVariables.set(\"studentId\",String(j.userId||\"\"));",
+                  "pm.collectionVariables.set(\"studentExpiresAtUtc\",j.expiresAtUtc||\"\");",
+                  "pm.test(\"student token is returned\",()=>pm.expect(j.token).to.be.ok);",
+                  "pm.collectionVariables.set(\"studentEmail\",pm.response.json().email||pm.collectionVariables.get(\"studentEmail\"));",
+                  "pm.test(\"new public account uses the Student role\",()=>pm.expect(pm.response.json().role).eql(\"Student\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/me",
+            "description": "Returns the profile associated with the current student token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student profile is available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"profile belongs to a student\",()=>pm.expect(pm.response.json().role).eql(\"Student\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Course Catalog",
+      "item": [
+        {
+          "name": "List Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course",
+            "description": "Returns the public course catalog."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course list is available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"course response is a list\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Instructors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/instructors",
+            "description": "Returns available instructors for catalog filtering and display."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"instructor list is available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"instructor response is a list\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/search?q={{searchText}}&minPrice=0&maxPrice=1000000&sort=price-low&page=1&pageSize=6",
+            "description": "Exercises search, price filtering, sorting, and pagination."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course search succeeds\",()=>pm.response.to.have.status(200));",
+                  "const j=pm.response.json();",
+                  "pm.test(\"search response contains pagination fields\",()=>{pm.expect(j.items).to.be.an(\"array\");pm.expect(j.totalCount).to.be.a(\"number\");pm.expect(j.totalPages).to.be.a(\"number\");});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Courses - No Results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/search?q=postman-no-match-{{$timestamp}}&page=1&pageSize=6",
+            "description": "Checks the empty-result response contract."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"empty search still returns 200\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"empty search keeps the items collection\",()=>pm.expect(pm.response.json().items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Course Management",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"API Testing Basics {{$timestamp}}\",\"description\":\"Temporary course created by the Postman regression collection.\",\"price\":49.5,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates the main course used by the enrollment scenarios."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course is created\",()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"courseId\",String(j.id));",
+                  "pm.test(\"created course has an id\",()=>pm.expect(j.id).to.be.ok);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{courseId}}",
+            "description": "Loads the course created earlier in the collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course details are available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"returned course matches the requested id\",()=>pm.expect(String(pm.response.json().id)).eql(pm.collectionVariables.get(\"courseId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"API Testing Basics - Updated\",\"description\":\"Updated by the Postman regression collection.\",\"price\":59.5,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Updates the main test course and verifies the returned title."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course is updated\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"updated title is returned\",()=>pm.expect(pm.response.json().title).eql(\"API Testing Basics - Updated\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Course for Deletion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Temporary Course {{$timestamp}}\",\"description\":\"Short-lived course used to verify delete behavior.\",\"price\":10,\"imageUrl\":null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a short-lived course used to validate DELETE behavior."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"temporary course is created\",()=>pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"deleteCourseId\",String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Temporary Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{deleteCourseId}}",
+            "description": "Deletes the temporary course created in the previous request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"temporary course is deleted\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Temporary Course Deleted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{deleteCourseId}}",
+            "description": "Confirms that the deleted temporary course returns 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"deleted course is no longer available\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Enrollments",
+      "item": [
+        {
+          "name": "Enroll in Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"courseId\":{{courseId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Enrolls the generated student in the test course."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"enrollment is created\",()=>pm.response.to.have.status(201));",
+                  "const j=pm.response.json();",
+                  "pm.collectionVariables.set(\"enrollmentId\",String(j.id));",
+                  "pm.test(\"enrollment points to the selected course\",()=>pm.expect(String(j.courseId)).eql(pm.collectionVariables.get(\"courseId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List My Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/my",
+            "description": "Returns enrollments belonging to the authenticated student."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student enrollments are available\",()=>pm.response.to.have.status(200));",
+                  "const courseId=pm.collectionVariables.get(\"courseId\");",
+                  "pm.test(\"student enrollment list contains the course\",()=>pm.expect(pm.response.json().some(x=>String(x.courseId)===courseId)).eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Enrollment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/{{enrollmentId}}",
+            "description": "Returns the enrollment created earlier in the run."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"enrollment details are available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"returned enrollment matches the requested id\",()=>pm.expect(String(pm.response.json().id)).eql(pm.collectionVariables.get(\"enrollmentId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Enrollments by User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/user/{{studentId}}",
+            "description": "Returns enrollments for the current student id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user enrollments are available\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Access to All Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment",
+            "description": "Verifies that a student cannot access the administrator enrollment list."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student cannot list all enrollments\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List All Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment",
+            "description": "Returns all enrollments for an administrator."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin can list all enrollments\",()=>pm.response.to.have.status(200));",
+                  "const courseId=pm.collectionVariables.get(\"courseId\");",
+                  "pm.test(\"admin list contains the test course\",()=>pm.expect(pm.response.json().some(x=>String(x.courseId)===courseId)).eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - List Course Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/course/{{courseId}}",
+            "description": "Returns enrollments associated with the test course."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"course enrollments are available to admin\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unenroll from Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/course/{{courseId}}",
+            "description": "Removes the current student's enrollment from the test course."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student can unenroll\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Enrollment Removed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/enrollment/{{enrollmentId}}",
+            "description": "Confirms that the removed enrollment is no longer available."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"removed enrollment is no longer available\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Users & Roles",
+      "item": [
+        {
+          "name": "Admin - List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users",
+            "description": "Returns the user list for an administrator."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin can list users\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"users response is a list\",()=>pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Access to Users List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users",
+            "description": "Verifies that the user list is restricted to administrators."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student cannot list all users\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Access to Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{adminId}}",
+            "description": "Checks that a student cannot access another user's protected profile."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"student cannot read another user profile\",()=>pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Get Student Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}",
+            "description": "Allows an administrator to view the generated student profile."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"admin can read the student profile\",()=>pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin - Change Student Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}/role",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"role\":\"Instructor\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Changes the generated student's role to Instructor."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"role update succeeds\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"updated role is Instructor\",()=>pm.expect(pm.response.json().role).eql(\"Instructor\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Updated Role",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/users/{{studentId}}",
+            "description": "Confirms that the role update was persisted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"updated profile is available\",()=>pm.response.to.have.status(200));",
+                  "pm.test(\"role change is persisted\",()=>pm.expect(pm.response.json().role).eql(\"Instructor\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99 - Cleanup",
+      "item": [
+        {
+          "name": "Delete Test Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/api/course/{{courseId}}",
+            "description": "Removes the main test course created by this collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"test course is deleted\",()=>pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Test Course Deleted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/course/{{courseId}}",
+            "description": "Confirms cleanup by checking that the deleted course returns 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"deleted test course is no longer available\",()=>pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
