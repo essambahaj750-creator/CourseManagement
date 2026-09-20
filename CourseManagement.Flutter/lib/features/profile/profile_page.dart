@@ -117,6 +117,81 @@ class ProfilePage extends StatelessWidget {
             helper: 'رقم حسابك داخل المنصة',
           ),
           const SizedBox(height: 24),
+          const SectionTitle(
+            title: 'اختصارات حسابك',
+            subtitle: 'الوصول السريع إلى أهم المساحات المرتبطة بدورك.',
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 620;
+              final actions = auth.isAdmin
+                  ? const [
+                      _ProfileAction(
+                        title: 'إدارة المستخدمين',
+                        subtitle: 'الحسابات والأدوار والصلاحيات',
+                        icon: Icons.manage_accounts_rounded,
+                        path: '/admin/users',
+                      ),
+                      _ProfileAction(
+                        title: 'كل التسجيلات',
+                        subtitle: 'متابعة نشاط الطلاب',
+                        icon: Icons.fact_check_rounded,
+                        path: '/admin/enrollments',
+                      ),
+                    ]
+                  : auth.isInstructor
+                      ? const [
+                          _ProfileAction(
+                            title: 'إدارة كورساتي',
+                            subtitle: 'أنشئ وعدّل وارفع المحتوى',
+                            icon: Icons.dashboard_customize_rounded,
+                            path: '/manage/courses',
+                          ),
+                          _ProfileAction(
+                            title: 'واجهة الطالب',
+                            subtitle: 'راجع ظهور الكورسات في الكتالوج',
+                            icon: Icons.visibility_rounded,
+                            path: '/courses',
+                          ),
+                        ]
+                      : const [
+                          _ProfileAction(
+                            title: 'كورساتي',
+                            subtitle: 'تابع تقدّمك ومسارك التعليمي',
+                            icon: Icons.play_circle_rounded,
+                            path: '/enrollments',
+                          ),
+                          _ProfileAction(
+                            title: 'استكشف الكورسات',
+                            subtitle: 'اكتشف محتوى جديدًا',
+                            icon: Icons.explore_rounded,
+                            path: '/courses',
+                          ),
+                        ];
+
+              if (compact) {
+                return Column(
+                  children: [
+                    for (var index = 0; index < actions.length; index++) ...[
+                      _ProfileActionCard(data: actions[index]),
+                      if (index < actions.length - 1)
+                        const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: _ProfileActionCard(data: actions[0])),
+                  const SizedBox(width: 12),
+                  Expanded(child: _ProfileActionCard(data: actions[1])),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -245,6 +320,87 @@ class _InfoCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+}
+
+
+class _ProfileAction {
+  const _ProfileAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.path,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String path;
+}
+
+class _ProfileActionCard extends StatelessWidget {
+  const _ProfileActionCard({required this.data});
+
+  final _ProfileAction data;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () => context.go(data.path),
+          child: Padding(
+            padding: const EdgeInsets.all(17),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.softAccentGradient,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: AppTheme.blue.withValues(alpha: .10),
+                    ),
+                  ),
+                  child: Icon(data.icon, color: AppTheme.blue, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.title,
+                        style: const TextStyle(
+                          color: AppTheme.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        data.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 10,
+                          height: 1.55,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppTheme.blue,
+                  size: 18,
+                ),
+              ],
+            ),
           ),
         ),
       );
