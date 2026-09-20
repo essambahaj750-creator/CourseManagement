@@ -26,6 +26,15 @@ class AppShell extends StatelessWidget {
       appBar: AppBar(
         toolbarHeight: mobile ? 66 : 76,
         titleSpacing: mobile ? 12 : 22,
+        flexibleSpace: const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [Color(0xFFFFFFFF), Color(0xFFF9FBFF)],
+            ),
+          ),
+        ),
         title: _Brand(compact: mobile),
         actions: [
           if (!mobile)
@@ -97,7 +106,35 @@ class AppShell extends StatelessWidget {
             ],
           ),
         ),
-        child: SafeArea(child: child),
+        child: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            reverseDuration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (page, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, .012),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: page,
+              ),
+            ),
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(path),
+              child: child,
+            ),
+          ),
+        ),
       ),
       bottomNavigationBar: mobile
           ? _FloatingBottomNavigation(
