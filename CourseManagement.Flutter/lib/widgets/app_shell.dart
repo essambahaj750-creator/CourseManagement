@@ -24,6 +24,7 @@ class AppShell extends StatelessWidget {
     final scaffold = Scaffold(
       extendBody: mobile,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: mobile ? 66 : 76,
         titleSpacing: mobile ? 12 : 22,
         flexibleSpace: const DecoratedBox(
